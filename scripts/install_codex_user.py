@@ -231,12 +231,10 @@ def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str
             del held['hooks'][event]
     if not changed:
         return existing
-    if (
-        remove
-        and not held['hooks']
-        and set(held) == set(required)
-        and held.get('description') == required['description']
-    ):
+    only_owned_metadata = (
+        set(held) == set(required) and held.get('description') == required['description']
+    )
+    if remove and not held['hooks'] and only_owned_metadata:
         return None
     return json.dumps(held, indent=2) + '\n'
 
