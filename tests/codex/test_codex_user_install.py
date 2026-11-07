@@ -172,3 +172,45 @@ def test_upgrade_reconciles_old_owned_skill_links(tmp_path: Path) -> None:
     assert prior.is_symlink()
     assert prior.resolve() == (ROOT / '.codex/skills/lets-investigate').resolve()
     assert (prior / 'references').is_dir()
+
+
+@pytest.mark.unit
+def test_unowned_role_preflight_does_not_leave_installed_links(tmp_path: Path) -> None:
+    config = tmp_path / '.codex/config.toml'
+    config.parent.mkdir()
+    original = '[agents."mm-triage-code-scout"]\ndescription = "custom"\n'
+    config.write_text(original)
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'unowned MightyModels agent role' in result.stderr
+    assert config.read_text() == original
+    assert not (tmp_path / '.codex/agents').exists()
+    assert not (tmp_path / '.agents/skills').exists()
+
+
+@pytest.mark.unit
+def test_invalid_instruction_markers_preflight_keeps_all_links_untouched(tmp_path: Path) -> None:
+    instructions = tmp_path / '.codex/AGENTS.md'
+    instructions.parent.mkdir()
+    instructions.write_text('# >>> mightymodels-codex managed >>>\nbroken\n')
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'Malformed MightyModels managed markers' in result.stderr
+    assert not (tmp_path / '.codex/agents').exists()
+    assert not (tmp_path / '.agents/skills').exists()
+
+
+@pytest.mark.unit
+def test_stale_temp_file_preflight_preserves_existing_config(tmp_path: Path) -> None:
+    config = tmp_path / '.codex/config.toml'
+    config.parent.mkdir()
+    config.write_text('sandbox_mode = "read-only"\n')
+    temporary = tmp_path / '.codex/config.toml.mightymodels-tmp'
+    temporary.write_text('held by another process')
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'Refusing existing temporary file' in result.stderr
+    assert temporary.read_text() == 'held by another process'
+    assert config.read_text() == 'sandbox_mode = "read-only"\n'
+    assert not (tmp_path / '.codex/agents').exists()
+    assert not (tmp_path / '.agents/skills').exists()
