@@ -10,7 +10,7 @@ import subprocess
 from collections import Counter
 from pathlib import Path
 
-SUPPRESSION = re.compile(r'(?i)#\\s*(?:ruff:\\s*)?noqa\\b|#\\s*(?:type|ty):\\s*ignore\\b')
+SUPPRESSION = re.compile(r'(?i)#\s*(?:ruff:\s*)?noqa\b|#\s*(?:type|ty):\s*ignore\b')
 
 
 def suppressions(source: str) -> Counter[str]:
@@ -49,7 +49,7 @@ def check(base: str, root: Path) -> int:
         return 2
 
     found = False
-    for raw in changed.stdout.split(b'\\0'):
+    for raw in changed.stdout.split(b'\0'):
         if not raw:
             continue
         relative = Path(raw.decode('utf-8', errors='surrogateescape'))
