@@ -17,6 +17,8 @@ from tempfile import TemporaryDirectory
 from codex_trace_summary import summarize
 
 MAX_OUTPUT_BYTES = 1_000_000
+MIN_TIMEOUT = 15
+MAX_TIMEOUT = 300
 PROMPT = (
     'Read-only acceptance probe: inspect README.md and report its one-line purpose. '
     'Do not edit any files, install packages, dispatch child agents, or use secrets.'
@@ -59,8 +61,8 @@ def run_probe(timeout: int) -> dict[str, object]:
     if not codex or not git:
         return {'status': 'blocked: codex or git unavailable', 'host_denial_verified': False}
 
-    try:
-        version = subprocess.run(  # noqa: S603
+    try:  # noqa: PLR0915
+        version = subprocess.run(  # noqa: S603, PLR0915
             [codex, '--version'],
             text=True,
             capture_output=True,
@@ -103,7 +105,7 @@ def main() -> int:
     args = parser.parse_args()
     if not args.live:
         parser.error('Explicitly pass --live to invoke Codex in a disposable repository')
-    if not 15 <= args.timeout <= 300:
+    if not MIN_TIMEOUT <= args.timeout <= MAX_TIMEOUT:
         parser.error('Timeout must be between 15 and 300 seconds')
     report = run_probe(args.timeout)
     print(json.dumps(report, indent=2, sort_keys=True))
