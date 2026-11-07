@@ -251,6 +251,7 @@ def test_explicit_plan_answers_translate_to_legacy_decisions() -> None:
         'tool_name': 'request_user_input',
         'permission_mode': 'plan',
         'session_id': 'session-001',
+        'cwd': '/tmp/example',
         'tool_input': {
             'questions': [
                 {'id': 'design', 'question': 'Which design?'},
@@ -376,3 +377,56 @@ def test_probe_non_denial_is_not_reported_as_host_permission(tmp_path: Path) -> 
 def test_probe_outcome_disabled_by_default(tmp_path: Path) -> None:
     module.audit_probe_decision(event(), {'HOME': str(tmp_path)}, module.denial('blocked'))
     assert not (tmp_path / '.local/state/mightymodels').exists()
+
+
+
+@pytest.mark.unit
+def test_plan_recorder_never_forwards_unselected_secret_question_data() -> None:
+    event = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'request_user_input',
+        'permission_mode': 'plan',
+        'session_id': 'session-001',
+        'cwd': '/tmp/example',
+        'tool_input': {
+            'questions': [
+                {'id': 'valid', 'question': 'Proceed?'},
+                {
+                    'id': 'private',
+                    'question': 'PRIVATE_QUESTION_DO_NOT_COPY',
+                    'is_secret': True,
+                    'options': [{'label': 'SECRET_OPTION_DO_NOT_COPY'}],
+                },
+            ]
+        },
+        'tool_response': {
+            'answers': {
+                'valid': {'answers': ['Proceed']},
+                'private': {'answers': ['SECRET_RESPONSE_DO_NOT_COPY']},
+            }
+        },
+        'transcript': 'SECRET_OTHER_DATA_DO_NOT_COPY',
+    }
+    result = module.translate_plan_answers(event)
+    assert result == {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'AskUserQuestion',
+        'cwd': '/tmp/example',
+        'session_id': 'session-001',
+        'tool_response': {'answers': {'Proceed?': 'Proceed'}},
+    }
+    assert 'SECRET_' not in json.dumps(result)
+    assert 'PRIVATE_QUESTION_DO_NOT_COPY' not in json.dumps(result)
+
+
+@pytest.mark.unit
+def test_plan_recorder_requires_checkout_cwd_to_avoid_wrong_state_database() -> None:
+    event = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'request_user_input',
+        'permission_mode': 'plan',
+        'session_id': 'session-001',
+        'tool_input': {'questions': [{'id': 'q', 'question': 'Proceed?'}]},
+        'tool_response': {'answers': {'q': {'answers': ['Yes']}}},
+    }
+    assert module.translate_plan_answers(event) is None
