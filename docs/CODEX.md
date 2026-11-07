@@ -394,8 +394,21 @@ toolchain files. These Claude matchers are **not** asserted to execute in native
 Codex. The global MightyModels hook bridge is for lifecycle/dispatch, not
 automatic formatting in arbitrary target repositories.
 
-For development **inside this MightyModels checkout**, use the explicit,
-repository-scoped workflow:
+For development **inside this MightyModels checkout**, the project-only
+`.codex/hooks.json` now registers a narrow `PreToolUse` handler for
+`apply_patch` / `Edit` / `Write`. Its read-only Python guard refuses newly
+added `noqa`, `type: ignore` and `ty: ignore` annotations in the patch and
+direct `uv.lock` patch changes. Unknown edit payloads are denied rather than
+silently assumed safe. It does not change user/global dispatch or MCP hooks.
+
+**This is not complete host enforcement.** Hook execution requires Codex to load
+and trust this project's hooks, and some edits (including shell-driven writes)
+may bypass `apply_patch` interception. No `ask` response is emitted: Codex
+does not currently support PreToolUse `permissionDecision: "ask"`. A refusal
+requires a separate user-approved workflow, not an automatic consent prompt.
+The hook never runs a formatter or changes files itself.
+
+Continue using the explicit repository-scoped quality workflow:
 
 ```sh
 python3 scripts/codex_hygiene_check.py --base origin/main
@@ -410,8 +423,9 @@ complete and must **not** be treated as a pass. It does not examine untracked
 files, validate every type-suppression form, or replace review. It reports
 counts, not potentially sensitive source lines. `make format` intentionally
 changes files; run it only where edits are approved. `make check` runs the
-repo's lint/tests. Review any configuration-file edits and `uv.lock`
-changes explicitly; do not claim they were denied by Codex host policy.
+repo's lint/tests. Review configuration-file edits explicitly, and regenerate `uv.lock`
+through the dependency tooling rather than editing it directly. A static
+hook test is not proof that the live host enforced a denial.
 
 For other repositories, use **their own** format, lint, test and approval
 procedures. Never run MightyModels' Ruff/ty settings against unrelated code
