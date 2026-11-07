@@ -294,6 +294,8 @@ def test_default_or_unknown_user_input_never_persists_approval(mode: str | None)
         {'answers': {'q': {'answers': []}}},
         {'answers': {'q': {'answers': [None]}}},
         {'answers': {'q': {'answers': ['yes']}}, 'afkTimeoutMs': 1000},
+        {'answers': {'q': {'answers': ['yes']}}, 'afkTimeoutMs': None},
+        {'answers': {'q': {'answers': ['yes']}}, 'afkTimeoutMs': 0},
         {'answers': {'q': {'answer': 'yes'}}},
         'not-json',
     ],
