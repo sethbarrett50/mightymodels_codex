@@ -313,6 +313,11 @@ The Codex PostToolUse adapter also handles `request_user_input` responses,
 session ID are present. The translated result reaches the existing
 `ask-recorder` decision ledger; empty/timeout/malformed responses, secret
 questions and Default-mode auto-resolved questions do not become approvals.
+The adapter forwards only the session ID, checkout directory and
+nonsecret question/answer pairs; raw choices, skipped secret questions,
+transcript metadata and other original tool fields are discarded. A missing
+checkout directory prevents forwarding to avoid an accidental wrong-repository
+ledger write.
 A warning is returned when no eligible response can be recorded. Default-mode
 required decisions still use ordinary chat and must be explicitly persisted
 using an available MCP decision mechanism before work advances.
