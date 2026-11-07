@@ -32,7 +32,7 @@ def test_counts_events_and_token_usage_without_exposing_secret_fields() -> None:
             'reasoning_output_tokens': 4,
         }},
     ]
-    report = METRICS.summarize(io.StringIO(''.join(json.dumps(e) + '\\n' for e in events)))
+    report = METRICS.summarize(io.StringIO(''.join(json.dumps(e) + '\n' for e in events)))
     assert report['events']['mcp_calls'] == 1
     assert report['events']['turn_started'] == 1
     assert report['events']['turn_completed'] == 1
@@ -57,7 +57,7 @@ def test_ignores_invalid_usage_values_and_unknown_events() -> None:
         {'type': 'turn.completed', 'usage': {'input_tokens': 7}},
         {'type': 'new-event-with-SECRET'},
     ]
-    stream = io.StringIO(''.join(json.dumps(e) + '\\n' for e in records) + '{oops\\n')
+    stream = io.StringIO(''.join(json.dumps(e) + '\n' for e in records) + '{oops\n')
     report = METRICS.summarize(stream)
     assert report['usage']['input_tokens'] == 7
     assert report['usage']['cached_input_tokens'] == 0
@@ -75,7 +75,7 @@ def test_records_only_known_item_types_and_does_not_count_item_updates() -> None
         {'type': 'item.started', 'item': {'type': 'unknown-secret-type'}},
         {'type': 'turn.failed', 'error': 'SECRET'},
     ]
-    report = METRICS.summarize(io.StringIO(''.join(json.dumps(e) + '\\n' for e in events)))
+    report = METRICS.summarize(io.StringIO(''.join(json.dumps(e) + '\n' for e in events)))
     assert report['events']['items_started'] == 2
     assert report['events']['command_executions'] == 1
     assert report['events']['other_items'] == 1
