@@ -51,7 +51,6 @@ def safe_write(path: Path, content: str) -> None:
     tmp.replace(path)
 
 
-
 Snapshot = tuple[Path, str, bytes | Path | None, int]
 
 
@@ -211,7 +210,7 @@ def update_instructions(path: Path, root: Path, *, remove: bool) -> None:
         safe_write(path, content)
 
 
-def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915, PLR1702
+def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--uninstall', action='store_true')
     parser.add_argument('--home', type=Path, default=Path.home())
@@ -257,7 +256,7 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915, PLR1702
         hooks.exists() and not hooks_are_owned(hooks.read_text(encoding='utf-8'), expected_hooks)
     ):
         parser.error(f'Unmanaged hooks configuration exists: {hooks}; merge manually')
-    try:  # noqa: PLW0717
+    try:  # noqa: PLW0717, PLR1702
         # Validate global config before modifying installed links.
         global_conf = codex / 'config.toml'
         if global_conf.is_symlink():
