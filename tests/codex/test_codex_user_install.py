@@ -115,3 +115,14 @@ def test_unowned_custom_role_is_not_overwritten(tmp_path: Path) -> None:
     assert result.returncode != 0
     assert 'unowned MightyModels agent role' in result.stderr
     assert config.read_text() == original
+
+
+@pytest.mark.unit
+def test_upgrade_removes_obsolete_wingman_link(tmp_path: Path) -> None:
+    retired = tmp_path / '.codex/agents/mm-triage-wingman.toml'
+    retired.parent.mkdir(parents=True)
+    retired.symlink_to(ROOT / '.codex/agents/mm-triage-wingman.toml')
+    installed = invoke(tmp_path)
+    assert installed.returncode == 0, installed.stderr
+    assert not retired.is_symlink()
+    assert len(list(retired.parent.glob('mm-*.toml'))) == 11

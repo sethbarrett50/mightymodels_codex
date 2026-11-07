@@ -157,6 +157,14 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
                 parser.error(f'Unmanaged symlink exists: {dest}')
         elif dest.exists():
             parser.error(f'Unmanaged path exists: {dest}')
+    # Remove an obsolete wingman symlink left by installations before model routing.
+    retired = codex / 'agents/mm-triage-wingman.toml'
+    retired_source = root / '.codex/agents/mm-triage-wingman.toml'
+    if retired.is_symlink():
+        if retired.resolve(strict=False) != retired_source.resolve(strict=False):
+            parser.error(f'Unmanaged retired agent symlink: {retired}')
+    elif retired.exists():
+        parser.error(f'Unmanaged retired agent path: {retired}')
     hooks = codex / 'hooks.json'
     expected_hooks = hook_config(root)
     if hooks.exists() and (
@@ -172,6 +180,7 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
             parser.error('Unmanaged global mighty_mcp exists; merge manually')
         for dest, src in destinations:
             reconcile_link(dest, src, remove=args.uninstall)
+        reconcile_link(retired, retired_source, remove=True)
         update_config(global_conf, root, remove=args.uninstall)
         update_hooks(hooks, root, remove=args.uninstall)
         update_instructions(codex / 'AGENTS.md', root, remove=args.uninstall)
