@@ -1,0 +1,68 @@
+{
+  "description": "Codex dispatch admission for local checkout",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(spawn_agent|Agent)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/hooks/codex_bridge.py\"",
+            "timeout": 12,
+            "statusMessage": "Validating MightyModels agent dispatch"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/hooks/codex_bridge.py\"",
+            "timeout": 18,
+            "statusMessage": "Saving MightyModels ticket state"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "^mm-triage-(code-scout|web-scout)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/hooks/codex_bridge.py\"",
+            "timeout": 18,
+            "statusMessage": "Recording MightyModels scout evidence"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/hooks/codex_bridge.py\"",
+            "timeout": 18,
+            "statusMessage": "Pruning stale MightyModels Codex session pointers"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^mcp__mighty_mcp__",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/hooks/codex_bridge.py\"",
+            "timeout": 18,
+            "statusMessage": "Recording MightyModels active session pointer"
+          }
+        ]
+      }
+    ]
+  }
+}
