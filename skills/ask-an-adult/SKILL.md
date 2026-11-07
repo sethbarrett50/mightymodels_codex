@@ -21,6 +21,8 @@ allowed-tools:
 
 > **Codex user decision gate:** Present wingman's questions through the real `request_user_input` tool when available, with selectable options and a custom/free-text response. If unavailable, use a plain chat question and wait. Never claim that a popup was displayed without calling the tool, treat a timeout as a decision, or assume Claude's `AskUserQuestion` recorder hook persisted the response.
 
+> **Codex-only Fable-disabled escalation:** Stop before the Claude Wingman dispatch steps below. No `mm-triage-wingman` worker exists in Codex. Instead, summarize the established evidence, two or more defensible choices, tradeoffs, your tentative lean (clearly not an independent review), and the information still missing. Ask the user to select a choice or provide a free-text instruction in ordinary chat, then **end the turn**. Do not proceed, invoke a substitute subagent, invent a Wingman verdict, or persist a decision before the user explicitly replies. After the reply, persist that real decision using the available MCP tool and resume the caller. This Codex route does not modify the Claude workflow below.
+
 # ask-an-adult
 
 `wingman` is a one-shot advisor on the ticket's alias (`fable`). It holds no tool, so it cannot

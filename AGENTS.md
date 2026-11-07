@@ -17,6 +17,10 @@ This fork has two runtimes: native Codex roles in `.codex/agents/`, and legacy C
 - `mightymodels:review:qualitylens` → `mm-review-qualitylens`
 - `mightymodels:review:uncle-bob` → `mm-review-uncle-bob`
 
+## Disabled Wingman decision routing
+
+Codex has **no Fable/Wingman agent**. When any MightyModels skill requests a Wingman consultation, do not attempt a spawn, claim that a consultation occurred, or silently use Sol/Astra. Present the existing evidence and options directly to the user as a required chat decision, end the turn, and resume only after an explicit user answer. Preserve that answer using the existing MCP mechanisms when available; unanswered/timeout is never permission to proceed. This conditional route applies only to Codex, not to the original Claude workflow.
+
 ## Tool translation
 
 1. Use Codex native agent delegation tools to create a subagent with the mapped role; reuse its thread for follow-ups and collect its report before updating task state. Do not treat spawning an agent as task completion.

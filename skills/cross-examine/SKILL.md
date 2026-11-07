@@ -22,6 +22,8 @@ allowed-tools:
 > **Codex runtime adapter (MightyModels fork):** When running under Codex, interpret Claude's `Agent` tool as native `spawn_agent` with `agent_type` mapped via the repository's `AGENTS.md` (or `docs/CODEX.md` when installed as a plugin). Reuse an existing agent through the native follow-up messaging tool rather than literal `SendMessage`. Call actual tools exposed by the MightyModels MCP server, not hardcoded `mcp__plugin_mightymodels_mighty-mcp__*` names. Read required companion skills explicitly; Claude `skills:` preloading, `allowed-tools:` and automatic model routing are not Codex permission controls. `${CLAUDE_SKILL_DIR}` means this SKILL.md's directory; `$ARGUMENTS` means the user's invocation arguments. Do not bypass the existing task-start, owned-file, independent fact-checking or review gates when a tool is unavailable. No Astra model is configured.
 
 
+> **Codex-only tie resolution:** A tie routes to `ask-an-adult`'s Codex-only direct user choice, not to Fable/Wingman. No model's opinion substitutes for the user's real answer. Do not progress before the user responds.
+
 # cross-examine
 
 A plan written from a vague intent is a plan the agent wrote and the user nodded at. This
