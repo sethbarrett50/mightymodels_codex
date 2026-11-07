@@ -194,10 +194,18 @@ def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901, PLR0911, 
             answers[label] = '\n'.join(actual)
     if not answers:
         return None
-    payload = dict(event)
-    payload['tool_name'] = 'AskUserQuestion'
-    payload['tool_response'] = {'answers': answers}
-    return payload
+    # The recorder needs only the session pointer and approved answers.
+    # Never pass original tool_input/options or skipped secret responses onward.
+    cwd = event.get('cwd')
+    if not isinstance(cwd, str) or not cwd.strip():
+        return None
+    return {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'AskUserQuestion',
+        'cwd': cwd,
+        'session_id': session_id,
+        'tool_response': {'answers': answers},
+    }
 
 
 def lifecycle_command(event: dict) -> str | None:
