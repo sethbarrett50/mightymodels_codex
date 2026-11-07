@@ -1,0 +1,10 @@
+#!/bin/sh
+# Portable MCP launcher: resolve project root independently of cwd.
+set -eu
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+root=$(CDPATH= cd -- "$here/.." && pwd -P)
+command -v uv >/dev/null 2>&1 || { echo "MightyModels Codex requires uv" >&2; exit 127; }
+export UV_PROJECT="$root"
+export UV_PROJECT_ENVIRONMENT="$root/.venv"
+cd "$root"
+exec uv run --locked --no-dev --package mightymodels-mcp mightymodels-mcp

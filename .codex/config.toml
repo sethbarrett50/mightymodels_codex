@@ -1,54 +1,10 @@
-# Native Codex subagent roles, ported from agents/**/*.md
-# Tool/permission enforcement and automatic skill loading are not equivalent.
-
+# Project-scoped Codex configuration. Roles are auto-discovered in .codex/agents/.
 [agents]
 enabled = true
+max_concurrent_threads_per_session = 6
 
-[agents."mm-review-fact-checker"]
-description = "Task verification worker. Use when an engineer, architect or intern reports a task done and before the task closes: reads the task's commit, reruns the tests the implementer named, rules on each outcome sentence of the brief with a file:line, and rates defects on the mightymodels severity table. Returns a structured XML report that advises; the primary decides. Does not run a whole-tree check, and does not fix, edit, or dispatch."
-config_file = "agents/mm-review-fact-checker.toml"
-
-[agents."mm-review-merge-vader"]
-description = "Release-readiness persona reviewer dispatched by review-circus. Applies the merge-vader doctrine to a branch or codebase scope: correctness, regressions, compatibility, security and SDLC gates, operational behavior, and documentation drift. Gathers evidence through code-scout, web-scout, and qualitylens, and returns a complete MERGE-VADER report with normalized findings and a BLOCK, MERGE WITH CONDITIONS, or CLEAR verdict. Read-only."
-config_file = "agents/mm-review-merge-vader.toml"
-
-[agents."mm-review-qualitylens"]
-description = "Deterministic repository-risk measurement worker. Use when a reviewer needs code churn, change coupling, or hotspot signals for a bounded target, and the dispatch supplies the history parameters. Calls the signals_code_churn, signals_change_coupling and signals_code_hotspots tools and transcribes its measurements into a structured XML report. Does not judge maintainability or architecture, explore the code by hand, or edit."
-config_file = "agents/mm-review-qualitylens.toml"
-
-[agents."mm-review-uncle-bob"]
-description = "Maintainability persona reviewer dispatched by review-circus. Applies the uncle-bob doctrine (SOLID, the Clean Code smells catalog, Clean Architecture component metrics) to a branch or codebase scope, reading the metrics JSON review-circus produced and gathering evidence through code-scout and qualitylens. Returns a complete UNCLE-BOB report with letter grades and normalized UB findings that state future change pressure, expected churn, and whether a clean extension path exists. Read-only."
-config_file = "agents/mm-review-uncle-bob.toml"
-
-[agents."mm-triage-code-scout"]
-description = "Repository retrieval worker. Use to locate files or symbols, find call sites and imports, read a config value or literal, list declared and resolved dependency versions, pull git history for a path, read a GitHub issue or pull request through `gh`, or run one named read-only command or test and capture its output. Language- and ecosystem-agnostic. Returns a structured XML report with file:line evidence. Does not fetch external documentation, analyze, diagnose, recommend, or edit."
-config_file = "agents/mm-triage-code-scout.toml"
-
-[agents."mm-triage-terry-toolchain"]
-description = "Environment survey worker. Use when a game-plan run is about to draft its plan, once per run: surveys the harness's tools, the installed skills, plugins and agents, the repository's own toolchain (git hooks, lint and format bans, test runner, CI) and the sandbox and permission limits, so they reach the plan and each brief instead of surfacing later as a blocked engineer. Returns one capped Markdown report with a section naming what it could not see. Does not write a file, edit, install, run a gate, recommend an approach, or dispatch."
-config_file = "agents/mm-triage-terry-toolchain.toml"
-
-[agents."mm-triage-web-scout"]
-description = "Documentation retrieval worker. Use to fetch one official documentation page, changelog, or release note and cite the section that answers a question about documented behavior, defaults, deprecations, or version differences in a dependency, API, protocol, or tool. Reads only the repository manifest or lockfile needed to pin the version, and fetches the public web only: a question about a GitHub issue or pull request goes to code-scout. Returns a structured XML report with URL and section citations. Does not search source code, analyze, recommend, or edit."
-config_file = "agents/mm-triage-web-scout.toml"
-
-[agents."mm-triage-wingman"]
-description = "One-shot advisory consult for a decision the primary agent cannot confidently make on its own. Give it the decision at stake, the active ticket's text and every fact gathered so far; it returns an independent recommendation, the reasoning behind it, the missing information that would change the answer, and the exact questions to put to the user next. It works from the dispatch alone - it cannot read the ticket, read files, run commands, or check anything you did not tell it. Escalate when two options both look defensible, when a choice is expensive to reverse, when scout reports conflict or contradict the plan, when a failure has resisted two attempts, or when you are about to guess at user intent. Do not escalate for work you can simply do, for facts a scout can retrieve, for a decision the user already made, or to have your own plan confirmed."
-config_file = "agents/mm-triage-wingman.toml"
-
-[agents."mm-workers-architect"]
-description = "Higher-cost recovery implementer. Use only after engineer returns failed or blocked on a task, or a designated merge-vader or uncle-bob rejects an implementation for poor code quality with structured evidence. Diagnoses the root cause, makes binding design decisions, implements and verifies within the original ownership envelope, and requests scope expansion instead of taking it. Not for new work; new work starts with engineer."
-config_file = "agents/mm-workers-architect.toml"
-
-[agents."mm-workers-engineer"]
-description = "Default low-cost implementer. Use to execute exactly one task group from an approved plan, or one residual fix carrying explicit Fix and Verify lines: edits only the files the dispatch owns, runs each task's verification in order, commits, and reports done, failed, or blocked. Debugs a failed verification alone, up to three recorded fixes, and returns evidence instead of redesigning; failed and blocked results are the primary's cue to escalate to architect. Language- and ecosystem-agnostic. Other implementers may be running concurrently on other groups."
-config_file = "agents/mm-workers-engineer.toml"
-
-[agents."mm-workers-gitty-up"]
-description = "Opens the pull request for a pushed branch (or takes an existing one), waits for its GitHub checks to settle under a hard time budget, and reports a verdict. Delegate after the branch is pushed, when the dispatching agent needs a PR and needs to know whether CI passed. Returns pass, fail with log tails, or error. Never modifies code."
-config_file = "agents/mm-workers-gitty-up.toml"
-
-[agents."mm-workers-intern"]
-description = "Lowest-cost implementer for one small task. Use when a started task is a bounded change against an ASKED stanza inside the files the dispatch owns: it edits, runs the task's verification once, commits, and reports done, or reports blocked at the first wall. It takes one attempt and does not debug; a blocked result is the primary's cue to give the task to the engineer."
-config_file = "agents/mm-workers-intern.toml"
-
+# Start Codex from the repository root so the script path resolves.
+[mcp_servers.mighty_mcp]
+command = "sh"
+args = ["./bin/mightymodels-mcp-codex"]
+startup_timeout_sec = 30
