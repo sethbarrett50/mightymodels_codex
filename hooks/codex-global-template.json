@@ -62,6 +62,17 @@
             "statusMessage": "Recording MightyModels active session pointer"
           }
         ]
+      },
+      {
+        "matcher": "^request_user_input$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/hooks/codex_bridge.py\"",
+            "timeout": 18,
+            "statusMessage": "Recording explicit Codex Plan-mode user decisions"
+          }
+        ]
       }
     ]
   }

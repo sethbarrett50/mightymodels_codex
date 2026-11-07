@@ -142,11 +142,71 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
     return decision
 
 
+def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901, PLR0911, PLR0912, PLR0914, PLR0915
+    """Convert only explicit, nonsecret Plan-mode answers for the legacy recorder.
+
+    Default-mode prompts may auto-resolve; never treat those as authorization.
+    Unknown or partial Codex response shapes are not persisted.
+    """
+    if event.get('permission_mode') != 'plan':
+        return None
+    session_id = event.get('session_id')
+    if not isinstance(session_id, str) or not session_id.strip():
+        return None
+    request = event.get('tool_input')
+    response = event.get('tool_response')
+    if isinstance(response, str):
+        try:
+            response = json.loads(response)
+        except ValueError:
+            return None
+    if not isinstance(request, dict) or not isinstance(response, dict):
+        return None
+    questions = request.get('questions')
+    returned = response.get('answers')
+    if not isinstance(questions, list) or not isinstance(returned, dict):
+        return None
+    if response.get('afkTimeoutMs') is not None:
+        return None
+
+    answers: dict[str, str] = {}
+    question_ids: set[str] = set()
+    for question in questions:
+        if not isinstance(question, dict):
+            return None
+        identifier = question.get('id')
+        label = question.get('question')
+        if not isinstance(identifier, str) or not identifier or identifier in question_ids:
+            return None
+        question_ids.add(identifier)
+        if question.get('is_secret') is True:
+            continue
+        if not isinstance(label, str) or not label.strip() or label in answers:
+            return None
+        selected = returned.get(identifier)
+        if not isinstance(selected, dict) or not isinstance(selected.get('answers'), list):
+            continue
+        texts = selected['answers']
+        if not all(isinstance(text, str) for text in texts):
+            return None
+        actual = [value.strip() for value in texts if value.strip()]
+        if actual:
+            answers[label] = '\n'.join(actual)
+    if not answers:
+        return None
+    payload = dict(event)
+    payload['tool_name'] = 'AskUserQuestion'
+    payload['tool_response'] = {'answers': answers}
+    return payload
+
+
 def lifecycle_command(event: dict) -> str | None:
     """Return a supported lifecycle command, filtering unrelated MCP results."""
     name = event.get('hook_event_name')
     if name == 'PostToolUse':
         tool = event.get('tool_name')
+        if tool == 'request_user_input':
+            return 'ask-recorder'
         return (
             'session-pointer'
             if isinstance(tool, str) and tool.startswith('mcp__mighty_mcp__')
@@ -159,7 +219,7 @@ def lifecycle_command(event: dict) -> str | None:
     }.get(name)
 
 
-def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict | None:
+def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict | None:  # noqa: C901, PLR0912, PLR0915
     """Forward compatible nonblocking events to the existing MightyModels hooks."""
     if not isinstance(event, dict):
         return None
@@ -168,6 +228,16 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     if command is None:
         return None
     payload = dict(event)
+    if command == 'ask-recorder':
+        translated = translate_plan_answers(event)
+        if translated is None:
+            return {
+                'systemMessage': (
+                    'MightyModels did not persist this Codex question response; '
+                    'required decisions need explicit user confirmation and MCP state.'
+                )
+            }
+        payload = translated
     if name == 'SubagentStop':
         payload['agent_type'] = role(payload.get('agent_type'))
     env = dict(environ)

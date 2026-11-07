@@ -138,7 +138,13 @@ def hooks_are_owned(held: str, expected: str) -> bool:
     return (
         isinstance(observed, dict)
         and bool(observed)
-        and all(key in supported and value == supported[key] for key, value in observed.items())
+        and all(
+            key in supported
+            and isinstance(value, list)
+            and bool(value)
+            and value == supported[key][: len(value)]
+            for key, value in observed.items()
+        )
     )
 
 

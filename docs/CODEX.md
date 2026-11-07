@@ -278,15 +278,24 @@ prints credentials or logs raw MCP payloads. These records support later
 compaction and handoff, and preserve Claude's existing `session-start`
 export functionality in its own runtime.
 
+The Codex PostToolUse adapter also handles `request_user_input` responses,
+**only in Plan mode** when an actual nonempty answer, question ID/text and
+session ID are present. The translated result reaches the existing
+`ask-recorder` decision ledger; empty/timeout/malformed responses, secret
+questions and Default-mode auto-resolved questions do not become approvals.
+A warning is returned when no eligible response can be recorded. Default-mode
+required decisions still use ordinary chat and must be explicitly persisted
+using an available MCP decision mechanism before work advances.
+
 **Important limitations:** hook trust, event presence and the actual
-Codex session identifier need real-host verification. No Claude
-`AskUserQuestion` recorder equivalent has been assumed: Codex's
-`request_user_input` may time out, and unanswered decisions must never
-be converted to persisted approvals. The session-pointer handler can
-only record tools whose inputs identify the target; a bare
-`investigation_start` response is not automatically linked until a
-subsequent named investigation tool call. The remaining user-decision
-recording work is tracked under #8 and #11.
+Codex session identifier need real-host verification. An adapter calling
+`ask-recorder` does not guarantee a database write: the session must
+already have a valid ticket/investigation pointer, and the repository must
+be registered. The session-pointer handler only records tool calls whose
+inputs identify the target; a bare `investigation_start` response is not
+automatically linked until a subsequent named investigation call. Idempotency,
+replay behavior, compaction/resume and a genuinely blocked user approval
+require real-host acceptance under #8. No response or timeout grants consent.
 
 ## Use existing GitHub CLI credentials without exposing secrets (issue #12)
 

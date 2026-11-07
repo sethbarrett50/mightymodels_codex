@@ -242,3 +242,110 @@ def test_session_start_runs_prune_only(tmp_path: Path) -> None:
         )
     assert outcome is None
     assert 'session-prune' in runner.call_args.args[0]
+
+
+@pytest.mark.unit
+def test_explicit_plan_answers_translate_to_legacy_decisions() -> None:
+    event = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'request_user_input',
+        'permission_mode': 'plan',
+        'session_id': 'session-001',
+        'tool_input': {
+            'questions': [
+                {'id': 'design', 'question': 'Which design?'},
+                {'id': 'secrets', 'question': 'Password?', 'is_secret': True},
+            ]
+        },
+        'tool_response': {
+            'answers': {
+                'design': {'answers': ['Option A', 'detail B']},
+                'secrets': {'answers': ['TOP_SECRET_DO_NOT_STORE']},
+            }
+        },
+    }
+    payload = module.translate_plan_answers(event)
+    assert payload is not None
+    assert payload['tool_name'] == 'AskUserQuestion'
+    assert payload['tool_response'] == {'answers': {'Which design?': 'Option A\ndetail B'}}
+    assert 'TOP_SECRET_DO_NOT_STORE' not in json.dumps(payload)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('mode', ['default', 'unknown', None])
+def test_default_or_unknown_user_input_never_persists_approval(mode: str | None) -> None:
+    event = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'request_user_input',
+        'permission_mode': mode,
+        'session_id': 'session-001',
+        'tool_input': {'questions': [{'id': 'q', 'question': 'May I proceed?'}]},
+        'tool_response': {'answers': {'q': {'answers': ['Yes']}}},
+    }
+    assert module.translate_plan_answers(event) is None
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    'response',
+    [
+        {'answers': {}},
+        {'answers': {'q': {'answers': []}}},
+        {'answers': {'q': {'answers': [None]}}},
+        {'answers': {'q': {'answers': ['yes']}}, 'afkTimeoutMs': 1000},
+        {'answers': {'q': {'answer': 'yes'}}},
+        'not-json',
+    ],
+)
+def test_empty_timeout_or_unrecognized_answers_are_not_recorded(response: object) -> None:
+    event = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'request_user_input',
+        'permission_mode': 'plan',
+        'session_id': 'session-001',
+        'tool_input': {'questions': [{'id': 'q', 'question': 'Continue?'}]},
+        'tool_response': response,
+    }
+    assert module.translate_plan_answers(event) is None
+
+
+@pytest.mark.unit
+def test_plan_decision_forwards_to_legacy_recorder(tmp_path: Path) -> None:
+    plan_event = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'request_user_input',
+        'permission_mode': 'plan',
+        'session_id': 'session-001',
+        'cwd': str(tmp_path),
+        'tool_input': {'questions': [{'id': 'q', 'question': 'Continue?'}]},
+        'tool_response': {'answers': {'q': {'answers': ['Proceed']}}},
+    }
+    with patch.object(module.subprocess, 'run') as runner:
+        runner.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout='', stderr=''
+        )
+        outcome = module.run_lifecycle(
+            plan_event, project_root=tmp_path, environ={'HOME': str(tmp_path)}
+        )
+    assert outcome is None
+    assert 'ask-recorder' in runner.call_args.args[0]
+    payload = json.loads(runner.call_args.kwargs['input'])
+    assert payload['tool_response'] == {'answers': {'Continue?': 'Proceed'}}
+
+
+@pytest.mark.unit
+def test_unconfirmed_default_answer_emits_warning_without_state_write(tmp_path: Path) -> None:
+    event = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'request_user_input',
+        'permission_mode': 'default',
+        'session_id': 'session-001',
+        'tool_input': {'questions': [{'id': 'q', 'question': 'Continue?'}]},
+        'tool_response': {'answers': {'q': {'answers': ['Yes']}}},
+    }
+    with patch.object(module.subprocess, 'run') as runner:
+        outcome = module.run_lifecycle(
+            event, project_root=tmp_path, environ={'HOME': str(tmp_path)}
+        )
+    runner.assert_not_called()
+    assert 'did not persist' in outcome['systemMessage']

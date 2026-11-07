@@ -276,3 +276,17 @@ def test_global_config_symlink_preflight_preserves_external_file(tmp_path: Path)
     assert config.is_symlink()
     assert external.read_text() == 'setting = "outside"\n'
     assert not (tmp_path / '.codex/agents').exists()
+
+
+@pytest.mark.unit
+def test_upgrade_preserves_owned_previous_post_tool_groups(tmp_path: Path) -> None:
+    assert invoke(tmp_path).returncode == 0
+    hooks_path = tmp_path / '.codex/hooks.json'
+    previous = json.loads(hooks_path.read_text())
+    previous['hooks']['PostToolUse'] = previous['hooks']['PostToolUse'][:1]
+    hooks_path.write_text(json.dumps(previous, indent=2) + '\n')
+    result = invoke(tmp_path)
+    assert result.returncode == 0, result.stderr
+    upgraded = json.loads(hooks_path.read_text())
+    assert len(upgraded['hooks']['PostToolUse']) == 2
+    assert upgraded['hooks']['PostToolUse'][1]['matcher'] == '^request_user_input$'
