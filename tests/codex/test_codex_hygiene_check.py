@@ -36,10 +36,16 @@ def setup_repo(tmp_path: Path) -> Path:
     )
     subprocess.run(  # noqa: S603
         [
-            'git', '-C', str(tmp_path),
-            '-c', 'user.name=Test',
-            '-c', 'user.email=test@example.invalid',
-            'commit', '-qm', 'baseline',
+            GIT_BINARY,
+            '-C',
+            str(tmp_path),
+            '-c',
+            'user.name=Test',
+            '-c',
+            'user.email=test@example.invalid',
+            'commit',
+            '-qm',
+            'baseline',
         ],
         check=True,
         capture_output=True,
