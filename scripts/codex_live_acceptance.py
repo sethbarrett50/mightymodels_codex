@@ -19,6 +19,7 @@ from codex_trace_summary import summarize
 MAX_OUTPUT_BYTES = 1_000_000
 MIN_TIMEOUT = 15
 MAX_TIMEOUT = 300
+PROBE_ERRORS = (OSError, subprocess.TimeoutExpired, ValueError)
 PROMPT = (
     'Read-only acceptance probe: inspect README.md and report its one-line purpose. '
     'Do not edit any files, install packages, dispatch child agents, or use secrets.'
@@ -55,7 +56,9 @@ def summarize_result(
     return data
 
 
-def _invoke_codex(codex: str, git: str, timeout: int) -> tuple[str, subprocess.CompletedProcess[str]] | None:
+def _invoke_codex(
+    codex: str, git: str, timeout: int
+) -> tuple[str, subprocess.CompletedProcess[str]] | None:
     version = subprocess.run(  # noqa: S603
         [codex, '--version'],
         text=True,
@@ -97,7 +100,7 @@ def run_probe(timeout: int) -> dict[str, object]:
         return {'status': 'blocked: codex or git unavailable', 'host_denial_verified': False}
     try:
         outcome = _invoke_codex(codex, git, timeout)
-    except (OSError, subprocess.TimeoutExpired, ValueError):
+    except PROBE_ERRORS:
         return {'status': 'unverified: process unavailable or timed out'}
     if outcome is None:
         return {'status': 'blocked: temporary Git initialization failed'}
