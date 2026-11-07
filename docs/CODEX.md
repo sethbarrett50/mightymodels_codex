@@ -307,3 +307,17 @@ a successful read does not authorize unrelated writes. Preserve GitHub
 scopes and sandbox/approval boundaries. For missing credentials, ask the
 user to use `gh auth login` or the approved credential connector; never
 request a token be pasted into the conversation.
+
+### Updating an existing global Codex hook installation
+
+After lifecycle hook changes (issue #8), an older MightyModels-owned
+`~/.codex/hooks.json` may contain only the previous PreToolUse,
+PreCompact and SubagentStop events. The installer now accepts an existing
+manifest only when every defined event matches exactly the current
+MightyModels-owned definition. It can then replace that owned subset with the
+new version (which adds SessionStart and PostToolUse). It **still refuses** a
+symlink, a changed hook or an unrelated event; never remove another tool's
+hooks to force installation. This is an intentionally narrow upgrade
+compatibility measure. Full coexistence with unrelated hooks, crash-safe
+multi-file rollback and duplicate-configuration diagnostics remain under
+issue #15. Restart Codex and re-review changed hook trust hashes.

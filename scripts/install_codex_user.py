@@ -68,11 +68,29 @@ def hook_config(root: Path) -> str:
     return json.dumps(data, indent=2) + '\n'
 
 
+def hooks_are_owned(held: str, expected: str) -> bool:
+    """Allow previous MightyModels hook subsets, but never unrelated hooks."""
+    try:
+        original = json.loads(held)
+        current = json.loads(expected)
+    except ValueError:
+        return False
+    if not isinstance(original, dict) or original.get('description') != current['description']:
+        return False
+    observed = original.get('hooks')
+    supported = current['hooks']
+    return (
+        isinstance(observed, dict)
+        and bool(observed)
+        and all(key in supported and value == supported[key] for key, value in observed.items())
+    )
+
+
 def update_hooks(path: Path, root: Path, *, remove: bool) -> None:
-    """Do not overwrite an unrelated hooks file; identify ours by exact content."""
+    """Upgrade owned hook definitions without overwriting unrelated user hooks."""
     expected = hook_config(root)
     if path.exists() or path.is_symlink():
-        if path.is_symlink() or path.read_text(encoding='utf-8') != expected:
+        if path.is_symlink() or not hooks_are_owned(path.read_text(encoding='utf-8'), expected):
             msg = f'Refusing unmanaged hooks configuration: {path}'
             raise FileExistsError(msg)
         path.unlink()
@@ -168,7 +186,8 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
     hooks = codex / 'hooks.json'
     expected_hooks = hook_config(root)
     if hooks.exists() and (
-        hooks.is_symlink() or hooks.read_text(encoding='utf-8') != expected_hooks
+        hooks.is_symlink()
+        or not hooks_are_owned(hooks.read_text(encoding='utf-8'), expected_hooks)
     ):
         parser.error(f'Unmanaged hooks configuration exists: {hooks}; merge manually')
     try:  # noqa: PLW0717
