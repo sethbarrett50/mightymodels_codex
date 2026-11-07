@@ -318,10 +318,16 @@ def test_malformed_foreign_hook_file_preflight_preserves_home(tmp_path: Path) ->
 def test_conflicting_bridge_hook_cannot_be_silently_duplicated(tmp_path: Path) -> None:
     path = tmp_path / '.codex/hooks.json'
     path.parent.mkdir()
-    original = {'hooks': {'PreToolUse': [{
-        'matcher': 'Agent',
-        'hooks': [{'type': 'command', 'command': 'python3 /other/codex_bridge.py'}],
-    }]}}
+    original = {
+        'hooks': {
+            'PreToolUse': [
+                {
+                    'matcher': 'Agent',
+                    'hooks': [{'type': 'command', 'command': 'python3 /other/codex_bridge.py'}],
+                }
+            ]
+        }
+    }
     path.write_text(json.dumps(original) + '\n')
     result = invoke(tmp_path)
     assert result.returncode != 0
