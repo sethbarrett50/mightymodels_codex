@@ -23,6 +23,8 @@ ROLES = {
     for name in names
 }
 HOOK_TIMEOUT = 8
+HOOK_ERRORS = (OSError, subprocess.TimeoutExpired, ValueError)
+INPUT_ERRORS = (ValueError, UnicodeError)
 
 
 def denial(reason: str) -> dict:
@@ -64,12 +66,12 @@ def translate(event: object) -> tuple[dict | None, str | None]:  # noqa: C901, P
         return None, None  # Native Codex default-agent dispatch
     target = role(target)
     if target.startswith('mightymodels:') and target not in ROLES.values():
-        return None, f'Unknown MightyModels agent role: {target}'
+        return None, 'Unknown MightyModels agent role'
     if target == 'mightymodels:triage:wingman':
         return None, 'Codex wingman is disabled: Fable tier is not configured'
     if not target.startswith('mightymodels:'):
         if is_mighty_caller:
-            return None, f'MightyModels worker may not delegate to {target}'
+            return None, 'MightyModels worker may not delegate to a non-MightyModels role'
         return None, None
     payload = {
         'hook_event_name': 'PreToolUse',
@@ -124,7 +126,7 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
             timeout=HOOK_TIMEOUT,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired, ValueError):
+    except HOOK_ERRORS:
         return denial('MightyModels admission unavailable; dispatch denied')
     if result.returncode:
         return denial(
@@ -323,7 +325,7 @@ def audit_probe_decision(event: object, environ: dict[str, str], result: object)
 def main() -> int:
     try:
         event = json.load(sys.stdin)
-    except (ValueError, UnicodeError):
+    except INPUT_ERRORS:
         print(json.dumps(denial('Invalid Codex hook event'))
         return 0
     root = Path(__file__).resolve().parent.parent
