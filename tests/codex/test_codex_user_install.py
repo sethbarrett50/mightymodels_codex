@@ -334,3 +334,41 @@ def test_conflicting_bridge_hook_cannot_be_silently_duplicated(tmp_path: Path) -
     assert 'bridge hook differs' in result.stderr
     assert json.loads(path.read_text()) == original
     assert not (tmp_path / '.codex/agents').exists()
+
+
+@pytest.mark.unit
+def test_installer_preserves_foreign_top_level_hook_metadata(tmp_path: Path) -> None:
+    hooks = tmp_path / '.codex/hooks.json'
+    hooks.parent.mkdir()
+    initial = {
+        'description': 'MightyModels Codex hooks',
+        'hooks': {},
+        'user_settings': {'private_marker': 'RETAIN_USER_DEFINED_VALUE'},
+    }
+    hooks.write_text(json.dumps(initial) + '\n')
+    install = invoke(tmp_path)
+    assert install.returncode == 0, install.stderr
+    installed = json.loads(hooks.read_text())
+    assert installed['user_settings'] == initial['user_settings']
+    assert installed['hooks']['PreToolUse']
+    uninstall = invoke(tmp_path, uninstall=True)
+    assert uninstall.returncode == 0, uninstall.stderr
+    assert json.loads(hooks.read_text()) == initial
+
+
+@pytest.mark.unit
+def test_install_refuses_duplicate_owned_hook_groups_before_link_changes(tmp_path: Path) -> None:
+    source = json.loads((ROOT / 'hooks/codex-global-template.json').read_text())
+    from runpy import run_path
+
+    namespace = run_path(str(INSTALLER))
+    expected = namespace['hook_config'](ROOT)
+    manifest = json.loads(expected)
+    manifest['hooks']['PreToolUse'].append(manifest['hooks']['PreToolUse'][0])
+    hooks = tmp_path / '.codex/hooks.json'
+    hooks.parent.mkdir()
+    hooks.write_text(json.dumps(manifest) + '\n')
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'Duplicate managed' in result.stderr
+    assert not (tmp_path / '.codex/agents').exists()
