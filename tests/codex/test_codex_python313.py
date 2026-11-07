@@ -15,7 +15,11 @@ ROOT = Path(__file__).resolve().parents[2]
 @pytest.mark.unit
 @pytest.mark.parametrize(
     'script',
-    ['scripts/codex_doctor.py', 'scripts/codex_hygiene_check.py'],
+    [
+        'scripts/codex_doctor.py',
+        'scripts/codex_hygiene_check.py',
+        'scripts/install_codex_user.py',
+    ],
 )
 def test_standalone_codex_scripts_parse_as_python_313(script: str) -> None:
     source = (ROOT / script).read_text(encoding='utf-8')
