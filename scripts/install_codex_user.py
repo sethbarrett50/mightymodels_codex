@@ -201,6 +201,7 @@ def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str
             msg = f'Global hook groups for {event} must be a list'
             raise ValueError(msg)
         validate_hook_groups(groups, wanted)
+        event_changed = False
         for group in wanted:
             count = groups.count(group)
             if count > 1:
@@ -208,13 +209,14 @@ def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str
                 raise ValueError(msg)
             if remove and count:
                 groups.remove(group)
-                changed = True
+                event_changed = True
             elif not remove and not count:
                 groups.append(group)
-                changed = True
+                event_changed = True
+        changed = changed or event_changed
         if groups:
             held['hooks'][event] = groups
-        elif event in held['hooks'] and changed:
+        elif event in held['hooks'] and event_changed:
             del held['hooks'][event]
     if not changed:
         return existing
