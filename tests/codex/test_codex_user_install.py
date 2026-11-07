@@ -151,7 +151,7 @@ def test_reinstall_upgrades_owned_previous_hook_manifest(tmp_path: Path) -> None
 
 @pytest.mark.unit
 def test_existing_foreign_hook_event_is_not_removed(tmp_path: Path) -> None:
-    current = json.loads((ROOT / '.codex/hooks.json').read_text())
+    current = json.loads((ROOT / 'hooks/codex-global-template.json').read_text())
     current['hooks']['PreToolUse'].append({'matcher': 'Bash', 'hooks': []})
     hooks = tmp_path / '.codex/hooks.json'
     hooks.parent.mkdir(parents=True)
