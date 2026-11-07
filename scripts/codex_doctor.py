@@ -59,7 +59,7 @@ def check_hooks(home: Path, root: Path) -> str:
         return note('Global MightyModels hooks missing or a symlink', ok=False)
     try:
         owned = hooks_are_owned(hooks.read_text(encoding='utf-8'), hook_config(root))
-    except OSError, ValueError:
+    except (OSError, ValueError):
         owned = False
     message = (
         'Installed MightyModels hooks are owned; runtime trust not verified'
@@ -75,7 +75,7 @@ def check_project_overlap(root: Path, cwd: Path) -> str | None:
         return None
     try:
         project = tomllib.loads(config.read_text(encoding='utf-8'))
-    except OSError, ValueError:
+    except (OSError, ValueError):
         return '[WARN] Project-scoped Codex config missing or malformed'
     if 'mighty_mcp' not in project.get('mcp_servers', {}):
         return None
@@ -91,7 +91,7 @@ def diagnose(home: Path, root: Path, cwd: Path) -> tuple[list[str], bool]:
         return ['[FAIL] MightyModels MCP launcher missing from checkout'], False
     try:
         config = tomllib.loads((home / '.codex/config.toml').read_text(encoding='utf-8'))
-    except OSError, ValueError:
+    except (OSError, ValueError):
         return ['[FAIL] Global Codex config missing or malformed'], False
 
     reports = [
