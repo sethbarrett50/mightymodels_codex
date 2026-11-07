@@ -115,7 +115,7 @@ def reconcile_link(destination: Path, source: Path, *, remove: bool) -> None:
 
 
 def hook_config(root: Path) -> str:
-    data = json.loads((root / '.codex/hooks.json').read_text(encoding='utf-8'))
+    data = json.loads((root / 'hooks/codex-global-template.json').read_text(encoding='utf-8'))
     command = 'python3 ' + shlex.quote(str(root / 'hooks/codex_bridge.py'))
     for groups in data['hooks'].values():
         for group in groups:

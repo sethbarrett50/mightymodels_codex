@@ -82,7 +82,7 @@ def check_project_overlap(root: Path, cwd: Path) -> str | None:
     if 'mighty_mcp' not in project.get('mcp_servers', {}):
         return None
     return (
-        '[WARN] MightyModels checkout also declares project-scoped mighty_mcp; '
+        '[WARN] MightyModels checkout declares project-scoped mighty_mcp; '
         'verify CLI precedence and duplicate hook behavior'
     )
 

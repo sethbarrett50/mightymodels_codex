@@ -55,12 +55,14 @@ def test_project_scoped_skills() -> None:
 
 @pytest.mark.unit
 def test_hook_configurations_parse() -> None:
-    for path in ('hooks/codex-hooks.json', '.codex/hooks.json'):
+    for path in ('hooks/codex-hooks.json', 'hooks/codex-global-template.json'):
         data = json.loads((ROOT / path).read_text(encoding='utf-8'))
         group = data['hooks']['PreToolUse'][0]
         assert 'Agent' in group['matcher']
         assert group['hooks'][0]['type'] == 'command'
-    tomllib.loads((ROOT / '.codex/config.toml').read_text(encoding='utf-8'))
+    project = tomllib.loads((ROOT / '.codex/config.toml').read_text(encoding='utf-8'))
+    assert 'mighty_mcp' not in project.get('mcp_servers', {})
+    assert not (ROOT / '.codex/hooks.json').exists()
 
 
 @pytest.mark.unit
