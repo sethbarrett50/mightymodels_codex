@@ -54,12 +54,17 @@ def translate(event: object) -> tuple[dict | None, str | None]:
         (raw.get(k) for k in ("agent_type", "subagent_type", "profile") if raw.get(k)),
         None,
     )
-    if not isinstance(target, str):
-        return None, "Codex agent-dispatch payload has no recognizable target role"
-    target = role(target)
-    if not target.startswith("mightymodels:"):
-        return None, None
     parent = role(event.get("agent_type"))
+    is_mighty_caller = isinstance(parent, str) and parent.startswith('mightymodels:')
+    if not isinstance(target, str):
+        if is_mighty_caller:
+            return None, 'MightyModels worker cannot delegate without an explicit approved role'
+        return None, None  # Native Codex default-agent dispatch
+    target = role(target)
+    if not target.startswith('mightymodels:'):
+        if is_mighty_caller:
+            return None, f'MightyModels worker may not delegate to {target}'
+        return None, None
     payload = {
         "hook_event_name": "PreToolUse",
         "session_id": event.get("session_id"),

@@ -133,3 +133,27 @@ def test_compaction_uses_legacy_snapshot_hook(tmp_path):
         )
     assert result is None
     assert "pre-compact" in runner.call_args.args[0]
+
+@pytest.mark.unit
+def test_native_default_agent_allowed():
+    base = event()
+    base["tool_input"] = {"message": "Summarize the repository"}
+    payload, error = module.translate(base)
+    assert payload is None
+    assert error is None
+
+
+@pytest.mark.unit
+def test_mighty_worker_cannot_delegate_to_native_role():
+    payload, error = module.translate(event("explorer", "mm-workers-engineer"))
+    assert payload is None
+    assert "may not delegate" in error
+
+
+@pytest.mark.unit
+def test_mighty_worker_requires_explicit_role():
+    base = event(caller="mm-workers-engineer")
+    base["tool_input"] = {"message": "Do anything"}
+    payload, error = module.translate(base)
+    assert payload is None
+    assert "explicit approved role" in error
