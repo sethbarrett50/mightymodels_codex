@@ -59,8 +59,10 @@ ROLE_TRANSLATIONS = (
         'installed `$becoming-uncle-bob` skill (read its SKILL.md explicitly)',
     ),
     (
-        'Its text is in your context from the start, under a line that reads '
-        '"Base directory for this skill:" and gives the skill\'s absolute path;',
+        (
+            'Its text is in your context from the start, under a line that reads '
+            '"Base directory for this skill:" and gives the skill\'s absolute path;'
+        ),
         'Read the skill from $HOME/.agents/skills/ before continuing;',
     ),
 )
