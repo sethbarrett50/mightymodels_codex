@@ -7,137 +7,137 @@
       "role": "mm-review-fact-checker",
       "source_model": "haiku",
       "source_effort": "high",
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium",
       "unmapped": [
         "tools",
         "maxTurns"
-      ],
-      "codex_model": "gpt-6-luna",
-      "codex_effort": "medium"
+      ]
     },
     {
       "source": "agents/review/merge-vader.md",
       "role": "mm-review-merge-vader",
       "source_model": "opus",
       "source_effort": "medium",
+      "codex_model": "gpt-6.1-sol",
+      "codex_effort": "high",
       "unmapped": [
         "tools",
         "skills"
-      ],
-      "codex_model": "gpt-6.1-sol",
-      "codex_effort": "high"
+      ]
     },
     {
       "source": "agents/review/qualitylens.md",
       "role": "mm-review-qualitylens",
       "source_model": "haiku",
       "source_effort": "high",
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium",
       "unmapped": [
         "tools",
         "maxTurns"
-      ],
-      "codex_model": "gpt-6-luna",
-      "codex_effort": "medium"
+      ]
     },
     {
       "source": "agents/review/uncle-bob.md",
       "role": "mm-review-uncle-bob",
       "source_model": "opus",
       "source_effort": "medium",
+      "codex_model": "gpt-6.1-sol",
+      "codex_effort": "high",
       "unmapped": [
         "tools",
         "skills"
-      ],
-      "codex_model": "gpt-6.1-sol",
-      "codex_effort": "high"
+      ]
     },
     {
       "source": "agents/triage/code-scout.md",
       "role": "mm-triage-code-scout",
       "source_model": "haiku",
       "source_effort": "high",
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium",
       "unmapped": [
         "tools",
         "maxTurns"
-      ],
-      "codex_model": "gpt-6-luna",
-      "codex_effort": "medium"
+      ]
     },
     {
       "source": "agents/triage/terry-toolchain.md",
       "role": "mm-triage-terry-toolchain",
       "source_model": "sonnet",
       "source_effort": "medium",
+      "codex_model": "gpt-6.1-sol",
+      "codex_effort": "medium",
       "unmapped": [
         "tools"
-      ],
-      "codex_model": "gpt-6.1-sol",
-      "codex_effort": "medium"
+      ]
     },
     {
       "source": "agents/triage/web-scout.md",
       "role": "mm-triage-web-scout",
       "source_model": "haiku",
       "source_effort": "high",
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium",
       "unmapped": [
         "tools",
         "maxTurns"
-      ],
-      "codex_model": "gpt-6-luna",
-      "codex_effort": "medium"
+      ]
     },
     {
       "source": "agents/triage/wingman.md",
       "role": "mm-triage-wingman",
       "source_model": "fable",
       "source_effort": "high",
-      "unmapped": [],
-      "codex_status": "disabled: no Fable substitution"
+      "codex_status": "disabled: no Fable substitution",
+      "unmapped": []
     },
     {
       "source": "agents/workers/architect.md",
       "role": "mm-workers-architect",
       "source_model": "opus",
       "source_effort": "medium",
+      "codex_model": "gpt-6.1-sol",
+      "codex_effort": "high",
       "unmapped": [
         "tools",
         "skills"
-      ],
-      "codex_model": "gpt-6.1-sol",
-      "codex_effort": "high"
+      ]
     },
     {
       "source": "agents/workers/engineer.md",
       "role": "mm-workers-engineer",
       "source_model": "sonnet",
       "source_effort": "medium",
+      "codex_model": "gpt-6.1-sol",
+      "codex_effort": "medium",
       "unmapped": [
         "tools",
         "skills"
-      ],
-      "codex_model": "gpt-6.1-sol",
-      "codex_effort": "medium"
+      ]
     },
     {
       "source": "agents/workers/gitty-up.md",
       "role": "mm-workers-gitty-up",
       "source_model": "haiku",
       "source_effort": "high",
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium",
       "unmapped": [
         "tools"
-      ],
-      "codex_model": "gpt-6-luna",
-      "codex_effort": "medium"
+      ]
     },
     {
       "source": "agents/workers/intern.md",
       "role": "mm-workers-intern",
       "source_model": "haiku",
       "source_effort": "high",
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium",
       "unmapped": [
         "tools"
-      ],
-      "codex_model": "gpt-6-luna",
-      "codex_effort": "medium"
+      ]
     }
   ]
 }
