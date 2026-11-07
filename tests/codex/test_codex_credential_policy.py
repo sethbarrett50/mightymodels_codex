@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('name', ('AGENTS.md', 'docs/CODEX.md'))
+@pytest.mark.parametrize('name', ['AGENTS.md', 'docs/CODEX.md'])
 def test_credential_policy(name: str) -> None:
     content = (ROOT / name).read_text(encoding='utf-8')
     assert 'gh auth status -h github.com' in content
