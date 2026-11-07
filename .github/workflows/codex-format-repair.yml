@@ -1,0 +1,32 @@
+name: Temporary Codex format repair
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  format:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feat/codex-global-install-and-live-validation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install 3.14
+      - run: uv sync --locked --all-packages --group check --group test --python 3.14
+      - name: Apply project formatter
+        run: |
+          uv run --no-sync ruff check --fix-only scripts/install_codex_user.py tests/codex/test_codex_user_install.py
+          uv run --no-sync ruff format scripts/install_codex_user.py tests/codex/test_codex_user_install.py
+      - name: Commit formatter changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/install_codex_user.py tests/codex/test_codex_user_install.py
+          if ! git diff --cached --quiet; then
+            git commit -m "style(codex): apply formatter"
+            git push origin HEAD:${{ github.head_ref }}
+          fi

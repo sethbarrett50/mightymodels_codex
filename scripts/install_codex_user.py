@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Install or remove MightyModels integrations for the current Codex user.
 
 Never use sudo: files are managed only inside the invoking user's home.
@@ -9,7 +8,6 @@ import argparse
 import json
 import os
 import shlex
-import sys
 import tomllib
 from pathlib import Path
 
@@ -22,7 +20,8 @@ AGENT_COUNT = 12
 def managed_text(text: str, replacement: str) -> str:
     """Replace the managed stanza without altering unrelated content."""
     if text.count(START) != text.count(END) or text.count(START) > 1:
-        raise ValueError('Malformed MightyModels managed markers')
+        msg = 'Malformed MightyModels managed markers'
+        raise ValueError(msg)
     if START in text:
         left, remainder = text.split(START, 1)
         _, right = remainder.split(END, 1)
@@ -34,19 +33,22 @@ def safe_write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + '.mightymodels-tmp')
     if tmp.exists() or tmp.is_symlink():
-        raise FileExistsError(f'Refusing existing temporary file: {tmp}')
+        msg = f'Refusing existing temporary file: {tmp}'
+        raise FileExistsError(msg)
     tmp.write_text(content, encoding='utf-8')
     os.chmod(tmp, 0o600)
     tmp.replace(path)
 
 
-def reconcile_link(destination: Path, source: Path, remove: bool) -> None:
+def reconcile_link(destination: Path, source: Path, *, remove: bool) -> None:
     if destination.is_symlink():
         if destination.resolve(strict=False) != source.resolve():
-            raise FileExistsError(f'Refusing unrelated symlink: {destination}')
+            msg = f'Refusing unrelated symlink: {destination}'
+            raise FileExistsError(msg)
         destination.unlink()
     elif destination.exists():
-        raise FileExistsError(f'Refusing existing unmanaged path: {destination}')
+        msg = f'Refusing existing unmanaged path: {destination}'
+        raise FileExistsError(msg)
     if not remove:
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.symlink_to(source, target_is_directory=True)
@@ -62,23 +64,25 @@ def hook_config(root: Path) -> str:
     return json.dumps(data, indent=2) + '\n'
 
 
-def update_hooks(path: Path, root: Path, remove: bool) -> None:
+def update_hooks(path: Path, root: Path, *, remove: bool) -> None:
     """Do not overwrite an unrelated hooks file; identify ours by exact content."""
     expected = hook_config(root)
     if path.exists() or path.is_symlink():
         if path.is_symlink() or path.read_text(encoding='utf-8') != expected:
-            raise FileExistsError(f'Refusing unmanaged hooks configuration: {path}')
+            msg = f'Refusing unmanaged hooks configuration: {path}'
+            raise FileExistsError(msg)
         path.unlink()
     if not remove:
         safe_write(path, expected)
 
 
-def update_config(path: Path, root: Path, remove: bool) -> None:
+def update_config(path: Path, root: Path, *, remove: bool) -> None:
     original = path.read_text(encoding='utf-8') if path.exists() else ''
     # Parse before editing and again afterwards to avoid corrupting Codex config.
     parsed = tomllib.loads(original)
     if START not in original and 'mighty_mcp' in parsed.get('mcp_servers', {}):
-        raise ValueError('Existing mighty_mcp is not managed by this installer')
+        msg = 'Existing mighty_mcp is not managed by this installer'
+        raise ValueError(msg)
     quoted = json.dumps(str(root / 'bin/mightymodels-mcp-codex'))
     block = '' if remove else (
         '[mcp_servers.mighty_mcp]\n'
@@ -92,7 +96,7 @@ def update_config(path: Path, root: Path, remove: bool) -> None:
         safe_write(path, content)
 
 
-def update_instructions(path: Path, root: Path, remove: bool) -> None:
+def update_instructions(path: Path, root: Path, *, remove: bool) -> None:
     original = path.read_text(encoding='utf-8') if path.exists() else ''
     block = '' if remove else (
         'MightyModels user-scoped installation: read '
@@ -105,7 +109,7 @@ def update_instructions(path: Path, root: Path, remove: bool) -> None:
         safe_write(path, content)
 
 
-def main() -> int:
+def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--uninstall', action='store_true')
     parser.add_argument('--home', type=Path, default=Path.home())
@@ -133,7 +137,7 @@ def main() -> int:
     expected_hooks = hook_config(root)
     if hooks.exists() and (hooks.is_symlink() or hooks.read_text(encoding='utf-8') != expected_hooks):
         parser.error(f'Unmanaged hooks configuration exists: {hooks}; merge manually')
-    try:
+    try:  # noqa: PLW0717
         # Validate global config before modifying installed links.
         global_conf = codex / 'config.toml'
         old = global_conf.read_text(encoding='utf-8') if global_conf.exists() else ''
@@ -141,10 +145,10 @@ def main() -> int:
         if START not in old and 'mighty_mcp' in parsed.get('mcp_servers', {}):
             parser.error('Unmanaged global mighty_mcp exists; merge manually')
         for dest, src in destinations:
-            reconcile_link(dest, src, args.uninstall)
-        update_config(global_conf, root, args.uninstall)
-        update_hooks(hooks, root, args.uninstall)
-        update_instructions(codex / 'AGENTS.md', root, args.uninstall)
+            reconcile_link(dest, src, remove=args.uninstall)
+        update_config(global_conf, root, remove=args.uninstall)
+        update_hooks(hooks, root, remove=args.uninstall)
+        update_instructions(codex / 'AGENTS.md', root, remove=args.uninstall)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
     print(('Removed' if args.uninstall else 'Installed') + ' MightyModels user-level agents, skills, MCP, instructions and hooks.')
@@ -153,4 +157,4 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    raise SystemExit(main())

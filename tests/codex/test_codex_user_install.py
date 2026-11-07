@@ -22,7 +22,7 @@ def invoke(home: Path, *, uninstall: bool = False) -> subprocess.CompletedProces
 
 
 @pytest.mark.unit
-def test_user_install_round_trip_preserves_existing_config(tmp_path: Path) -> None:
+def test_user_install_round_trip_preserves_existing_config(tmp_path: Path) -> None:  # noqa: PLR0915
     codex = tmp_path / '.codex'
     codex.mkdir()
     config = codex / 'config.toml'
