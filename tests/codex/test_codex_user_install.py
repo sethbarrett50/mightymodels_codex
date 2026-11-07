@@ -250,12 +250,14 @@ def test_failed_install_mutations_restore_prior_files_links_and_directories(tmp_
             existing.symlink_to('wrong-destination')
             created.parent.mkdir(parents=True)
             created.symlink_to('new-link')
-            raise OSError('simulated later write failure')
+            msg = 'simulated later write failure'
+            raise OSError(msg)
     assert config.read_text() == 'sandbox_mode = "read-only"\n'
     assert config.stat().st_mode & 0o777 == 0o640
     assert existing.is_symlink()
     assert existing.readlink() == Path('original-legacy-skill')
-    assert not created.exists() and not created.is_symlink()
+    assert not created.exists()
+    assert not created.is_symlink()
     assert not created.parent.exists()
 
 
