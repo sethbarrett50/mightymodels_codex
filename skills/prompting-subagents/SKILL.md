@@ -15,6 +15,9 @@ when_to_use: >-
 user-invocable: false
 ---
 
+> **Codex runtime adapter (MightyModels fork):** When running under Codex, interpret Claude's `Agent` tool as native `spawn_agent` with `agent_type` mapped via the repository's `AGENTS.md` (or `docs/CODEX.md` when installed as a plugin). Reuse an existing agent through the native follow-up messaging tool rather than literal `SendMessage`. Call actual tools exposed by the MightyModels MCP server, not hardcoded `mcp__plugin_mightymodels_mighty-mcp__*` names. Read required companion skills explicitly; Claude `skills:` preloading, `allowed-tools:` and automatic model routing are not Codex permission controls. `\${CLAUDE_SKILL_DIR}` means this SKILL.md's directory; `$ARGUMENTS` means the user's invocation arguments. Do not bypass the existing task-start, owned-file, independent fact-checking or review gates when a tool is unavailable. No Astra model is configured.
+
+
 # prompting-subagents
 
 Mightymodels workers are cheap because each does one narrow job from a packet it cannot question: a subagent has not seen this conversation, the ticket, or the diff, and it will act on exactly what the packet says. The failures this skill prevents are all packet failures: the wrong worker for the job, a worker asked for judgment it is built to refuse, a packet missing the one field its worker checks first, a model other than the ticket's, and a report read as more certain than it is. Every worker's standing contract lives in its agent file; the packet carries only what varies per dispatch.
