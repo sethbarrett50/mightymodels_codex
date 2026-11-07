@@ -193,8 +193,8 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
         parser.error(f'Unmanaged retired agent path: {retired}')
     hooks = codex / 'hooks.json'
     expected_hooks = hook_config(root)
-    if hooks.exists() and (
-        hooks.is_symlink() or not hooks_are_owned(hooks.read_text(encoding='utf-8'), expected_hooks)
+    if hooks.is_symlink() or (
+        hooks.exists() and not hooks_are_owned(hooks.read_text(encoding='utf-8'), expected_hooks)
     ):
         parser.error(f'Unmanaged hooks configuration exists: {hooks}; merge manually')
     try:  # noqa: PLW0717
@@ -204,6 +204,21 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
         parsed = tomllib.loads(old)
         if START not in old and 'mighty_mcp' in parsed.get('mcp_servers', {}):
             parser.error('Unmanaged global mighty_mcp exists; merge manually')
+        if START not in old:
+            reserved = [name for name in parsed.get('agents', {}) if name.startswith('mm-')]
+            if reserved:
+                parser.error(f'Existing unowned MightyModels agent role declarations: {reserved}')
+        # Preflight managed markers and stale temporary files before touching links.
+        # The individual updaters validate these too, but only after link mutations.
+        managed_text(old, '')
+        instructions = codex / 'AGENTS.md'
+        if instructions.is_symlink():
+            parser.error(f'Refusing symlink to global instructions: {instructions}')
+        managed_text(instructions.read_text(encoding='utf-8') if instructions.exists() else '', '')
+        for target in (global_conf, hooks, instructions):
+            tmp = target.with_name(target.name + '.mightymodels-tmp')
+            if tmp.exists() or tmp.is_symlink():
+                parser.error(f'Refusing existing temporary file: {tmp}')
         for dest, src in destinations:
             previous = old_skill_links.get(dest)
             if (
