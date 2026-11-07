@@ -9,15 +9,16 @@ import json
 import os
 import shlex
 import tomllib
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from stat import S_IMODE
-from typing import Iterator
 
 START = '# >>> mightymodels-codex managed >>>'
 END = '# <<< mightymodels-codex managed <<<'
 SKILL_COUNT = 19
 AGENT_COUNT = 11
+_ROLLBACK_ERRORS = (OSError, ValueError)
 
 
 def managed_text(text: str, replacement: str) -> str:
@@ -70,7 +71,7 @@ def restore_on_failure(paths: list[Path]) -> Iterator[None]:
 
     try:
         yield
-    except (OSError, ValueError):
+    except _ROLLBACK_ERRORS:
         for path, kind, saved, mode in reversed(snapshots):
             if path.is_symlink() or path.is_file():
                 path.unlink()
