@@ -1,0 +1,18 @@
+{
+  "description": "Codex-specific MightyModels dispatch admission; does not replace host sandbox permissions",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(spawn_agent|Agent)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/codex_bridge.py\"",
+            "timeout": 12,
+            "statusMessage": "Validating MightyModels agent dispatch"
+          }
+        ]
+      }
+    ]
+  }
+}

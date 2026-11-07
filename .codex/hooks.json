@@ -1,0 +1,18 @@
+{
+  "description": "Codex dispatch admission for local checkout",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(spawn_agent|Agent)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/hooks/codex_bridge.py\"",
+            "timeout": 12,
+            "statusMessage": "Validating MightyModels agent dispatch"
+          }
+        ]
+      }
+    ]
+  }
+}

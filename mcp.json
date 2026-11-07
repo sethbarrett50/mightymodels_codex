@@ -3,11 +3,7 @@
   "mcpServers": {
     "mighty-mcp": {
       "type": "stdio",
-      "command": "sh",
-      "args": [
-        "-c",
-        "exec \"${PLUGIN_ROOT:?PLUGIN_ROOT must point to the installed MightyModels plugin}\"/bin/mightymodels-mcp-codex"
-      ]
+      "command": "./bin/mightymodels-mcp-codex"
     }
   }
 }
