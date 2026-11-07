@@ -231,7 +231,7 @@ def test_dangling_hook_symlink_preflight_does_not_install_links(tmp_path: Path) 
 
 
 @pytest.mark.unit
-def test_failed_install_mutations_restore_prior_files_links_and_directories(tmp_path: Path) -> None:
+def test_failed_install_mutations_restore_prior_files_links_and_directories(tmp_path: Path) -> None:  # noqa: PLR0915
     namespace = run_path(str(INSTALLER))
     restore_on_failure = namespace['restore_on_failure']
     config = tmp_path / '.codex/config.toml'
@@ -242,16 +242,18 @@ def test_failed_install_mutations_restore_prior_files_links_and_directories(tmp_
     existing.parent.mkdir(parents=True)
     existing.symlink_to('original-legacy-skill')
     created = tmp_path / '.codex/agents/brand-new.toml'
-    with pytest.raises(OSError, match='simulated later write failure'):
-        with restore_on_failure([config, existing, created]):
-            config.write_text('modified\n')
-            config.chmod(0o600)
-            existing.unlink()
-            existing.symlink_to('wrong-destination')
-            created.parent.mkdir(parents=True)
-            created.symlink_to('new-link')
-            msg = 'simulated later write failure'
-            raise OSError(msg)
+    with (
+        pytest.raises(OSError, match='simulated later write failure'),  # noqa: PT012
+        restore_on_failure([config, existing, created]),
+    ):
+        config.write_text('modified\n')
+        config.chmod(0o600)
+        existing.unlink()
+        existing.symlink_to('wrong-destination')
+        created.parent.mkdir(parents=True)
+        created.symlink_to('new-link')
+        msg = 'simulated later write failure'
+        raise OSError(msg)
     assert config.read_text() == 'sandbox_mode = "read-only"\n'
     assert config.stat().st_mode & 0o777 == 0o640
     assert existing.is_symlink()
