@@ -206,9 +206,12 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
             parser.error('Unmanaged global mighty_mcp exists; merge manually')
         for dest, src in destinations:
             previous = old_skill_links.get(dest)
-            if previous is not None and dest.is_symlink():
-                if dest.resolve(strict=False) == previous.resolve():
-                    dest.unlink()
+            if (
+                previous is not None
+                and dest.is_symlink()
+                and dest.resolve(strict=False) == previous.resolve()
+            ):
+                dest.unlink()
             reconcile_link(dest, src, remove=args.uninstall)
         reconcile_link(retired, retired_source, remove=True)
         update_config(global_conf, root, remove=args.uninstall)
