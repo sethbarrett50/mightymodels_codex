@@ -2,10 +2,13 @@
 
 import subprocess
 from pathlib import Path
+from runpy import run_path
 
 import pytest
 
-from scripts.codex_hygiene_check import added_suppression_count, check
+_checker = run_path(str(Path(__file__).resolve().parents[2] / 'scripts/codex_hygiene_check.py'))
+added_suppression_count = _checker['added_suppression_count']
+check = _checker['check']
 
 
 @pytest.mark.unit
