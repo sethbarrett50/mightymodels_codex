@@ -3,8 +3,12 @@
 import subprocess
 from pathlib import Path
 from runpy import run_path
+from shutil import which
 
 import pytest
+
+GIT_BINARY = which('git')
+assert GIT_BINARY is not None
 
 _checker = run_path(str(Path(__file__).resolve().parents[2] / 'scripts/codex_hygiene_check.py'))
 added_suppression_count = _checker['added_suppression_count']
@@ -22,11 +26,11 @@ def test_detects_only_new_suppressions() -> None:
 
 def setup_repo(tmp_path: Path) -> Path:
     subprocess.run(  # noqa: S603
-        ['git', 'init', '-q', str(tmp_path)], check=True, capture_output=True
+        [GIT_BINARY, 'init', '-q', str(tmp_path)], check=True, capture_output=True
     )
     (tmp_path / 'file.py').write_text('x = 1\n')
     subprocess.run(  # noqa: S603
-        ['git', '-C', str(tmp_path), 'add', 'file.py'],
+        [GIT_BINARY, '-C', str(tmp_path), 'add', 'file.py'],
         check=True,
         capture_output=True,
     )
