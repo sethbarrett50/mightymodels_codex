@@ -25,12 +25,15 @@ def test_counts_events_and_token_usage_without_exposing_secret_fields() -> None:
             'type': 'item.completed',
             'item': {'type': 'agent_message', 'text': 'PRIVATE_DISCUSSION'},
         },
-        {'type': 'turn.completed', 'usage': {
-            'input_tokens': 100,
-            'cached_input_tokens': 80,
-            'output_tokens': 12,
-            'reasoning_output_tokens': 4,
-        }},
+        {
+            'type': 'turn.completed',
+            'usage': {
+                'input_tokens': 100,
+                'cached_input_tokens': 80,
+                'output_tokens': 12,
+                'reasoning_output_tokens': 4,
+            },
+        },
     ]
     report = METRICS.summarize(io.StringIO(''.join(json.dumps(e) + '\n' for e in events)))
     assert report['events']['mcp_calls'] == 1
@@ -49,11 +52,14 @@ def test_counts_events_and_token_usage_without_exposing_secret_fields() -> None:
 @pytest.mark.unit
 def test_ignores_invalid_usage_values_and_unknown_events() -> None:
     records = [
-        {'type': 'turn.completed', 'usage': {
-            'input_tokens': True,
-            'cached_input_tokens': -1,
-            'output_tokens': 'secret',
-        }},
+        {
+            'type': 'turn.completed',
+            'usage': {
+                'input_tokens': True,
+                'cached_input_tokens': -1,
+                'output_tokens': 'secret',
+            },
+        },
         {'type': 'turn.completed', 'usage': {'input_tokens': 7}},
         {'type': 'new-event-with-SECRET'},
     ]
