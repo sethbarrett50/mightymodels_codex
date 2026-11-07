@@ -7,7 +7,7 @@ from pathlib import Path
 from install_codex_user import AGENT_COUNT, SKILL_COUNT, hook_config, hooks_are_owned
 
 
-def note(ok: bool, message: str) -> str:
+def note(message: str, *, ok: bool) -> str:
     return f'[{"OK" if ok else "FAIL"}] {message}'
 
 
@@ -16,8 +16,12 @@ def check_mcp(config: dict, root: Path) -> str:
     valid = server.get('command') == 'sh' and server.get('args') == [
         str(root / 'bin/mightymodels-mcp-codex')
     ]
-    return note(valid, 'Global MightyModels MCP launcher registered' if valid else
-                'Global MightyModels MCP registration missing or unexpected')
+    message = (
+        'Global MightyModels MCP launcher registered'
+        if valid
+        else 'Global MightyModels MCP registration missing or unexpected'
+    )
+    return note(message, ok=valid)
 
 
 def check_agents(config: dict, home: Path, root: Path) -> str:
@@ -32,8 +36,8 @@ def check_agents(config: dict, home: Path, root: Path) -> str:
         for source in (root / '.codex/agents').glob('mm-*.toml')
         for name in (source.stem,)
     )
-    return note(valid == AGENT_COUNT,
-                f'Installed owned native agent registrations: {valid}/{AGENT_COUNT}')
+    message = f'Installed owned native agent registrations: {valid}/{AGENT_COUNT}'
+    return note(message, ok=valid == AGENT_COUNT)
 
 
 def check_skills(home: Path, root: Path) -> str:
@@ -45,19 +49,24 @@ def check_skills(home: Path, root: Path) -> str:
         )
         for source in (root / '.codex/skills').glob('*/SKILL.md')
     )
-    return note(valid == SKILL_COUNT, f'Installed owned Codex skill links: {valid}/{SKILL_COUNT}')
+    message = f'Installed owned Codex skill links: {valid}/{SKILL_COUNT}'
+    return note(message, ok=valid == SKILL_COUNT)
 
 
 def check_hooks(home: Path, root: Path) -> str:
     hooks = home / '.codex/hooks.json'
     if not hooks.is_file() or hooks.is_symlink():
-        return note(False, 'Global MightyModels hooks missing or a symlink')
+        return note('Global MightyModels hooks missing or a symlink', ok=False)
     try:
         owned = hooks_are_owned(hooks.read_text(encoding='utf-8'), hook_config(root))
     except OSError, ValueError:
         owned = False
-    return note(owned, 'Installed MightyModels hooks are owned; runtime trust not verified'
-                if owned else 'Existing global hooks differ from managed MightyModels definitions')
+    message = (
+        'Installed MightyModels hooks are owned; runtime trust not verified'
+        if owned
+        else 'Existing global hooks differ from managed MightyModels definitions'
+    )
+    return note(message, ok=owned)
 
 
 def check_project_overlap(root: Path, cwd: Path) -> str | None:
