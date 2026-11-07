@@ -349,3 +349,30 @@ def test_unconfirmed_default_answer_emits_warning_without_state_write(tmp_path: 
         )
     runner.assert_not_called()
     assert 'did not persist' in outcome['systemMessage']
+
+
+@pytest.mark.unit
+def test_probe_denial_records_only_decision_kind(tmp_path: Path) -> None:
+    value = event('mm-workers-engineer')
+    value['tool_input']['message'] = 'CREDENTIALS_MUST_STAY_PRIVATE'
+    environ = {'HOME': str(tmp_path), 'MIGHTYMODELS_CODEX_DISPATCH_PROBE': '1'}
+    module.audit_probe_decision(value, environ, module.denial('CREDENTIALS_MUST_STAY_PRIVATE'))
+    marker = tmp_path / '.local/state/mightymodels/codex-dispatch-probe.log'
+    assert marker.stat().st_mode & 0o777 == 0o600
+    assert 'adapter_denied' in marker.read_text()
+    assert 'CREDENTIALS_MUST_STAY_PRIVATE' not in marker.read_text()
+
+
+@pytest.mark.unit
+def test_probe_non_denial_is_not_reported_as_host_permission(tmp_path: Path) -> None:
+    environ = {'HOME': str(tmp_path), 'MIGHTYMODELS_CODEX_DISPATCH_PROBE': '1'}
+    module.audit_probe_decision(event(), environ, None)
+    marker = tmp_path / '.local/state/mightymodels/codex-dispatch-probe.log'
+    assert 'adapter_no_denial' in marker.read_text()
+    assert 'adapter_denied' not in marker.read_text()
+
+
+@pytest.mark.unit
+def test_probe_outcome_disabled_by_default(tmp_path: Path) -> None:
+    module.audit_probe_decision(event(), {'HOME': str(tmp_path)}, module.denial('blocked'))
+    assert not (tmp_path / '.local/state/mightymodels').exists()

@@ -250,12 +250,19 @@ Exit, then check:
 
 ```sh
 if test -s ~/.local/state/mightymodels/codex-dispatch-probe.log; then
-    echo 'PreToolUse reached the bridge; verify actual denial separately'
+    grep -E '^(pre_tool_use_spawn_agent_seen|adapter_denied|adapter_no_denial) ' \
+      ~/.local/state/mightymodels/codex-dispatch-probe.log
 else
     echo 'UNVERIFIED/UNSAFE: no native spawn_agent PreToolUse event was observed'
 fi
 unset MIGHTYMODELS_CODEX_DISPATCH_PROBE
 ```
+
+The opt-in log now distinguishes `pre_tool_use_spawn_agent_seen` (the bridge
+was invoked), `adapter_denied` (the bridge prepared a denial) and
+`adapter_no_denial` (the bridge did not issue a denial). These are **adapter
+observations only**, not proof that Codex respected the decision or that an
+agent failed to launch. The log never includes role identifiers or messages.
 
 **Do not test with a destructive command or an unauthorized live write.**
 The next acceptance test should be a benign attempted engineer dispatch
