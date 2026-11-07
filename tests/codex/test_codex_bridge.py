@@ -193,6 +193,7 @@ def test_probe_disabled_by_default(tmp_path: Path) -> None:
     module.audit_probe(event(), {'HOME': str(tmp_path)})
     assert not (tmp_path / '.local/state/mightymodels').exists()
 
+
 @pytest.mark.unit
 def test_mcp_post_tool_result_records_session_pointer(tmp_path: Path) -> None:
     post_event = {
@@ -221,7 +222,8 @@ def test_non_mighty_mcp_post_tool_result_is_ignored(tmp_path: Path) -> None:
     with patch.object(module.subprocess, 'run') as runner:
         outcome = module.run_lifecycle(
             {'hook_event_name': 'PostToolUse', 'tool_name': 'Bash'},
-            project_root=tmp_path, environ={'HOME': str(tmp_path)}
+            project_root=tmp_path,
+            environ={'HOME': str(tmp_path)},
         )
     assert outcome is None
     runner.assert_not_called()

@@ -128,9 +128,7 @@ class SessionPruneHandler:
             return None
 
         start = find_root(self.environ, directory_of(payload.cwd))
-        handler = SessionStartHandler(
-            environ=self.environ, stderr=self.stderr, clock=self.clock
-        )
+        handler = SessionStartHandler(environ=self.environ, stderr=self.stderr, clock=self.clock)
         try:
             await handler.prune_pointers(data, start)
         except STATE_UNREADABLE as error:
