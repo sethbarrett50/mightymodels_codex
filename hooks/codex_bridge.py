@@ -124,19 +124,19 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
             timeout=HOOK_TIMEOUT,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
-        return denial(f'MightyModels admission unavailable; dispatch denied: {exc}')
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        return denial('MightyModels admission unavailable; dispatch denied')
     if result.returncode:
         return denial(
             'MightyModels admission check failed; dispatch denied '
-            f'(exit {result.returncode}; {result.stderr[-500:]})'
+            f'(exit {result.returncode})'
         )
     if not result.stdout.strip():
         return None
     try:
         decision = json.loads(result.stdout)
-    except ValueError as exc:
-        return denial(f'MightyModels admission returned malformed JSON: {exc}')
+    except ValueError:
+        return denial('MightyModels admission returned malformed JSON')
     if not isinstance(decision, dict):
         return denial('Admission handler did not return a JSON object')
     return decision
@@ -273,11 +273,11 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
             timeout=12,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
-        warning = f'MightyModels {command} unavailable: {exc}'
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        warning = f'MightyModels {command} unavailable'
     else:
         if result.returncode:
-            warning = f'MightyModels {command} failed ({result.returncode}): {result.stderr[-300:]}'
+            warning = f'MightyModels {command} failed (exit {result.returncode})'
     if name == 'SubagentStop':
         return {'continue': True, **({'systemMessage': warning} if warning else {})}
     return {'systemMessage': warning} if warning else None
@@ -323,8 +323,8 @@ def audit_probe_decision(event: object, environ: dict[str, str], result: object)
 def main() -> int:
     try:
         event = json.load(sys.stdin)
-    except (ValueError, UnicodeError) as exc:
-        print(json.dumps(denial(f'Invalid Codex hook event: {exc}')))
+    except (ValueError, UnicodeError):
+        print(json.dumps(denial('Invalid Codex hook event'))
         return 0
     root = Path(__file__).resolve().parent.parent
     audit_probe(event, dict(os.environ))
