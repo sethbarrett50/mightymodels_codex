@@ -10,7 +10,9 @@
       "unmapped": [
         "tools",
         "maxTurns"
-      ]
+      ],
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium"
     },
     {
       "source": "agents/review/merge-vader.md",
@@ -20,7 +22,9 @@
       "unmapped": [
         "tools",
         "skills"
-      ]
+      ],
+      "codex_model": "gpt-6.1-sol",
+      "codex_effort": "high"
     },
     {
       "source": "agents/review/qualitylens.md",
@@ -30,7 +34,9 @@
       "unmapped": [
         "tools",
         "maxTurns"
-      ]
+      ],
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium"
     },
     {
       "source": "agents/review/uncle-bob.md",
@@ -40,7 +46,9 @@
       "unmapped": [
         "tools",
         "skills"
-      ]
+      ],
+      "codex_model": "gpt-6.1-sol",
+      "codex_effort": "high"
     },
     {
       "source": "agents/triage/code-scout.md",
@@ -50,7 +58,9 @@
       "unmapped": [
         "tools",
         "maxTurns"
-      ]
+      ],
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium"
     },
     {
       "source": "agents/triage/terry-toolchain.md",
@@ -59,7 +69,9 @@
       "source_effort": "medium",
       "unmapped": [
         "tools"
-      ]
+      ],
+      "codex_model": "gpt-6.1-sol",
+      "codex_effort": "medium"
     },
     {
       "source": "agents/triage/web-scout.md",
@@ -69,16 +81,17 @@
       "unmapped": [
         "tools",
         "maxTurns"
-      ]
+      ],
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium"
     },
     {
       "source": "agents/triage/wingman.md",
       "role": "mm-triage-wingman",
       "source_model": "fable",
       "source_effort": "high",
-      "unmapped": [
-        "tools"
-      ]
+      "unmapped": [],
+      "codex_status": "disabled: no Fable substitution"
     },
     {
       "source": "agents/workers/architect.md",
@@ -88,7 +101,9 @@
       "unmapped": [
         "tools",
         "skills"
-      ]
+      ],
+      "codex_model": "gpt-6.1-sol",
+      "codex_effort": "high"
     },
     {
       "source": "agents/workers/engineer.md",
@@ -98,7 +113,9 @@
       "unmapped": [
         "tools",
         "skills"
-      ]
+      ],
+      "codex_model": "gpt-6.1-sol",
+      "codex_effort": "medium"
     },
     {
       "source": "agents/workers/gitty-up.md",
@@ -107,7 +124,9 @@
       "source_effort": "high",
       "unmapped": [
         "tools"
-      ]
+      ],
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium"
     },
     {
       "source": "agents/workers/intern.md",
@@ -116,7 +135,9 @@
       "source_effort": "high",
       "unmapped": [
         "tools"
-      ]
+      ],
+      "codex_model": "gpt-6-luna",
+      "codex_effort": "medium"
     }
   ]
 }
