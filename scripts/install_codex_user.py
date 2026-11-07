@@ -9,7 +9,10 @@ import json
 import os
 import shlex
 import tomllib
+from contextlib import contextmanager
 from pathlib import Path
+from stat import S_IMODE
+from typing import Iterator
 
 START = '# >>> mightymodels-codex managed >>>'
 END = '# <<< mightymodels-codex managed <<<'
@@ -42,6 +45,50 @@ def safe_write(path: Path, content: str) -> None:
     tmp.write_text(content, encoding='utf-8')
     Path(tmp).chmod(0o600)
     tmp.replace(path)
+
+
+
+@contextmanager
+def restore_on_failure(paths: list[Path]) -> Iterator[None]:
+    """Undo file/link mutations on ordinary failures; not a crash-safe journal."""
+    snapshots: list[tuple[Path, str, bytes | str | None, int]] = []
+    missing_dirs: set[Path] = set()
+    for path in paths:
+        if path.is_symlink():
+            snapshots.append((path, 'link', os.readlink(path), 0))
+        elif path.is_file():
+            snapshots.append((path, 'file', path.read_bytes(), S_IMODE(path.stat().st_mode)))
+        elif path.exists():
+            msg = f'Refusing to snapshot non-file destination: {path}'
+            raise FileExistsError(msg)
+        else:
+            snapshots.append((path, 'absent', None, 0))
+        parent = path.parent
+        while not parent.exists():
+            missing_dirs.add(parent)
+            parent = parent.parent
+
+    try:
+        yield
+    except (OSError, ValueError):
+        for path, kind, saved, mode in reversed(snapshots):
+            if path.is_symlink() or path.is_file():
+                path.unlink()
+            if kind == 'link':
+                assert isinstance(saved, str)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.symlink_to(saved)
+            elif kind == 'file':
+                assert isinstance(saved, bytes)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(saved)
+                path.chmod(mode)
+        for directory in sorted(missing_dirs, key=lambda item: len(item.parts), reverse=True):
+            try:
+                directory.rmdir()
+            except OSError:
+                pass  # Do not remove nonempty directories, even after an interrupted install.
+        raise
 
 
 def reconcile_link(destination: Path, source: Path, *, remove: bool) -> None:
@@ -200,6 +247,8 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
     try:  # noqa: PLW0717
         # Validate global config before modifying installed links.
         global_conf = codex / 'config.toml'
+        if global_conf.is_symlink():
+            parser.error(f'Refusing global config symlink: {global_conf}')
         old = global_conf.read_text(encoding='utf-8') if global_conf.exists() else ''
         parsed = tomllib.loads(old)
         if START not in old and 'mighty_mcp' in parsed.get('mcp_servers', {}):
@@ -219,19 +268,22 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
             tmp = target.with_name(target.name + '.mightymodels-tmp')
             if tmp.exists() or tmp.is_symlink():
                 parser.error(f'Refusing existing temporary file: {tmp}')
-        for dest, src in destinations:
-            previous = old_skill_links.get(dest)
-            if (
-                previous is not None
-                and dest.is_symlink()
-                and dest.resolve(strict=False) == previous.resolve()
-            ):
-                dest.unlink()
-            reconcile_link(dest, src, remove=args.uninstall)
-        reconcile_link(retired, retired_source, remove=True)
-        update_config(global_conf, root, remove=args.uninstall)
-        update_hooks(hooks, root, remove=args.uninstall)
-        update_instructions(codex / 'AGENTS.md', root, remove=args.uninstall)
+        affected = [dest for dest, _ in destinations]
+        affected.extend((retired, global_conf, hooks, instructions))
+        with restore_on_failure(affected):
+            for dest, src in destinations:
+                previous = old_skill_links.get(dest)
+                if (
+                    previous is not None
+                    and dest.is_symlink()
+                    and dest.resolve(strict=False) == previous.resolve()
+                ):
+                    dest.unlink()
+                reconcile_link(dest, src, remove=args.uninstall)
+            reconcile_link(retired, retired_source, remove=True)
+            update_config(global_conf, root, remove=args.uninstall)
+            update_hooks(hooks, root, remove=args.uninstall)
+            update_instructions(instructions, root, remove=args.uninstall)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
     print(
