@@ -431,6 +431,31 @@ hooks actually fired or were trusted, or that scouts were sandboxed.
 Remaining crash/power-loss transactionality, mixed-hook upgrade edge cases,
 plugin-vs-global precedence, and live host enforcement stay open under #15/#9.
 
+## Opt-in disposable live Codex smoke — issue #16
+
+For a bounded read-only Codex host smoke test, run this on the actual
+unprivileged Codex account after installing MightyModels:
+
+```sh
+cd ~/code/mightymodels_codex
+python3 scripts/codex_live_acceptance.py --live --timeout 90
+```
+
+The opt-in runner creates and removes a disposable Git fixture, calls
+`codex exec --json --sandbox read-only`, and reports only a sanitized Codex
+CLI version, event/tool counts and numeric token usage. It intentionally
+does **not** save or print the raw transcript, event IDs, prompt, stderr or
+tool arguments. The host may still access its normal Codex credentials and
+caches; no credentials are exported or printed by the runner. A timed-out,
+unavailable, malformed or failed run exits nonzero and reports
+`unverified`, not a fabricated success.
+
+A completed read-only smoke does not certify model identity, authorization,
+agent isolation or persistent workflow state. Full #16 acceptance still
+requires the subsequent user-host matrix: native named-agent dispatch,
+blocked unauthorized engineer, scoped authorized task, independent review,
+compaction/resume and actual quota/model evidence.
+
 ## Read-only JSONL telemetry for live acceptance — issue #16
 
 Codex's noninteractive `codex exec --json` streams JSONL events with
