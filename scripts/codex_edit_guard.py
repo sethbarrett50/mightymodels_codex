@@ -29,7 +29,7 @@ def deny(reason: str) -> dict:
     }
 
 
-def inspect(event: object) -> str | None:
+def inspect(event: object) -> str | None:  # noqa: C901, PLR0911, PLR0912
     """Return a sanitized reason only when an edit should not proceed."""
     if not isinstance(event, dict) or event.get('hook_event_name') != 'PreToolUse':
         return 'Unrecognized project edit hook event'
