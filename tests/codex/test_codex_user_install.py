@@ -214,3 +214,16 @@ def test_stale_temp_file_preflight_preserves_existing_config(tmp_path: Path) -> 
     assert config.read_text() == 'sandbox_mode = "read-only"\n'
     assert not (tmp_path / '.codex/agents').exists()
     assert not (tmp_path / '.agents/skills').exists()
+
+
+@pytest.mark.unit
+def test_dangling_hook_symlink_preflight_does_not_install_links(tmp_path: Path) -> None:
+    hooks = tmp_path / '.codex/hooks.json'
+    hooks.parent.mkdir()
+    hooks.symlink_to(tmp_path / 'missing-unmanaged-hooks.json')
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'Unmanaged hooks configuration' in result.stderr
+    assert hooks.is_symlink()
+    assert not (tmp_path / '.codex/agents').exists()
+    assert not (tmp_path / '.agents/skills').exists()
