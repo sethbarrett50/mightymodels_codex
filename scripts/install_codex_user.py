@@ -173,15 +173,14 @@ def validate_hook_groups(groups: list, expected: list) -> None:
         for hook in group['hooks']:
             if not isinstance(hook, dict):
                 msg = 'Invalid global hook command structure'
-                raise ValueError(msg)
+                raise TypeError(msg)
             command = hook.get('command')
             if isinstance(command, str) and 'codex_bridge.py' in command and group not in expected:
                 msg = 'Existing MightyModels bridge hook differs from expected definition'
                 raise ValueError(msg)
 
 
-
-def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:
+def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:  # noqa: PLR0913
     """Apply exact owned group additions/removals without touching foreign entries."""
     validate_hook_groups(groups, wanted)
     changed = False
@@ -199,7 +198,7 @@ def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: s
     return changed
 
 
-def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str | None:
+def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str | None:  # noqa: C901, PLR0912
     """Reconcile exact owned groups, preserving unrelated hook definitions."""
     if existing is None or hooks_are_owned(existing, expected):
         return None if remove else expected
