@@ -14,7 +14,10 @@ DOCTOR = ROOT / 'scripts/codex_doctor.py'
 def run_script(script: Path, home: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(  # noqa: S603
         [sys.executable, str(script), '--home', str(home), '--root', str(ROOT)],
-        text=True, capture_output=True, check=False, cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+        cwd=ROOT,
     )
 
 

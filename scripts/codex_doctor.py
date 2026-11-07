@@ -1,49 +1,29 @@
-"""Read-only diagnostics for a user-scoped MightyModels Codex installation.
-
-Usage: python3 scripts/codex_doctor.py [--home PATH] [--root PATH]
-Does not spawn Codex, read credential stores, reveal tokens or change files.
-"""
+"""Read-only Codex installation diagnostics without credential access or writes."""
 
 import argparse
-import sys
 import tomllib
 from pathlib import Path
 
 from install_codex_user import AGENT_COUNT, SKILL_COUNT, hook_config, hooks_are_owned
 
 
-def diagnose(home: Path, root: Path, cwd: Path) -> tuple[list[str], bool]:
-    """Return non-secret status messages and whether critical checks passed."""
-    reports = []
-    failed = False
+def note(ok: bool, message: str) -> str:
+    return f'[{"OK" if ok else "FAIL"}] {message}'
 
-    def note(level: str, message: str) -> None:
-        nonlocal failed
-        reports.append(f'[{level}] {message}')
-        failed |= level == 'FAIL'
 
-    if not (root / 'bin/mightymodels-mcp-codex').is_file():
-        note('FAIL', 'MightyModels MCP launcher missing from checkout')
-        return reports, False
-
-    codex = home / '.codex'
-    config_path = codex / 'config.toml'
-    try:
-        config = tomllib.loads(config_path.read_text(encoding='utf-8'))
-    except (OSError, ValueError):
-        note('FAIL', 'Global Codex config missing or malformed')
-        return reports, False
-
+def check_mcp(config: dict, root: Path) -> str:
     server = config.get('mcp_servers', {}).get('mighty_mcp', {})
-    if server.get('command') == 'sh' and server.get('args') == [
+    valid = server.get('command') == 'sh' and server.get('args') == [
         str(root / 'bin/mightymodels-mcp-codex')
-    ]:
-        note('OK', 'Global MightyModels MCP launcher registered')
-    else:
-        note('FAIL', 'Global MightyModels MCP registration missing or unexpected')
+    ]
+    return note(valid, 'Global MightyModels MCP launcher registered' if valid else
+                'Global MightyModels MCP registration missing or unexpected')
 
+
+def check_agents(config: dict, home: Path, root: Path) -> str:
     agents = config.get('agents', {})
-    valid_agents = sum(
+    codex = home / '.codex'
+    valid = sum(
         bool(
             (codex / 'agents' / f'{name}.toml').is_symlink()
             and (codex / 'agents' / f'{name}.toml').resolve(strict=False) == source.resolve()
@@ -52,12 +32,12 @@ def diagnose(home: Path, root: Path, cwd: Path) -> tuple[list[str], bool]:
         for source in (root / '.codex/agents').glob('mm-*.toml')
         for name in (source.stem,)
     )
-    note(
-        'OK' if valid_agents == AGENT_COUNT else 'FAIL',
-        f'Installed owned native agent registrations: {valid_agents}/{AGENT_COUNT}',
-    )
+    return note(valid == AGENT_COUNT,
+                f'Installed owned native agent registrations: {valid}/{AGENT_COUNT}')
 
-    valid_skills = sum(
+
+def check_skills(home: Path, root: Path) -> str:
+    valid = sum(
         bool(
             (home / '.agents/skills' / source.parent.name).is_symlink()
             and (home / '.agents/skills' / source.parent.name).resolve(strict=False)
@@ -65,36 +45,57 @@ def diagnose(home: Path, root: Path, cwd: Path) -> tuple[list[str], bool]:
         )
         for source in (root / '.codex/skills').glob('*/SKILL.md')
     )
-    note(
-        'OK' if valid_skills == SKILL_COUNT else 'FAIL',
-        f'Installed owned Codex skill links: {valid_skills}/{SKILL_COUNT}',
+    return note(valid == SKILL_COUNT, f'Installed owned Codex skill links: {valid}/{SKILL_COUNT}')
+
+
+def check_hooks(home: Path, root: Path) -> str:
+    hooks = home / '.codex/hooks.json'
+    if not hooks.is_file() or hooks.is_symlink():
+        return note(False, 'Global MightyModels hooks missing or a symlink')
+    try:
+        owned = hooks_are_owned(hooks.read_text(encoding='utf-8'), hook_config(root))
+    except OSError, ValueError:
+        owned = False
+    return note(owned, 'Installed MightyModels hooks are owned; runtime trust not verified'
+                if owned else 'Existing global hooks differ from managed MightyModels definitions')
+
+
+def check_project_overlap(root: Path, cwd: Path) -> str | None:
+    config = root / '.codex/config.toml'
+    if not cwd.is_relative_to(root) or not config.is_file():
+        return None
+    try:
+        project = tomllib.loads(config.read_text(encoding='utf-8'))
+    except OSError, ValueError:
+        return '[WARN] Project-scoped Codex config missing or malformed'
+    if 'mighty_mcp' not in project.get('mcp_servers', {}):
+        return None
+    return (
+        '[WARN] MightyModels checkout also declares project-scoped mighty_mcp; '
+        'verify CLI precedence and duplicate hook behavior'
     )
 
-    hooks = codex / 'hooks.json'
-    if hooks.is_file() and not hooks.is_symlink():
-        if hooks_are_owned(hooks.read_text(encoding='utf-8'), hook_config(root)):
-            note('OK', 'Installed MightyModels hooks are owned; runtime trust not verified')
-        else:
-            note('FAIL', 'Existing global hooks differ from managed MightyModels definitions')
-    else:
-        note('FAIL', 'Global MightyModels hooks missing or a symlink')
 
-    project_conf = root / '.codex/config.toml'
-    if cwd.is_relative_to(root) and project_conf.is_file():
-        try:
-            project = tomllib.loads(project_conf.read_text(encoding='utf-8'))
-        except ValueError:
-            note('WARN', 'Project-scoped Codex config is malformed')
-        else:
-            if 'mighty_mcp' in project.get('mcp_servers', {}):
-                note(
-                    'WARN',
-                    'MightyModels checkout also declares project-scoped mighty_mcp; '
-                    'verify CLI precedence and duplicate hook behavior',
-                )
+def diagnose(home: Path, root: Path, cwd: Path) -> tuple[list[str], bool]:
+    """Return nonsecret status messages and whether required checks passed."""
+    if not (root / 'bin/mightymodels-mcp-codex').is_file():
+        return ['[FAIL] MightyModels MCP launcher missing from checkout'], False
+    try:
+        config = tomllib.loads((home / '.codex/config.toml').read_text(encoding='utf-8'))
+    except OSError, ValueError:
+        return ['[FAIL] Global Codex config missing or malformed'], False
 
-    note('WARN', 'Live hook delivery, scout sandbox isolation and model identity are unverified')
-    return reports, not failed
+    reports = [
+        check_mcp(config, root),
+        check_agents(config, home, root),
+        check_skills(home, root),
+        check_hooks(home, root),
+    ]
+    warning = check_project_overlap(root, cwd)
+    if warning is not None:
+        reports.append(warning)
+    reports.append('[WARN] Live hook delivery, scout isolation and model identity unverified')
+    return reports, all(not item.startswith('[FAIL]') for item in reports)
 
 
 def main() -> int:
@@ -102,13 +103,15 @@ def main() -> int:
     parser.add_argument('--home', type=Path, default=Path.home())
     parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[1])
     args = parser.parse_args()
-    home = args.home.expanduser().resolve()
-    root = args.root.expanduser().resolve()
-    messages, valid = diagnose(home, root, Path.cwd().resolve())
+    messages, valid = diagnose(
+        args.home.expanduser().resolve(),
+        args.root.expanduser().resolve(),
+        Path.cwd().resolve(),
+    )
     for message in messages:
         print(message)
     return 0 if valid else 1
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    raise SystemExit(main())
