@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Synchronize native Codex agent roles with upstream MightyModels Markdown agents.
 
 Usage: python scripts/sync_codex_agents.py [--check]

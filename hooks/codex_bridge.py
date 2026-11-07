@@ -38,7 +38,7 @@ def role(value: object) -> object:
     return ROLES.get(value, value) if isinstance(value, str) else value
 
 
-def translate(event: object) -> tuple[dict | None, str | None]:  # noqa: C901, PLR0911
+def translate(event: object) -> tuple[dict | None, str | None]:  # noqa: C901, PLR0911, PLR0912
     """Return translated legacy hook input, or a denial reason.
 
     A non-MightyModels dispatch returns (None, None). Missing role information is
