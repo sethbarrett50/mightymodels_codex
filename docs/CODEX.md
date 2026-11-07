@@ -392,6 +392,34 @@ hooks actually fired or were trusted, or that scouts were sandboxed.
 Remaining crash/power-loss transactionality, third-party hook coexistence,
 plugin-vs-global precedence, and live host enforcement stay open under #15/#9.
 
+## Read-only JSONL telemetry for live acceptance — issue #16
+
+Codex's noninteractive `codex exec --json` streams JSONL events with
+turn completions, item start events and numeric token usage. To check a
+single bounded **read-only** run without saving raw prompts or tool output:
+
+```sh
+cd ~/kc/YOUR_DISPOSABLE_REPO
+codex --version
+codex exec --json --sandbox read-only \
+  "Read only: summarize the top-level files and do not edit anything." \
+  | python3 ~/code/mightymodels_codex/scripts/codex_trace_summary.py
+```
+
+The script parses the stream in memory and prints only counters for started
+item types, completed/failed turns and numeric input/cached/output tokens.
+It never prints prompts, command arguments, messages, thread IDs or raw
+responses. Do not save the **raw** JSONL stream in bug reports, PRs or CI
+artifacts. Disable telemetry by omitting the pipe/script entirely.
+
+The report deliberately says `effective_model_identity: unverified` and
+`quota_savings: not_measured`: model pins and token counts do not prove
+actual child-agent identity, provider quota consumption or cost reduction.
+Run matched baseline and MightyModels tasks on a real host and separately
+verify agent routing, trust and state transitions before claiming #16 passed.
+The summarizer cannot reconstruct hidden child turns or model metadata if
+the event stream does not expose them.
+
 ## Project hygiene without unverified Claude hooks — issue #17
 
 The original Claude project settings use Write/Edit suppression prompts,
