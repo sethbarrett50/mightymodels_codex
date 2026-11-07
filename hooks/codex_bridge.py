@@ -142,8 +142,7 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
     return decision
 
 
-
-def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901
+def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901, PLR0911, PLR0912, PLR0914, PLR0915
     """Convert only explicit, nonsecret Plan-mode answers for the legacy recorder.
 
     Default-mode prompts may auto-resolve; never treat those as authorization.
@@ -220,7 +219,7 @@ def lifecycle_command(event: dict) -> str | None:
     }.get(name)
 
 
-def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict | None:
+def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict | None:  # noqa: C901, PLR0912, PLR0915
     """Forward compatible nonblocking events to the existing MightyModels hooks."""
     if not isinstance(event, dict):
         return None
