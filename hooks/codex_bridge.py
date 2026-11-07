@@ -208,22 +208,19 @@ def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901, PLR0911, 
     }
 
 
-
 def translate_pointer_event(event: dict) -> dict | None:
     """Pass only target keys to the session-pointer handler, never tool results."""
     session_id = event.get('session_id')
     cwd = event.get('cwd')
     name = event.get('tool_name')
     supplied = event.get('tool_input')
-    if (
-        not isinstance(session_id, str)
-        or not session_id.strip()
-        or not isinstance(cwd, str)
-        or not cwd.strip()
-        or not isinstance(name, str)
-        or not name.startswith('mcp__mighty_mcp__')
-        or not isinstance(supplied, dict)
-    ):
+    if not isinstance(session_id, str) or not session_id.strip():
+        return None
+    if not isinstance(cwd, str) or not cwd.strip():
+        return None
+    if not isinstance(name, str) or not name.startswith('mcp__mighty_mcp__'):
+        return None
+    if not isinstance(supplied, dict):
         return None
     target = {
         key: value
