@@ -429,3 +429,50 @@ def test_plan_recorder_requires_checkout_cwd_to_avoid_wrong_state_database() -> 
         'tool_response': {'answers': {'q': {'answers': ['Yes']}}},
     }
     assert module.translate_plan_answers(event) is None
+
+
+@pytest.mark.unit
+def test_pointer_envelope_drops_raw_mcp_response_and_extra_arguments(tmp_path: Path) -> None:
+    raw = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'mcp__mighty_mcp__ticket_show',
+        'session_id': 'session-9',
+        'cwd': str(tmp_path),
+        'tool_input': {'slug': 'example', 'debug_token': 'PRIVATE_MCP_ARG_DO_NOT_COPY'},
+        'tool_response': {'result': 'PRIVATE_MCP_RESULT_DO_NOT_COPY'},
+        'metadata': 'PRIVATE_HOST_METADATA_DO_NOT_COPY',
+    }
+    expected = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'mcp__mighty_mcp__ticket_show',
+        'session_id': 'session-9',
+        'cwd': str(tmp_path),
+        'tool_input': {'slug': 'example'},
+    }
+    assert module.translate_pointer_event(raw) == expected
+    with patch.object(module.subprocess, 'run') as runner:
+        runner.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout='', stderr=''
+        )
+        module.run_lifecycle(raw, project_root=tmp_path, environ={'HOME': str(tmp_path)})
+    payload = json.loads(runner.call_args.kwargs['input'])
+    assert payload == expected
+    assert 'PRIVATE_' not in json.dumps(payload)
+
+
+@pytest.mark.unit
+def test_pointer_envelope_skips_missing_targets_and_context(tmp_path: Path) -> None:
+    event = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'mcp__mighty_mcp__ticket_show',
+        'session_id': 'session-9',
+        'cwd': str(tmp_path),
+        'tool_input': {'debug_token': 'PRIVATE_MCP_ARG_DO_NOT_COPY'},
+        'tool_response': {'text': 'PRIVATE_MCP_RESULT_DO_NOT_COPY'},
+    }
+    with patch.object(module.subprocess, 'run') as runner:
+        outcome = module.run_lifecycle(
+            event, project_root=tmp_path, environ={'HOME': str(tmp_path)}
+        )
+    assert outcome is None
+    runner.assert_not_called()
