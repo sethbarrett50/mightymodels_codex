@@ -303,7 +303,11 @@ not a workaround that relaxes the gate.
 Codex `SessionStart` now invokes a pruning-only handler, avoiding Claude's
 `CLAUDE_ENV_FILE` requirement. Codex `PostToolUse` responses from
 `mcp__mighty_mcp__*` invoke the existing session-pointer handler to connect
-the session with the most recently used ticket or investigation. Neither hook
+the session with the most recently used ticket or investigation. The adapter
+now sends only the session, checkout, MCP tool name and recognized pointer
+fields (`slug`, `ticket`, `investigation_id`). Original MCP responses,
+unrelated tool arguments and arbitrary event metadata are discarded rather
+than copied to the state helper. Neither hook
 prints credentials or logs raw MCP payloads. These records support later
 compaction and handoff, and preserve Claude's existing `session-start`
 export functionality in its own runtime.
