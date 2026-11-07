@@ -9,7 +9,8 @@ import re
 import sys
 from pathlib import PurePosixPath
 
-_SUPPRESSION = re.compile(r'#\\s*(?:noqa\\b|(?:type|ty)\\s*:\\s*ignore\\b)', re.IGNORECASE)
+_SUPPRESSION = re.compile(r'#\s*(?:noqa\b|(?:type|ty)\s*:\s*ignore\b)', re.IGNORECASE)
+_BAD_INPUT = (ValueError, UnicodeError)
 _PATCH_HEADERS = (
     '*** Update File: ',
     '*** Add File: ',
@@ -56,7 +57,7 @@ def inspect(event: object) -> str | None:
 def main() -> int:
     try:
         event = json.load(sys.stdin)
-    except (ValueError, UnicodeError):
+    except _BAD_INPUT:
         print(json.dumps(deny('Invalid project edit hook payload')))
         return 0
     reason = inspect(event)
