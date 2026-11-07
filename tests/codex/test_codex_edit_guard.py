@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 GUARD = SimpleNamespace(**runpy.run_path(str(ROOT / 'scripts/codex_edit_guard.py')))
 
 
-def event(patch: str) -> dict:
+def event(patch: str) -> dict[str, object]:
     return {
         'hook_event_name': 'PreToolUse',
         'tool_name': 'apply_patch',
@@ -28,29 +28,23 @@ def event(patch: str) -> dict:
     ],
 )
 def test_new_suppressions_are_denied_before_patch(added: str) -> None:
-    patch = '\n'.join(
-        ('*** Begin Patch', '*** Update File: src/app.py', '@@', added, '*** End Patch')
-    )
+    patch = f'*** Begin Patch\n*** Update File: src/app.py\n@@\n{added}\n*** End Patch'
     assert 'suppression' in GUARD.inspect(event(patch))
 
 
 @pytest.mark.unit
 def test_existing_suppression_in_context_is_not_a_new_suppression() -> None:
-    patch = '\n'.join((
-        '*** Begin Patch',
-        '*** Update File: src/app.py',
-        '@@',
-        ' already = True  # noqa: F401',
-        '+value = 1',
-        '*** End Patch',
-    ))
+    patch = (
+        '*** Begin Patch\n*** Update File: src/app.py\n@@\n'
+        ' already = True  # noqa: F401\n+value = 1\n*** End Patch'
+    )
     assert GUARD.inspect(event(patch)) is None
 
 
 @pytest.mark.unit
 @pytest.mark.parametrize('header', ['*** Update File: uv.lock', '*** Move to: sub/uv.lock'])
 def test_direct_lockfile_patching_is_denied(header: str) -> None:
-    patch = '\n'.join(('*** Begin Patch', header, '@@', '+value = 1', '*** End Patch'))
+    patch = f'*** Begin Patch\n{header}\n@@\n+value = 1\n*** End Patch'
     assert 'uv.lock' in GUARD.inspect(event(patch))
 
 
