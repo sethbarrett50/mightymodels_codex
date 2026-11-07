@@ -2,15 +2,17 @@
 
 import json
 import runpy
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
-import subprocess
 from unittest.mock import patch
 
 import pytest
 
-module = SimpleNamespace(**runpy.run_path(str(Path(__file__).resolve().parents[2] / 'hooks' / 'codex_bridge.py')))
+module = SimpleNamespace(
+    **runpy.run_path(str(Path(__file__).resolve().parents[2] / 'hooks' / 'codex_bridge.py'))
+)
 
 
 def event(target: str = 'mm-workers-engineer', caller: str | None = None) -> dict[str, Any]:

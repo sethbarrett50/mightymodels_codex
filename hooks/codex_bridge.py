@@ -123,9 +123,9 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
         return denial(f'MightyModels admission unavailable; dispatch denied: {exc}')
     if result.returncode:
         return denial(
-                'MightyModels admission check failed; dispatch denied '
-                f'(exit {result.returncode}; {result.stderr[-500:]})'
-            )
+            'MightyModels admission check failed; dispatch denied '
+            f'(exit {result.returncode}; {result.stderr[-500:]})'
+        )
     if not result.stdout.strip():
         return None
     try:
