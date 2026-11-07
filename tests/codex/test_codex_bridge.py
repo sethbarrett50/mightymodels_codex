@@ -251,7 +251,7 @@ def test_explicit_plan_answers_translate_to_legacy_decisions() -> None:
         'tool_name': 'request_user_input',
         'permission_mode': 'plan',
         'session_id': 'session-001',
-        'cwd': '/tmp/example',
+        'cwd': 'fixture-checkout',
         'tool_input': {
             'questions': [
                 {'id': 'design', 'question': 'Which design?'},
@@ -379,7 +379,6 @@ def test_probe_outcome_disabled_by_default(tmp_path: Path) -> None:
     assert not (tmp_path / '.local/state/mightymodels').exists()
 
 
-
 @pytest.mark.unit
 def test_plan_recorder_never_forwards_unselected_secret_question_data() -> None:
     event = {
@@ -387,7 +386,7 @@ def test_plan_recorder_never_forwards_unselected_secret_question_data() -> None:
         'tool_name': 'request_user_input',
         'permission_mode': 'plan',
         'session_id': 'session-001',
-        'cwd': '/tmp/example',
+        'cwd': 'fixture-checkout',
         'tool_input': {
             'questions': [
                 {'id': 'valid', 'question': 'Proceed?'},
@@ -411,7 +410,7 @@ def test_plan_recorder_never_forwards_unselected_secret_question_data() -> None:
     assert result == {
         'hook_event_name': 'PostToolUse',
         'tool_name': 'AskUserQuestion',
-        'cwd': '/tmp/example',
+        'cwd': 'fixture-checkout',
         'session_id': 'session-001',
         'tool_response': {'answers': {'Proceed?': 'Proceed'}},
     }
