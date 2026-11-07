@@ -42,6 +42,7 @@ def test_project_scoped_skills():
         skill = ROOT / ".agents" / "skills" / item.parent.name
         assert skill.is_symlink()
         assert skill.resolve() == item.parent.resolve()
+        assert "Codex runtime adapter (MightyModels fork)" in item.read_text(encoding="utf-8")
 
 
 @pytest.mark.unit

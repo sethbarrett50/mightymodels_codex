@@ -101,7 +101,7 @@ def test_scout_stop_uses_legacy_hook(tmp_path):
     def fake_run(*args, **kwargs):
         recorded.update(kwargs)
         return subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
-    with patch.object(module.subprocess, "run", side_effect=fake_run):
+    with patch.object(module.subprocess, "run", side_effect=fake_run) as runner:
         outcome = module.run_lifecycle(
             {
                 "hook_event_name": "SubagentStop",
@@ -116,6 +116,7 @@ def test_scout_stop_uses_legacy_hook(tmp_path):
     payload = json.loads(recorded["input"])
     assert payload["agent_type"] == "mightymodels:triage:code-scout"
     assert recorded["input"]
+    assert "subagent-record" in runner.call_args.args[0]
     assert outcome == {"continue": True}
 
 
