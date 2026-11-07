@@ -420,6 +420,8 @@ def test_untrusted_role_or_parser_error_never_echoed_in_denial() -> None:
 def test_failing_subprocess_exception_is_not_disclosed(tmp_path: Path) -> None:
     canary = 'VERY_SECRET_SUBPROCESS_PATH'
     with patch.object(module.subprocess, 'run', side_effect=OSError(canary)):
-        result = module.run_admission(event(), project_root=tmp_path, environ={'HOME': str(tmp_path)})
+        result = module.run_admission(
+            event(), project_root=tmp_path, environ={'HOME': str(tmp_path)}
+        )
     assert result['hookSpecificOutput']['permissionDecision'] == 'deny'
     assert canary not in json.dumps(result)
