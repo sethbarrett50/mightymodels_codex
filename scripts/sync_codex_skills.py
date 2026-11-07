@@ -20,18 +20,18 @@ CODEX_PREFIX = 'mcp__mighty_mcp__'
 BANNER = (
     '> **Native Codex workflow (generated):** This file is generated from the '
     'Claude skill; do not edit it directly. MCP calls must use actual '
-    '\`mighty_mcp\` tools exposed by the current Codex session. '
-    'Use named native \`spawn_agent\` roles; never invoke Claude Agent/SendMessage '
+    '`mighty_mcp` tools exposed by the current Codex session. '
+    'Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage '
     'APIs or inherit model aliases. A required decision in Default mode uses '
     'ordinary chat and stops until a real answer; auto-resolution never grants '
-    'permission. \`USER_REQUEST_ARGS\` denotes the user-provided invocation '
+    'permission. `USER_REQUEST_ARGS` denotes the user-provided invocation '
     'text, not a shell variable. Helper paths resolve through the installed '
-    '\`$HOME/.agents/skills/\` links; if these links are missing, stop rather '
+    '`$HOME/.agents/skills/` links; if these links are missing, stop rather '
     'than guessing a file location.'
 )
 
 
-def translated(root: Path, source: Path) -> str:
+def translated(source: Path) -> str:
     """Preserve skill semantics while rewriting host-specific transport syntax."""
     raw = source.read_text(encoding='utf-8')
     match = FRONT.match(raw)
@@ -66,7 +66,7 @@ def generate(root: Path) -> dict[str, str]:
     for source in sources:
         name = source.parent.name
         key = f'.codex/skills/{name}/SKILL.md'
-        result[key] = translated(root, source)
+        result[key] = translated(source)
     return result
 
 
