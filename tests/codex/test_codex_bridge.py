@@ -237,7 +237,8 @@ def test_session_start_runs_prune_only(tmp_path: Path) -> None:
         )
         outcome = module.run_lifecycle(
             {'hook_event_name': 'SessionStart', 'cwd': str(tmp_path)},
-            project_root=tmp_path, environ={'HOME': str(tmp_path)}
+            project_root=tmp_path,
+            environ={'HOME': str(tmp_path)},
         )
     assert outcome is None
     assert 'session-prune' in runner.call_args.args[0]
