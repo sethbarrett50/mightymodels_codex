@@ -82,7 +82,7 @@ def check(base: str, root: Path) -> int:
         return 2
 
     found = False
-    for raw in changed.stdout.split(b'\\0'):
+    for raw in changed.stdout.split(b'\0'):
         if not raw:
             continue
         relative = Path(raw.decode('utf-8', errors='surrogateescape'))
