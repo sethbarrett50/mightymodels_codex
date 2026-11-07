@@ -31,13 +31,14 @@ def test_user_install_round_trip_preserves_existing_config(tmp_path: Path) -> No
     instructions.write_text('# Existing policies\n')
     first = invoke(tmp_path)
     assert first.returncode == 0, first.stderr
-    assert len(list((codex / 'agents').glob('mm-*.toml'))) == 12
+    assert len(list((codex / 'agents').glob('mm-*.toml'))) == 11
     assert len(list((tmp_path / '.agents/skills').iterdir())) == 19
     conf = tomllib.loads(config.read_text())
     assert conf['sandbox_mode'] == 'workspace-write'
     assert conf['other']['value'] == 7
     roles = {name: value for name, value in conf['agents'].items() if name.startswith('mm-')}
-    assert len(roles) == 12
+    assert len(roles) == 11
+    assert 'mm-triage-wingman' not in roles
     assert roles['mm-triage-code-scout']['config_file'] == str(
         ROOT / '.codex/agents/mm-triage-code-scout.toml'
     )
@@ -114,3 +115,14 @@ def test_unowned_custom_role_is_not_overwritten(tmp_path: Path) -> None:
     assert result.returncode != 0
     assert 'unowned MightyModels agent role' in result.stderr
     assert config.read_text() == original
+
+
+@pytest.mark.unit
+def test_upgrade_removes_obsolete_wingman_link(tmp_path: Path) -> None:
+    retired = tmp_path / '.codex/agents/mm-triage-wingman.toml'
+    retired.parent.mkdir(parents=True)
+    retired.symlink_to(ROOT / '.codex/agents/mm-triage-wingman.toml')
+    installed = invoke(tmp_path)
+    assert installed.returncode == 0, installed.stderr
+    assert not retired.is_symlink()
+    assert len(list(retired.parent.glob('mm-*.toml'))) == 11

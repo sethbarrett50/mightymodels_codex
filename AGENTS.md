@@ -6,7 +6,7 @@ This fork has two runtimes: native Codex roles in `.codex/agents/`, and legacy C
 
 - `mightymodels:triage:code-scout` → `mm-triage-code-scout`
 - `mightymodels:triage:web-scout` → `mm-triage-web-scout`
-- `mightymodels:triage:wingman` → `mm-triage-wingman`
+- `mightymodels:triage:wingman` → **disabled in Codex** (Fable not used; no substitute allowed)
 - `mightymodels:triage:terry-toolchain` → `mm-triage-terry-toolchain`
 - `mightymodels:workers:engineer` → `mm-workers-engineer`
 - `mightymodels:workers:architect` → `mm-workers-architect`
@@ -22,8 +22,12 @@ This fork has two runtimes: native Codex roles in `.codex/agents/`, and legacy C
 1. Use Codex native agent delegation tools to create a subagent with the mapped role; reuse its thread for follow-ups and collect its report before updating task state. Do not treat spawning an agent as task completion.
 2. Call MCP tools exposed by `mighty_mcp` using the tool names that Codex actually lists; Claude-qualified `mcp__plugin_mightymodels_mighty-mcp__tool` in skills means the corresponding `tool` from this MCP server. Never guess a tool that isn't exposed.
 3. Read the named skill's `SKILL.md` and its references before running the workflow; Claude `skills:` frontmatter was not automatically migrated to a preloaded Codex context.
-4. Resolve Claude model aliases (haiku, sonnet, opus, fable) to the **currently selected Codex model**. Never request Anthropic or Astra models. Use each role's declared reasoning effort where supported.
+4. Use the explicit model and reasoning effort in each native role: original Haiku → `gpt-6-luna`, Sonnet → `gpt-6.1-sol` medium, Opus → `gpt-6.1-sol` high. Fable/wingman is disabled; do not spawn it or silently substitute the parent model. An unavailable selected model is a blocker, not permission to escalate to expensive alternatives. The coordinator retains its own chosen model.
 5. When a skill calls for Claude's `AskUserQuestion`, distinguish **optional feedback** from a **required decision gate**. For optional feedback, use Codex's native `request_user_input` only when actually available in the current session; offer concise options and a free-text path. For a required gate in Default mode, ask directly in chat and stop until the user answers, because the native popup can auto-resolve. In Plan mode a native blocking question may be used when available, but verify a real answer was received. Never claim to have opened a popup without invoking the tool, and never fabricate or auto-select an answer. This tool is distinct from execution approval.
+
+## Model routing policy
+
+The generated roles pin their models independently from the coordinator. Scout, intern, gitty-up, fact-checker, and qualitylens use Luna; engineer and Terry use Sol medium; architect, merge-vader, and uncle-bob use Sol high. Fable is disabled for Codex, not replaced by Astra or Sol. Keep Claude source frontmatter unchanged. On unavailable model, report the error and stop rather than silently using the coordinator model. Model support and observed usage must be verified live in Codex; static checks do not prove the runtime selected the model.
 
 ## Interactive gate behavior
 

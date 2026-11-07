@@ -179,3 +179,28 @@ still returns this error, collect the actual `spawn_agent` result and
 `codex --version` and treat it as an outstanding host compatibility issue.
 Do not substitute a generic agent while claiming a named MightyModels scout
 ran, and do not relax admission hooks to workaround registry errors.
+
+## Cost-aware native agent routing (issue #6)
+
+Codex roles are generated from the original Claude role tiers. Haiku maps to
+`gpt-6-luna` at medium effort (six focused retrieval/mechanical workers).
+Sonnet maps to `gpt-6.1-sol` medium (engineer and Terry).
+Opus maps to `gpt-6.1-sol` high (architect, merge-vader and uncle-bob).
+The Fable-tier wingman is **not generated or installed for Codex** and is
+blocked by the dispatch adapter. Its Claude source remains untouched; no
+Astra or other premium replacement is selected.
+
+These explicit per-agent model settings prevent ordinary inheritance of the
+coordinator's selected model. Model availability depends on the user's Codex
+account and CLI: confirm `/model` and test a named Luna scout plus a Sol
+worker before declaring live routing validated. An unavailable model must not
+silently fall back to the expensive parent. Higher reasoning consumes more
+tokens; don't claim a fixed usage reduction without a representative benchmark.
+Re-run `python3 scripts/install_codex_user.py` after upgrading and restart
+Codex to refresh its agent definitions. The global installer now enables 11
+Codex roles and still exposes all 19 skills, some of which may refer to the
+unavailable wingman; those paths must block rather than dispatch it.
+
+OpenAI references:
+https://learn.chatgpt.com/docs/agent-configuration/subagents
+https://learn.chatgpt.com/docs/models?surface=cli

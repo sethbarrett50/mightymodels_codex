@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Synchronize native Codex agent roles with upstream MightyModels Markdown agents.
 
 Usage: python scripts/sync_codex_agents.py [--check]
@@ -14,6 +13,14 @@ from pathlib import Path
 
 SOURCE = re.compile(r'\A---\r?\n([\s\S]*?)\r?\n---\r?\n')
 EXPECTED_AGENTS = 12
+
+# Codex equivalents of the original Claude economy tiers. Fable is intentionally disabled.
+MODEL_TIERS = {
+    'haiku': ('gpt-6-luna', 'medium'),
+    'sonnet': ('gpt-6.1-sol', 'medium'),
+    'opus': ('gpt-6.1-sol', 'high'),
+}
+
 DESCRIPTION = re.compile(r'^description:\s*>-\s*\n((?:[ \t]+[^\n]*\n?)*)', re.MULTILINE)
 
 
@@ -44,10 +51,25 @@ def generate(root: Path) -> dict[str, str]:  # noqa: PLR0914, PLR0915
             raise ValueError(msg)
         description = ' '.join(description_match.group(1).split())
         effort = field(front, 'effort')
+        source_model = field(front, 'model')
         role = f'mm-{source.parent.name}-{name}'
+        if source_model == 'fable':
+            report.append({
+                'source': relative,
+                'role': role,
+                'source_model': source_model,
+                'source_effort': effort,
+                'codex_status': 'disabled: no Fable substitution',
+                'unmapped': [],
+            })
+            continue
+        if source_model not in MODEL_TIERS:
+            msg = f'Unsupported source model {source_model!r}: {source}'
+            raise ValueError(msg)
+        model, routed_effort = MODEL_TIERS[source_model]
         notes = (
             f'Ported from {relative}.\n'
-            'IMPORTANT: Claude-specific tool allowlists, skill preloads, model pins, '
+            'IMPORTANT: Claude-specific tool allowlists, skill preloads, '
             'and agent dispatch identifiers are NOT automatically enforced by Codex. '
             'Consult docs/CODEX.md. Do not execute write-capable workflows until '
             'their MCP and safety controls are validated.\n\n'
@@ -57,8 +79,8 @@ def generate(root: Path) -> dict[str, str]:  # noqa: PLR0914, PLR0915
             return json.dumps(value, ensure_ascii=False)
 
         lines = [f'name = {encoded(role)}', f'description = {encoded(description)}']
-        if effort in ('low', 'medium', 'high'):
-            lines.append(f'model_reasoning_effort = {encoded(effort)}')
+        lines.append(f'model = {encoded(model)}')
+        lines.append(f'model_reasoning_effort = {encoded(routed_effort)}')
         lines.append(f'developer_instructions = {encoded(notes + raw[match.end() :])}')
         target = (root / '.codex/agents' / f'{role}.toml').relative_to(root).as_posix()
         result[target] = '\n'.join(lines) + '\n'
@@ -79,8 +101,10 @@ def generate(root: Path) -> dict[str, str]:  # noqa: PLR0914, PLR0915
         report.append({
             'source': relative,
             'role': role,
-            'source_model': field(front, 'model'),
+            'source_model': source_model,
             'source_effort': effort,
+            'codex_model': model,
+            'codex_effort': routed_effort,
             'unmapped': unmapped,
         })
     result['.codex/compatibility-report.json'] = (
