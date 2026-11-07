@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
     'script',
     [
         'scripts/codex_doctor.py',
+        'hooks/codex_bridge.py',
         'scripts/codex_hygiene_check.py',
         'scripts/install_codex_user.py',
         'scripts/codex_edit_guard.py',
