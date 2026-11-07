@@ -40,7 +40,7 @@ def check(base: str, root: Path) -> int:
         print('Cannot verify requested base commit; no hygiene check performed.')
         return 2
     changed = subprocess.run(  # noqa: S603
-        ['git', '-C', str(root), 'diff', '-z', '--name-only', '--diff-filter=ACMR', base, '--'],
+        ['git', '-C', str(root), 'diff', '-z', '--name-only', '--diff-filter=ACMRT', base, '--'],
         capture_output=True,
         check=False,
     )
