@@ -1,17 +1,11 @@
 """Regression tests for the Codex-to-MightyModels dispatch gate."""
-import importlib.util
 import json
-from pathlib import Path
 import subprocess
 from unittest.mock import patch
 
 import pytest
 
-BRIDGE = Path(__file__).resolve().parents[2] / "hooks" / "codex_bridge.py"
-spec = importlib.util.spec_from_file_location("codex_bridge", BRIDGE)
-assert spec is not None and spec.loader is not None
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
+from hooks import codex_bridge as module
 
 
 def event(target="mm-workers-engineer", caller=None):
