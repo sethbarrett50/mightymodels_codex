@@ -130,8 +130,7 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
         return denial('MightyModels admission unavailable; dispatch denied')
     if result.returncode:
         return denial(
-            'MightyModels admission check failed; dispatch denied '
-            f'(exit {result.returncode})'
+            f'MightyModels admission check failed; dispatch denied (exit {result.returncode})'
         )
     if not result.stdout.strip():
         return None
@@ -275,7 +274,7 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
             timeout=12,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired, ValueError):
+    except HOOK_ERRORS:
         warning = f'MightyModels {command} unavailable'
     else:
         if result.returncode:
