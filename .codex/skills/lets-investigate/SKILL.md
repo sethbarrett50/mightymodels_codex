@@ -22,7 +22,7 @@ argument-hint: "[question, claim or error]"
 
 > **Codex required user-input contract (all skills):** In Default mode, a question that gates further action MUST be asked in ordinary chat; end the turn until the user explicitly replies. The native `request_user_input` popup may auto-resolve and is only for optional feedback in Default mode. In Plan mode, a genuinely blocking native question may be used when the host exposes it, but require a real explicit answer. Empty input, timeout, cancellation, interruption, and automatic resolution never count as consent. Preserve the pending decision and persist only the user's actual answer using available MightyModels tools. This is Codex-only; the Claude `Codex user decision gate` steps below remain unchanged.
 
-> **Codex investigation gate:** Required framing, classification, and end-of-round decisions follow the shared Codex required user-input contract above. Offer free-text input in ordinary chat; the Claude Codex user decision gate recorder does not run in Codex, so persist real answers through supported MCP tools only.
+> **Codex investigation gate:** Required framing, classification, and end-of-round decisions follow the shared Codex required user-input contract above. Offer free-text input in ordinary chat; the legacy Claude question recorder does not run in Codex, so persist real answers through supported MCP tools only.
 
 # lets-investigate
 
