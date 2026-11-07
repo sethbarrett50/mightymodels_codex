@@ -45,7 +45,7 @@ def test_plain_codex_role_not_policed():
     [
         {},
         [],
-        {"hook_event_name": "PreToolUse", "tool_name": "spawn_agent"},
+        {"hook_event_name": "PreToolUse", "tool_name": "spawn_agent", "tool_input": None},
         {"hook_event_name": "PostToolUse", "tool_name": "spawn_agent"},
     ],
 )
