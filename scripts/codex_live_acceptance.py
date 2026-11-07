@@ -55,47 +55,54 @@ def summarize_result(
     return data
 
 
+def _invoke_codex(codex: str, git: str, timeout: int) -> tuple[str, subprocess.CompletedProcess[str]] | None:
+    version = subprocess.run(  # noqa: S603
+        [codex, '--version'],
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=MIN_TIMEOUT,
+    )
+    with TemporaryDirectory(prefix='mm-codex-readonly-') as temporary:
+        worktree = Path(temporary)
+        (worktree / 'README.md').write_text(
+            '# Read-only acceptance fixture\nThis is a disposable repository.\n',
+            encoding='utf-8',
+        )
+        initialized = subprocess.run(  # noqa: S603
+            [git, 'init', '--quiet'],
+            cwd=worktree,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=MIN_TIMEOUT,
+        )
+        if initialized.returncode:
+            return None
+        execution = subprocess.run(  # noqa: S603
+            [codex, 'exec', '--json', '--sandbox', 'read-only', PROMPT],
+            cwd=worktree,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=timeout,
+        )
+    return version.stdout, execution
+
+
 def run_probe(timeout: int) -> dict[str, object]:
     codex = shutil.which('codex')
     git = shutil.which('git')
     if not codex or not git:
         return {'status': 'blocked: codex or git unavailable', 'host_denial_verified': False}
-
-    try:  # noqa: PLR0915
-        version = subprocess.run(  # noqa: S603, PLR0915
-            [codex, '--version'],
-            text=True,
-            capture_output=True,
-            check=False,
-            timeout=15,
-        )
-        with TemporaryDirectory(prefix='mm-codex-readonly-') as temporary:
-            worktree = Path(temporary)
-            (worktree / 'README.md').write_text(
-                '# Read-only acceptance fixture\nThis is a disposable repository.\n',
-                encoding='utf-8',
-            )
-            initialized = subprocess.run(  # noqa: S603
-                [git, 'init', '--quiet'],
-                cwd=worktree,
-                text=True,
-                capture_output=True,
-                check=False,
-                timeout=15,
-            )
-            if initialized.returncode:
-                return {'status': 'blocked: temporary Git initialization failed'}
-            execution = subprocess.run(  # noqa: S603
-                [codex, 'exec', '--json', '--sandbox', 'read-only', PROMPT],
-                cwd=worktree,
-                text=True,
-                capture_output=True,
-                check=False,
-                timeout=timeout,
-            )
-        return summarize_result(execution, version=version.stdout)
+    try:
+        outcome = _invoke_codex(codex, git, timeout)
     except (OSError, subprocess.TimeoutExpired, ValueError):
         return {'status': 'unverified: process unavailable or timed out'}
+    if outcome is None:
+        return {'status': 'blocked: temporary Git initialization failed'}
+    version, execution = outcome
+    return summarize_result(execution, version=version)
 
 
 def main() -> int:
