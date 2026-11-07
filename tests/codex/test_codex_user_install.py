@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from runpy import run_path
 
 import pytest
 
@@ -227,3 +228,47 @@ def test_dangling_hook_symlink_preflight_does_not_install_links(tmp_path: Path) 
     assert hooks.is_symlink()
     assert not (tmp_path / '.codex/agents').exists()
     assert not (tmp_path / '.agents/skills').exists()
+
+
+@pytest.mark.unit
+def test_failed_install_mutations_restore_prior_files_links_and_directories(tmp_path: Path) -> None:
+    namespace = run_path(str(INSTALLER))
+    restore_on_failure = namespace['restore_on_failure']
+    config = tmp_path / '.codex/config.toml'
+    config.parent.mkdir()
+    config.write_text('sandbox_mode = "read-only"\n')
+    config.chmod(0o640)
+    existing = tmp_path / '.agents/skills/old'
+    existing.parent.mkdir(parents=True)
+    existing.symlink_to('original-legacy-skill')
+    created = tmp_path / '.codex/agents/brand-new.toml'
+    with pytest.raises(OSError, match='simulated later write failure'):
+        with restore_on_failure([config, existing, created]):
+            config.write_text('modified\n')
+            config.chmod(0o600)
+            existing.unlink()
+            existing.symlink_to('wrong-destination')
+            created.parent.mkdir(parents=True)
+            created.symlink_to('new-link')
+            raise OSError('simulated later write failure')
+    assert config.read_text() == 'sandbox_mode = "read-only"\n'
+    assert config.stat().st_mode & 0o777 == 0o640
+    assert existing.is_symlink()
+    assert existing.readlink() == Path('original-legacy-skill')
+    assert not created.exists() and not created.is_symlink()
+    assert not created.parent.exists()
+
+
+@pytest.mark.unit
+def test_global_config_symlink_preflight_preserves_external_file(tmp_path: Path) -> None:
+    external = tmp_path / 'external.toml'
+    external.write_text('setting = "outside"\n')
+    config = tmp_path / '.codex/config.toml'
+    config.parent.mkdir()
+    config.symlink_to(external)
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'Refusing global config symlink' in result.stderr
+    assert config.is_symlink()
+    assert external.read_text() == 'setting = "outside"\n'
+    assert not (tmp_path / '.codex/agents').exists()
