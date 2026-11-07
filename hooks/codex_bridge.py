@@ -208,6 +208,39 @@ def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901, PLR0911, 
     }
 
 
+
+def translate_pointer_event(event: dict) -> dict | None:
+    """Pass only target keys to the session-pointer handler, never tool results."""
+    session_id = event.get('session_id')
+    cwd = event.get('cwd')
+    name = event.get('tool_name')
+    supplied = event.get('tool_input')
+    if (
+        not isinstance(session_id, str)
+        or not session_id.strip()
+        or not isinstance(cwd, str)
+        or not cwd.strip()
+        or not isinstance(name, str)
+        or not name.startswith('mcp__mighty_mcp__')
+        or not isinstance(supplied, dict)
+    ):
+        return None
+    target = {
+        key: value
+        for key in ('slug', 'ticket', 'investigation_id')
+        if isinstance((value := supplied.get(key)), str) and value.strip()
+    }
+    if not target:
+        return None
+    return {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': name,
+        'session_id': session_id,
+        'cwd': cwd,
+        'tool_input': target,
+    }
+
+
 def lifecycle_command(event: dict) -> str | None:
     """Return a supported lifecycle command, filtering unrelated MCP results."""
     name = event.get('hook_event_name')
@@ -245,6 +278,11 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
                     'required decisions need explicit user confirmation and MCP state.'
                 )
             }
+        payload = translated
+    elif command == 'session-pointer':
+        translated = translate_pointer_event(event)
+        if translated is None:
+            return None
         payload = translated
     if name == 'SubagentStop':
         payload['agent_type'] = role(payload.get('agent_type'))
