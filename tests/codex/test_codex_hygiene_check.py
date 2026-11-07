@@ -7,8 +7,7 @@ from shutil import which
 
 import pytest
 
-GIT_BINARY = which('git')
-assert GIT_BINARY is not None
+GIT_BINARY = which('git') or '/usr/bin/git'
 
 _checker = run_path(str(Path(__file__).resolve().parents[2] / 'scripts/codex_hygiene_check.py'))
 added_suppression_count = _checker['added_suppression_count']
