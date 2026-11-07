@@ -36,6 +36,7 @@ from .routing import (
     Model,
     RoutingTable,
     ScopeSize,
+    create_codex_review_routing_table,
     create_routing_table,
 )
 from .value_types import (
@@ -92,6 +93,7 @@ __all__ = [
     'TaskIdText',
     'UnreadableJsonError',
     'WriteLimitError',
+    'create_codex_review_routing_table',
     'create_routing_table',
     'create_secret_patterns',
     'decode_text',

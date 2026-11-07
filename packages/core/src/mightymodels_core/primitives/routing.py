@@ -46,14 +46,14 @@ class RoutingTable:
     folders: dict[AgentName, AgentFolder] = field(default_factory=dict)
     models: dict[AgentName, Model] = field(default_factory=dict)
     efforts: dict[Model, Effort] = field(default_factory=dict)
-    depth_models: dict[Depth, Model] = field(default_factory=dict)
+    depth_models: dict[Depth, str] = field(default_factory=dict)
     override_model: Model = 'fable'
     default_scope: ScopeSize = 'med'
 
     def fixed_model(self, agent: AgentName) -> Model:
         return self.models[agent]
 
-    def reviewer_model(self, depth: Depth) -> Model:
+    def reviewer_model(self, depth: Depth) -> str:
         return self.depth_models[depth]
 
     def effort_of(self, model: Model) -> Effort:
@@ -86,4 +86,15 @@ def create_routing_table() -> RoutingTable:
         agents={'architect': 'workers', 'merge-vader': 'review', 'uncle-bob': 'review'},
     )
     table.assign(model='fable', agents={'wingman': 'triage'})
+    return table
+
+
+def create_codex_review_routing_table() -> RoutingTable:
+    """Use the actual pinned native Codex reviewer model, independently of depth."""
+    table = create_routing_table()
+    table.depth_models.update({
+        'quick': 'gpt-6.1-sol',
+        'standard': 'gpt-6.1-sol',
+        'deep': 'gpt-6.1-sol',
+    })
     return table

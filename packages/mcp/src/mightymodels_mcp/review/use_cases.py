@@ -6,10 +6,15 @@ database connection synchronously and must never be held across an `await`. A re
 the path core builds for it, never from one assembled here.
 """
 
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
-from mightymodels_core.primitives import StateError, create_routing_table
+from mightymodels_core.primitives import (
+    StateError,
+    create_codex_review_routing_table,
+    create_routing_table,
+)
 from mightymodels_core.reviews import parse_report
 from mightymodels_core.reviews.policy.review import create_persona_specs
 from mightymodels_core.reviews.records import RUNS_LISTED
@@ -58,8 +63,13 @@ class ReportMissingError(StateError):
         super().__init__(f'no {persona} report at {relative}; the reviewer writes it there first')
 
 
+def codex_runtime() -> bool:
+    return os.environ.get('MIGHTYMODELS_RUNTIME') == 'codex'
+
+
 def create_review_work(state: OpenState) -> ReviewWork:
-    return create_work(state, ReviewWork)
+    work = create_work(state, ReviewWork)
+    return replace(work, routing=create_codex_review_routing_table()) if codex_runtime() else work
 
 
 @dataclass(slots=True, kw_only=True, frozen=True)
