@@ -2,13 +2,16 @@
 
 import importlib
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
-from mightymodels_core.vocabulary.reviews import Depth
 from mightymodels_core.primitives import (
     create_codex_review_routing_table,
     create_routing_table,
 )
+
+if TYPE_CHECKING:
+    from mightymodels_core.vocabulary.reviews import Depth
 
 ROOT = Path(__file__).resolve().parents[2]
 
