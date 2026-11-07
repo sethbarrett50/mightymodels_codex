@@ -1,5 +1,6 @@
 """Read-only doctor cannot disclose secrets or silently bless missing setup."""
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -60,5 +61,21 @@ def test_doctor_detects_foreign_hook_configuration(tmp_path: Path) -> None:
     hooks.write_text('{"hooks":{"Other":[]}}\n')
     result = run_script(DOCTOR, tmp_path)
     assert result.returncode == 1
-    assert 'differ from managed' in result.stdout
+    assert 'hook groups missing or different' in result.stdout
     assert hooks.read_text() == '{"hooks":{"Other":[]}}\n'
+
+
+@pytest.mark.unit
+def test_doctor_accepts_owned_hooks_alongside_foreign_groups(tmp_path: Path) -> None:
+    hooks = tmp_path / '.codex/hooks.json'
+    hooks.parent.mkdir()
+    original = {
+        'description': 'user hooks',
+        'hooks': {'PreToolUse': [{'matcher': 'Bash', 'hooks': []}]},
+    }
+    hooks.write_text(json.dumps(original) + '\n')
+    installed = run_script(INSTALLER, tmp_path)
+    assert installed.returncode == 0, installed.stderr
+    result = run_script(DOCTOR, tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert 'runtime trust not verified' in result.stdout

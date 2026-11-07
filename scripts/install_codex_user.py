@@ -18,6 +18,7 @@ START = '# >>> mightymodels-codex managed >>>'
 END = '# <<< mightymodels-codex managed <<<'
 SKILL_COUNT = 19
 AGENT_COUNT = 11
+_INSTALL_ERRORS = (OSError, ValueError, TypeError)
 _ROLLBACK_ERRORS = (OSError, ValueError)
 
 
@@ -148,16 +149,97 @@ def hooks_are_owned(held: str, expected: str) -> bool:
     )
 
 
+def managed_hooks_present(held: str, expected: str) -> bool:
+    """Verify every owned event group is installed, even alongside foreign hooks."""
+    try:
+        original = json.loads(held)
+        required = json.loads(expected)
+    except ValueError:
+        return False
+    if not isinstance(original, dict) or not isinstance(original.get('hooks'), dict):
+        return False
+    observed = original['hooks']
+    return all(
+        isinstance(observed.get(event), list) and all(group in observed[event] for group in groups)
+        for event, groups in required['hooks'].items()
+    )
+
+
+def validate_hook_groups(groups: list, expected: list) -> None:
+    for group in groups:
+        if not isinstance(group, dict) or not isinstance(group.get('hooks'), list):
+            msg = 'Invalid global hook group structure'
+            raise TypeError(msg)
+        for hook in group['hooks']:
+            if not isinstance(hook, dict):
+                msg = 'Invalid global hook command structure'
+                raise TypeError(msg)
+            command = hook.get('command')
+            if isinstance(command, str) and 'codex_bridge.py' in command and group not in expected:
+                msg = 'Existing MightyModels bridge hook differs from expected definition'
+                raise ValueError(msg)
+
+
+def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:  # noqa: PLR0913
+    """Apply exact owned group additions/removals without touching foreign entries."""
+    validate_hook_groups(groups, wanted)
+    changed = False
+    for group in wanted:
+        count = groups.count(group)
+        if count > 1:
+            msg = f'Duplicate managed MightyModels hook group for {event}'
+            raise ValueError(msg)
+        if remove and count:
+            groups.remove(group)
+            changed = True
+        elif not remove and not count:
+            groups.append(group)
+            changed = True
+    return changed
+
+
+def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str | None:  # noqa: C901, PLR0912
+    """Reconcile exact owned groups, preserving unrelated hook definitions."""
+    if existing is None or hooks_are_owned(existing, expected):
+        return None if remove else expected
+    try:
+        held = json.loads(existing)
+        required = json.loads(expected)
+    except ValueError as exc:
+        msg = 'Malformed global hooks JSON'
+        raise ValueError(msg) from exc
+    if not isinstance(held, dict) or not isinstance(held.get('hooks'), dict):
+        msg = 'Global hooks must contain a hooks object'
+        raise TypeError(msg)
+
+    changed = False
+    for event, wanted in required['hooks'].items():
+        groups = held['hooks'].get(event, [])
+        if not isinstance(groups, list):
+            msg = f'Global hook groups for {event} must be a list'
+            raise TypeError(msg)
+        event_changed = reconcile_event_groups(groups, wanted, remove=remove, event=event)
+        changed = changed or event_changed
+        if groups:
+            held['hooks'][event] = groups
+        elif event in held['hooks'] and event_changed:
+            del held['hooks'][event]
+    if not changed:
+        return existing
+    if remove and not held['hooks'] and held.get('description') == required['description']:
+        return None
+    return json.dumps(held, indent=2) + '\n'
+
+
 def update_hooks(path: Path, root: Path, *, remove: bool) -> None:
-    """Upgrade owned hook definitions without overwriting unrelated user hooks."""
-    expected = hook_config(root)
-    if path.exists() or path.is_symlink():
-        if path.is_symlink() or not hooks_are_owned(path.read_text(encoding='utf-8'), expected):
-            msg = f'Refusing unmanaged hooks configuration: {path}'
-            raise FileExistsError(msg)
-        path.unlink()
-    if not remove:
-        safe_write(path, expected)
+    """Merge owned groups without clobbering unrelated Codex user hooks."""
+    existing = path.read_text(encoding='utf-8') if path.exists() else None
+    content = merge_hook_text(existing, hook_config(root), remove=remove)
+    if content is None:
+        if path.exists():
+            path.unlink()
+    elif content != existing:
+        safe_write(path, content)
 
 
 def update_config(path: Path, root: Path, *, remove: bool) -> None:
@@ -255,11 +337,15 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
         parser.error(f'Unmanaged retired agent path: {retired}')
     hooks = codex / 'hooks.json'
     expected_hooks = hook_config(root)
-    if hooks.is_symlink() or (
-        hooks.exists() and not hooks_are_owned(hooks.read_text(encoding='utf-8'), expected_hooks)
-    ):
-        parser.error(f'Unmanaged hooks configuration exists: {hooks}; merge manually')
+    if hooks.is_symlink():
+        parser.error(f'Unmanaged hooks symlink exists: {hooks}')
     try:  # noqa: PLW0717, PLR1702
+        # Check user hooks can be merged before touching any links.
+        merge_hook_text(
+            hooks.read_text(encoding='utf-8') if hooks.exists() else None,
+            expected_hooks,
+            remove=args.uninstall,
+        )
         # Validate global config before modifying installed links.
         global_conf = codex / 'config.toml'
         if global_conf.is_symlink():
@@ -299,7 +385,7 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
             update_config(global_conf, root, remove=args.uninstall)
             update_hooks(hooks, root, remove=args.uninstall)
             update_instructions(instructions, root, remove=args.uninstall)
-    except (OSError, ValueError) as exc:
+    except _INSTALL_ERRORS as exc:
         parser.error(str(exc))
     print(
         ('Removed' if args.uninstall else 'Installed')

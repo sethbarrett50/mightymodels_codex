@@ -4,7 +4,7 @@ import argparse
 import tomllib
 from pathlib import Path
 
-from install_codex_user import AGENT_COUNT, SKILL_COUNT, hook_config, hooks_are_owned
+from install_codex_user import AGENT_COUNT, SKILL_COUNT, hook_config, managed_hooks_present
 
 _CONFIG_READ_ERRORS = (OSError, ValueError)
 
@@ -60,13 +60,13 @@ def check_hooks(home: Path, root: Path) -> str:
     if not hooks.is_file() or hooks.is_symlink():
         return note('Global MightyModels hooks missing or a symlink', ok=False)
     try:
-        owned = hooks_are_owned(hooks.read_text(encoding='utf-8'), hook_config(root))
+        owned = managed_hooks_present(hooks.read_text(encoding='utf-8'), hook_config(root))
     except _CONFIG_READ_ERRORS:
         owned = False
     message = (
-        'Installed MightyModels hooks are owned; runtime trust not verified'
+        'Installed MightyModels hooks are recognized; runtime trust not verified'
         if owned
-        else 'Existing global hooks differ from managed MightyModels definitions'
+        else 'Expected MightyModels hook groups missing or different'
     )
     return note(message, ok=owned)
 
