@@ -31,6 +31,7 @@ from .use_cases import (
     StartAtHead,
     add_review_findings,
     create_review_work,
+    codex_runtime,
     gate_review,
     list_reviews,
     override_review,
@@ -134,9 +135,13 @@ async def review_start(
 
 
 async def review_override(request: ReviewOverrideRequest, ctx: ToolContext) -> ReviewView:
-    """Switch a run's heavier reviewer to the override model. Use when the user wants a deeper read
-    than the default model gave. Allowed once per run.
-    """
+    """Switch the heavier reviewer in Claude; reject unsupported Codex Fable overrides."""
+    if codex_runtime():
+        return ReviewView(
+            text='Codex Fable review override disabled: native reviewers remain pinned to '
+            'gpt-6.1-sol (high reasoning). No models or review state changed.\n',
+            run_id=request.run_id,
+        )
     async with open_tool_state(ctx) as state:
         return override_review(create_review_work(state), request.run_id)
 

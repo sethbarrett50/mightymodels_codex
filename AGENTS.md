@@ -33,6 +33,10 @@ Codex has **no Fable/Wingman agent**. When any MightyModels skill requests a Win
 
 The generated roles pin their models independently from the coordinator. Scout, intern, gitty-up, fact-checker, and qualitylens use Luna; engineer and Terry use Sol medium; architect, merge-vader, and uncle-bob use Sol high. Fable is disabled for Codex, not replaced by Astra or Sol. Keep Claude source frontmatter unchanged. On unavailable model, report the error and stop rather than silently using the coordinator model. Model support and observed usage must be verified live in Codex; static checks do not prove the runtime selected the model.
 
+## Codex review model audit
+
+For MCP review runs, the Codex launcher sets `MIGHTYMODELS_RUNTIME=codex` so `review_start` records the effective `gpt-6.1-sol` reviewer model rather than legacy Claude aliases, regardless of review depth. Native merge-vader and uncle-bob both use Sol/high. Depth controls personas and evidence scope; it does not override agent model pins. The Codex MCP refuses Fable `review_override` without writing state. Reject mismatched historical run metadata instead of misrepresenting the model used. Do not set this runtime flag on Claude sessions.
+
 ## Interactive gate behavior
 
 On the `codex` Linux account, enabling `[features] default_mode_request_user_input = true` in `~/.codex/config.toml` makes the native question tool available in supported Default-mode sessions. Restart Codex after changing it. This is a user-level setting, not a project or plugin setting. The availability of a tool must still be checked at runtime. Codex Default-mode prompts may time out; a timeout or empty answer is **not** consent to progress past a required gate.

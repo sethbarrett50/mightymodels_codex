@@ -1,7 +1,7 @@
 """The review unit of work: one unit per tool call, the stores and services on it."""
 
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from mightymodels_core.reviews import (
@@ -10,6 +10,7 @@ from mightymodels_core.reviews import (
     SqliteReviewDecisionRepository,
     SqliteReviewRepository,
 )
+from mightymodels_core.primitives import create_routing_table
 from mightymodels_core.similarity import SqliteSimilarityRepository
 
 from .entry import read_entry, write_entry
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from mightymodels_core.database import Database
-    from mightymodels_core.primitives import Clock, RepositoryKey
+    from mightymodels_core.primitives import Clock, RepositoryKey, RoutingTable
 
     from .entry import Entry
 
@@ -34,6 +35,7 @@ class ReviewWork:
     database: Database
     repository_key: RepositoryKey
     clock: Clock
+    routing: RoutingTable = field(default_factory=create_routing_table)
 
     @contextmanager
     def read(self) -> Generator[ReviewUnit]:
@@ -55,6 +57,7 @@ class ReviewWork:
             decisions=decisions,
             similarity=SqliteSimilarityRepository(unit=unit, repository_id=repository_id),
             clock=self.clock,
+            routing=self.routing,
         )
         decision_service = ReviewDecisionService(
             reviews=runs, decisions=decisions, clock=self.clock
