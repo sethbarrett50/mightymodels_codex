@@ -242,8 +242,8 @@ def test_failed_install_mutations_restore_prior_files_links_and_directories(tmp_
     existing.parent.mkdir(parents=True)
     existing.symlink_to('original-legacy-skill')
     created = tmp_path / '.codex/agents/brand-new.toml'
-    with (
-        pytest.raises(OSError, match='simulated later write failure'),  # noqa: PT012
+    with (  # noqa: PT012
+        pytest.raises(OSError, match='simulated later write failure'),
         restore_on_failure([config, existing, created]),
     ):
         config.write_text('modified\n')
