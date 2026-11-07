@@ -18,6 +18,7 @@ START = '# >>> mightymodels-codex managed >>>'
 END = '# <<< mightymodels-codex managed <<<'
 SKILL_COUNT = 19
 AGENT_COUNT = 11
+_INSTALL_ERRORS = (OSError, ValueError, TypeError)
 _ROLLBACK_ERRORS = (OSError, ValueError)
 
 
@@ -159,8 +160,7 @@ def managed_hooks_present(held: str, expected: str) -> bool:
         return False
     observed = original['hooks']
     return all(
-        isinstance(observed.get(event), list)
-        and all(group in observed[event] for group in groups)
+        isinstance(observed.get(event), list) and all(group in observed[event] for group in groups)
         for event, groups in required['hooks'].items()
     )
 
@@ -169,7 +169,7 @@ def validate_hook_groups(groups: list, expected: list) -> None:
     for group in groups:
         if not isinstance(group, dict) or not isinstance(group.get('hooks'), list):
             msg = 'Invalid global hook group structure'
-            raise ValueError(msg)
+            raise TypeError(msg)
         for hook in group['hooks']:
             if not isinstance(hook, dict):
                 msg = 'Invalid global hook command structure'
@@ -178,6 +178,25 @@ def validate_hook_groups(groups: list, expected: list) -> None:
             if isinstance(command, str) and 'codex_bridge.py' in command and group not in expected:
                 msg = 'Existing MightyModels bridge hook differs from expected definition'
                 raise ValueError(msg)
+
+
+
+def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:
+    """Apply exact owned group additions/removals without touching foreign entries."""
+    validate_hook_groups(groups, wanted)
+    changed = False
+    for group in wanted:
+        count = groups.count(group)
+        if count > 1:
+            msg = f'Duplicate managed MightyModels hook group for {event}'
+            raise ValueError(msg)
+        if remove and count:
+            groups.remove(group)
+            changed = True
+        elif not remove and not count:
+            groups.append(group)
+            changed = True
+    return changed
 
 
 def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str | None:
@@ -192,27 +211,15 @@ def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str
         raise ValueError(msg) from exc
     if not isinstance(held, dict) or not isinstance(held.get('hooks'), dict):
         msg = 'Global hooks must contain a hooks object'
-        raise ValueError(msg)
+        raise TypeError(msg)
 
     changed = False
     for event, wanted in required['hooks'].items():
         groups = held['hooks'].get(event, [])
         if not isinstance(groups, list):
             msg = f'Global hook groups for {event} must be a list'
-            raise ValueError(msg)
-        validate_hook_groups(groups, wanted)
-        event_changed = False
-        for group in wanted:
-            count = groups.count(group)
-            if count > 1:
-                msg = f'Duplicate managed MightyModels hook group for {event}'
-                raise ValueError(msg)
-            if remove and count:
-                groups.remove(group)
-                event_changed = True
-            elif not remove and not count:
-                groups.append(group)
-                event_changed = True
+            raise TypeError(msg)
+        event_changed = reconcile_event_groups(groups, wanted, remove=remove, event=event)
         changed = changed or event_changed
         if groups:
             held['hooks'][event] = groups
@@ -379,7 +386,7 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
             update_config(global_conf, root, remove=args.uninstall)
             update_hooks(hooks, root, remove=args.uninstall)
             update_instructions(instructions, root, remove=args.uninstall)
-    except (OSError, ValueError) as exc:
+    except _INSTALL_ERRORS as exc:
         parser.error(str(exc))
     print(
         ('Removed' if args.uninstall else 'Installed')
