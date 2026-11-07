@@ -135,7 +135,10 @@ async def review_start(
 
 
 async def review_override(request: ReviewOverrideRequest, ctx: ToolContext) -> ReviewView:
-    """Use for an explicitly requested heavier Claude reviewer.\n\n    Codex does not support Fable overrides.\n    """
+    """Use when explicitly requesting one heavier reviewer in Claude.
+
+    Codex does not support Fable overrides.
+    """
     if codex_runtime():
         return ReviewView(
             text='Codex Fable review override disabled: native reviewers remain pinned to '
