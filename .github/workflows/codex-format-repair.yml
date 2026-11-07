@@ -1,0 +1,35 @@
+name: One-time Codex format repair
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+concurrency:
+  group: codex-autoformat-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  format:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feat/native-codex-compat'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install 3.14
+      - run: uv sync --locked --all-packages --group check --group test --python 3.14
+      - name: Apply Python fixers to Codex port
+        run: |
+          uv run --no-sync ruff check --fix --unsafe-fixes --fix-only hooks/codex_bridge.py scripts/sync_codex_agents.py tests/codex
+          uv run --no-sync ruff format hooks/codex_bridge.py scripts/sync_codex_agents.py tests/codex
+      - name: Commit formatter changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add hooks/codex_bridge.py scripts/sync_codex_agents.py tests/codex
+          if ! git diff --cached --quiet; then
+            git commit -m "style(codex): apply repository formatting"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
