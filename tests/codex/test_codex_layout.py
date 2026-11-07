@@ -62,7 +62,20 @@ def test_hook_configurations_parse() -> None:
         assert group['hooks'][0]['type'] == 'command'
     project = tomllib.loads((ROOT / '.codex/config.toml').read_text(encoding='utf-8'))
     assert 'mighty_mcp' not in project.get('mcp_servers', {})
-    assert not (ROOT / '.codex/hooks.json').exists()
+    local_hooks = json.loads((ROOT / '.codex/hooks.json').read_text(encoding='utf-8'))
+    assert set(local_hooks['hooks']) == {'PreToolUse'}
+    assert local_hooks['hooks']['PreToolUse'][0]['matcher'] == '^(apply_patch|Edit|Write)
+
+
+@pytest.mark.unit
+def test_shell_launcher_syntax() -> None:
+    subprocess.run(  # noqa: S603
+        [shutil.which('sh') or '/bin/sh', '-n', 'bin/mightymodels-mcp-codex'],
+        check=True,
+        cwd=ROOT,
+    )
+
+    assert 'spawn_agent' not in json.dumps(local_hooks)
 
 
 @pytest.mark.unit
