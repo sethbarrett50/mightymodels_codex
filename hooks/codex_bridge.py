@@ -142,12 +142,29 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
     return decision
 
 
+def lifecycle_command(event: dict) -> str | None:
+    """Return a supported lifecycle command, filtering unrelated MCP results."""
+    name = event.get('hook_event_name')
+    if name == 'PostToolUse':
+        tool = event.get('tool_name')
+        return (
+            'session-pointer'
+            if isinstance(tool, str) and tool.startswith('mcp__mighty_mcp__')
+            else None
+        )
+    return {
+        'PreCompact': 'pre-compact',
+        'SubagentStop': 'subagent-record',
+        'SessionStart': 'session-prune',
+    }.get(name)
+
+
 def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict | None:
     """Forward compatible nonblocking events to the existing MightyModels hooks."""
     if not isinstance(event, dict):
         return None
     name = event.get('hook_event_name')
-    command = {'PreCompact': 'pre-compact', 'SubagentStop': 'subagent-record'}.get(name)
+    command = lifecycle_command(event)
     if command is None:
         return None
     payload = dict(event)
@@ -222,7 +239,12 @@ def main() -> int:
         return 0
     root = Path(__file__).resolve().parent.parent
     audit_probe(event, dict(os.environ))
-    if isinstance(event, dict) and event.get('hook_event_name') in ('PreCompact', 'SubagentStop'):
+    if isinstance(event, dict) and event.get('hook_event_name') in (
+        'PreCompact',
+        'SubagentStop',
+        'SessionStart',
+        'PostToolUse',
+    ):
         result = run_lifecycle(event, project_root=root, environ=dict(os.environ))
     else:
         result = run_admission(event, project_root=root, environ=dict(os.environ))
