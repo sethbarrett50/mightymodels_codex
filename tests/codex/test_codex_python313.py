@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
         'scripts/codex_doctor.py',
         'scripts/codex_hygiene_check.py',
         'scripts/install_codex_user.py',
+        'scripts/codex_edit_guard.py',
     ],
 )
 def test_standalone_codex_scripts_parse_as_python_313(script: str) -> None:

@@ -1,0 +1,18 @@
+{
+  "description": "MightyModels checkout-only guard against new Python lint suppressions and direct lockfile edits; user/global lifecycle hooks are separate",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(apply_patch|Edit|Write)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/codex_edit_guard.py\"",
+            "timeout": 12,
+            "statusMessage": "Reviewing MightyModels project patch"
+          }
+        ]
+      }
+    ]
+  }
+}
