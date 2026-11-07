@@ -5,18 +5,19 @@ Codex hook failures are not intrinsically fail-closed. This adapter returns an e
 denial when a MightyModels dispatch cannot be validated. Hook execution can still be
 disabled or bypassed by the host; this is a guardrail, not a security sandbox.
 """
+
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 ROLES = {
-    f"mm-{kind}-{name}": f"mightymodels:{kind}:{name}"
+    f'mm-{kind}-{name}': f'mightymodels:{kind}:{name}'
     for kind, names in {
-        "review": ("fact-checker", "merge-vader", "qualitylens", "uncle-bob"),
-        "triage": ("code-scout", "terry-toolchain", "web-scout", "wingman"),
-        "workers": ("architect", "engineer", "gitty-up", "intern"),
+        'review': ('fact-checker', 'merge-vader', 'qualitylens', 'uncle-bob'),
+        'triage': ('code-scout', 'terry-toolchain', 'web-scout', 'wingman'),
+        'workers': ('architect', 'engineer', 'gitty-up', 'intern'),
     }.items()
     for name in names
 }
@@ -25,10 +26,10 @@ HOOK_TIMEOUT = 8
 
 def denial(reason: str) -> dict:
     return {
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": reason,
+        'hookSpecificOutput': {
+            'hookEventName': 'PreToolUse',
+            'permissionDecision': 'deny',
+            'permissionDecisionReason': reason,
         }
     }
 
@@ -43,18 +44,18 @@ def translate(event: object) -> tuple[dict | None, str | None]:
     A non-MightyModels dispatch returns (None, None). Missing role information is
     denied to avoid silently bypassing admission on a changed Codex wire format.
     """
-    if not isinstance(event, dict) or event.get("hook_event_name") != "PreToolUse":
-        return None, "Unexpected or malformed Codex PreToolUse event"
-    if event.get("tool_name") not in ("spawn_agent", "Agent"):
-        return None, "Unexpected hook tool name for agent dispatch"
-    raw = event.get("tool_input")
+    if not isinstance(event, dict) or event.get('hook_event_name') != 'PreToolUse':
+        return None, 'Unexpected or malformed Codex PreToolUse event'
+    if event.get('tool_name') not in ('spawn_agent', 'Agent'):
+        return None, 'Unexpected hook tool name for agent dispatch'
+    raw = event.get('tool_input')
     if not isinstance(raw, dict):
-        return None, "Codex agent dispatch has no argument object"
+        return None, 'Codex agent dispatch has no argument object'
     target = next(
-        (raw.get(k) for k in ("agent_type", "subagent_type", "profile") if raw.get(k)),
+        (raw.get(k) for k in ('agent_type', 'subagent_type', 'profile') if raw.get(k)),
         None,
     )
-    parent = role(event.get("agent_type"))
+    parent = role(event.get('agent_type'))
     is_mighty_caller = isinstance(parent, str) and parent.startswith('mightymodels:')
     if not isinstance(target, str):
         if is_mighty_caller:
@@ -66,14 +67,14 @@ def translate(event: object) -> tuple[dict | None, str | None]:
             return None, f'MightyModels worker may not delegate to {target}'
         return None, None
     payload = {
-        "hook_event_name": "PreToolUse",
-        "session_id": event.get("session_id"),
-        "cwd": event.get("cwd"),
-        "tool_name": "Agent",
-        "tool_input": {"subagent_type": target},
+        'hook_event_name': 'PreToolUse',
+        'session_id': event.get('session_id'),
+        'cwd': event.get('cwd'),
+        'tool_name': 'Agent',
+        'tool_input': {'subagent_type': target},
     }
     if isinstance(parent, str):
-        payload["agent_type"] = parent
+        payload['agent_type'] = parent
     return payload, None
 
 
@@ -85,20 +86,31 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
         return None
 
     env = dict(environ)
-    home = Path(env.get("HOME") or str(Path.home()))
-    data_dir = env.get("CLAUDE_PLUGIN_DATA") or env.get("PLUGIN_DATA") or env.get(
-        "MIGHTYMODELS_DATA_DIR"
-    ) or str(Path(env.get("XDG_DATA_HOME") or (home / ".local/share")) / "mightymodels")
-    env["CLAUDE_PLUGIN_DATA"] = data_dir
-    env["UV_PROJECT"] = str(project_root)
-    env["UV_PROJECT_ENVIRONMENT"] = str(project_root / ".venv")
+    home = Path(env.get('HOME') or str(Path.home()))
+    data_dir = (
+        env.get('CLAUDE_PLUGIN_DATA')
+        or env.get('PLUGIN_DATA')
+        or env.get('MIGHTYMODELS_DATA_DIR')
+        or str(Path(env.get('XDG_DATA_HOME') or (home / '.local/share')) / 'mightymodels')
+    )
+    env['CLAUDE_PLUGIN_DATA'] = data_dir
+    env['UV_PROJECT'] = str(project_root)
+    env['UV_PROJECT_ENVIRONMENT'] = str(project_root / '.venv')
 
     try:
         # State initialization is not an authorization decision.
         Path(data_dir).mkdir(parents=True, exist_ok=True)
         result = subprocess.run(
-            ["uv", "run", "--locked", "--no-dev", "--package",
-             "mightymodels-hooks", "mightymodels-hooks", "dispatch-hook"],
+            [
+                'uv',
+                'run',
+                '--locked',
+                '--no-dev',
+                '--package',
+                'mightymodels-hooks',
+                'mightymodels-hooks',
+                'dispatch-hook',
+            ],
             input=json.dumps(translated),
             cwd=str(project_root),
             env=env,
@@ -109,45 +121,56 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
         )
         if result.returncode:
             return denial(
-                "MightyModels admission check failed; dispatch denied "
-                f"(exit {result.returncode}; {result.stderr[-500:]})"
+                'MightyModels admission check failed; dispatch denied '
+                f'(exit {result.returncode}; {result.stderr[-500:]})'
             )
         if not result.stdout.strip():
             return None
         decision = json.loads(result.stdout)
         if not isinstance(decision, dict):
-            raise ValueError("Admission handler did not return a JSON object")
+            msg = 'Admission handler did not return a JSON object'
+            raise ValueError(msg)
         return decision
     except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
-        return denial(f"MightyModels admission unavailable; dispatch denied: {exc}")
-
+        return denial(f'MightyModels admission unavailable; dispatch denied: {exc}')
 
 
 def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict | None:
     """Forward compatible nonblocking events to the existing MightyModels hooks."""
     if not isinstance(event, dict):
         return None
-    name = event.get("hook_event_name")
-    command = {"PreCompact": "pre-compact", "SubagentStop": "subagent-record"}.get(name)
+    name = event.get('hook_event_name')
+    command = {'PreCompact': 'pre-compact', 'SubagentStop': 'subagent-record'}.get(name)
     if command is None:
         return None
     payload = dict(event)
-    if name == "SubagentStop":
-        payload["agent_type"] = role(payload.get("agent_type"))
+    if name == 'SubagentStop':
+        payload['agent_type'] = role(payload.get('agent_type'))
     env = dict(environ)
-    home = Path(env.get("HOME") or str(Path.home()))
-    data_dir = env.get("CLAUDE_PLUGIN_DATA") or env.get("PLUGIN_DATA") or env.get(
-        "MIGHTYMODELS_DATA_DIR"
-    ) or str(Path(env.get("XDG_DATA_HOME") or (home / ".local/share")) / "mightymodels")
-    env["CLAUDE_PLUGIN_DATA"] = data_dir
-    env["UV_PROJECT"] = str(project_root)
-    env["UV_PROJECT_ENVIRONMENT"] = str(project_root / ".venv")
+    home = Path(env.get('HOME') or str(Path.home()))
+    data_dir = (
+        env.get('CLAUDE_PLUGIN_DATA')
+        or env.get('PLUGIN_DATA')
+        or env.get('MIGHTYMODELS_DATA_DIR')
+        or str(Path(env.get('XDG_DATA_HOME') or (home / '.local/share')) / 'mightymodels')
+    )
+    env['CLAUDE_PLUGIN_DATA'] = data_dir
+    env['UV_PROJECT'] = str(project_root)
+    env['UV_PROJECT_ENVIRONMENT'] = str(project_root / '.venv')
     warning = None
     try:
         Path(data_dir).mkdir(parents=True, exist_ok=True)
         result = subprocess.run(
-            ["uv", "run", "--locked", "--no-dev", "--package",
-             "mightymodels-hooks", "mightymodels-hooks", command],
+            [
+                'uv',
+                'run',
+                '--locked',
+                '--no-dev',
+                '--package',
+                'mightymodels-hooks',
+                'mightymodels-hooks',
+                command,
+            ],
             input=json.dumps(payload),
             cwd=str(project_root),
             env=env,
@@ -157,19 +180,19 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
             check=False,
         )
         if result.returncode:
-            warning = f"MightyModels {command} failed ({result.returncode}): {result.stderr[-300:]}"
+            warning = f'MightyModels {command} failed ({result.returncode}): {result.stderr[-300:]}'
     except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
-        warning = f"MightyModels {command} unavailable: {exc}"
-    if name == "SubagentStop":
-        return {"continue": True, **({"systemMessage": warning} if warning else {})}
-    return {"systemMessage": warning} if warning else None
+        warning = f'MightyModels {command} unavailable: {exc}'
+    if name == 'SubagentStop':
+        return {'continue': True, **({'systemMessage': warning} if warning else {})}
+    return {'systemMessage': warning} if warning else None
 
 
 def main() -> int:
     try:
         event = json.load(sys.stdin)
     except (ValueError, UnicodeError) as exc:
-        print(json.dumps(denial(f"Invalid Codex hook event: {exc}")))
+        print(json.dumps(denial(f'Invalid Codex hook event: {exc}')))
         return 0
     root = Path(__file__).resolve().parent.parent
     if isinstance(event, dict) and event.get('hook_event_name') in ('PreCompact', 'SubagentStop'):
@@ -181,5 +204,5 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())
