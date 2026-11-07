@@ -4,6 +4,8 @@ Never use sudo: files are managed only inside the invoking user's home.
 Existing unrelated skill, agent, hook and MCP settings are preserved.
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os
