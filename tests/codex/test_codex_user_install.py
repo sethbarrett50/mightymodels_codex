@@ -136,7 +136,8 @@ def test_reinstall_upgrades_owned_previous_hook_manifest(tmp_path: Path) -> None
     current = json.loads(hooks.read_text())
     previous = dict(current)
     previous['hooks'] = {
-        key: value for key, value in current['hooks'].items()
+        key: value
+        for key, value in current['hooks'].items()
         if key not in ('SessionStart', 'PostToolUse')
     }
     hooks.write_text(json.dumps(previous, indent=2) + '\n')

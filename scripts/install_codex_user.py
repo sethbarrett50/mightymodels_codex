@@ -186,8 +186,7 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
     hooks = codex / 'hooks.json'
     expected_hooks = hook_config(root)
     if hooks.exists() and (
-        hooks.is_symlink()
-        or not hooks_are_owned(hooks.read_text(encoding='utf-8'), expected_hooks)
+        hooks.is_symlink() or not hooks_are_owned(hooks.read_text(encoding='utf-8'), expected_hooks)
     ):
         parser.error(f'Unmanaged hooks configuration exists: {hooks}; merge manually')
     try:  # noqa: PLW0717
