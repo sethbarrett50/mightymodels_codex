@@ -1,0 +1,21 @@
+name: Temporary Markdown Format Diagnostic
+on:
+  push:
+    branches: [docs/codex-required-input-gates]
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Print canonical mdformat output
+        run: |
+          uv run --group check mdformat AGENTS.md docs/CODEX.md
+          echo '=== BEGIN AGENTS BASE64 ==='
+          base64 -w0 AGENTS.md
+          echo
+          echo '=== END AGENTS BASE64 ==='
+          echo '=== BEGIN DOCS BASE64 ==='
+          base64 -w0 docs/CODEX.md
+          echo
+          echo '=== END DOCS BASE64 ==='
