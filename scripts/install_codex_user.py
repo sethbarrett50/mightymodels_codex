@@ -26,7 +26,11 @@ def managed_text(text: str, replacement: str) -> str:
         left, remainder = text.split(START, 1)
         _, right = remainder.split(END, 1)
         text = left.rstrip('\n') + '\n' + right.lstrip('\n')
-    return text.rstrip('\n') + ('\n\n' + START + '\n' + replacement.rstrip('\n') + '\n' + END + '\n' if replacement else '\n')
+    return text.rstrip('\n') + (
+        '\n\n' + START + '\n' + replacement.rstrip('\n') + '\n' + END + '\n'
+        if replacement
+        else '\n'
+    )
 
 
 def safe_write(path: Path, content: str) -> None:
@@ -36,7 +40,7 @@ def safe_write(path: Path, content: str) -> None:
         msg = f'Refusing existing temporary file: {tmp}'
         raise FileExistsError(msg)
     tmp.write_text(content, encoding='utf-8')
-    os.chmod(tmp, 0o600)
+    Path(tmp).chmod(0o600)
     tmp.replace(path)
 
 
@@ -84,11 +88,12 @@ def update_config(path: Path, root: Path, *, remove: bool) -> None:
         msg = 'Existing mighty_mcp is not managed by this installer'
         raise ValueError(msg)
     quoted = json.dumps(str(root / 'bin/mightymodels-mcp-codex'))
-    block = '' if remove else (
-        '[mcp_servers.mighty_mcp]\n'
-        'command = "sh"\n'
-        f'args = [{quoted}]\n'
-        'startup_timeout_sec = 30'
+    block = (
+        ''
+        if remove
+        else (
+            f'[mcp_servers.mighty_mcp]\ncommand = "sh"\nargs = [{quoted}]\nstartup_timeout_sec = 30'
+        )
     )
     content = managed_text(original, block)
     tomllib.loads(content)
@@ -98,11 +103,15 @@ def update_config(path: Path, root: Path, *, remove: bool) -> None:
 
 def update_instructions(path: Path, root: Path, *, remove: bool) -> None:
     original = path.read_text(encoding='utf-8') if path.exists() else ''
-    block = '' if remove else (
-        'MightyModels user-scoped installation: read '
-        f'{root / "AGENTS.md"} before running MightyModels skills or agents.\n'
-        'Do not infer authorization from prompts alone; deny unverified dispatches.\n'
-        'Use the mighty_mcp server to persist ticket and task state.'
+    block = (
+        ''
+        if remove
+        else (
+            'MightyModels user-scoped installation: read '
+            f'{root / "AGENTS.md"} before running MightyModels skills or agents.\n'
+            'Do not infer authorization from prompts alone; deny unverified dispatches.\n'
+            'Use the mighty_mcp server to persist ticket and task state.'
+        )
     )
     content = managed_text(original, block)
     if content != original:
@@ -135,7 +144,9 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
             parser.error(f'Unmanaged path exists: {dest}')
     hooks = codex / 'hooks.json'
     expected_hooks = hook_config(root)
-    if hooks.exists() and (hooks.is_symlink() or hooks.read_text(encoding='utf-8') != expected_hooks):
+    if hooks.exists() and (
+        hooks.is_symlink() or hooks.read_text(encoding='utf-8') != expected_hooks
+    ):
         parser.error(f'Unmanaged hooks configuration exists: {hooks}; merge manually')
     try:  # noqa: PLW0717
         # Validate global config before modifying installed links.
@@ -151,7 +162,10 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
         update_instructions(codex / 'AGENTS.md', root, remove=args.uninstall)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
-    print(('Removed' if args.uninstall else 'Installed') + ' MightyModels user-level agents, skills, MCP, instructions and hooks.')
+    print(
+        ('Removed' if args.uninstall else 'Installed')
+        + ' MightyModels user-level agents, skills, MCP, instructions and hooks.'
+    )
     print('Restart Codex; review/trust hooks before relying on admission controls.')
     return 0
 

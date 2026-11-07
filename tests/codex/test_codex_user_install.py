@@ -36,9 +36,7 @@ def test_user_install_round_trip_preserves_existing_config(tmp_path: Path) -> No
     conf = tomllib.loads(config.read_text())
     assert conf['sandbox_mode'] == 'workspace-write'
     assert conf['other']['value'] == 7
-    assert conf['mcp_servers']['mighty_mcp']['args'] == [
-        str(ROOT / 'bin/mightymodels-mcp-codex')
-    ]
+    assert conf['mcp_servers']['mighty_mcp']['args'] == [str(ROOT / 'bin/mightymodels-mcp-codex')]
     hooks = json.loads((codex / 'hooks.json').read_text())
     command = hooks['hooks']['PreToolUse'][0]['hooks'][0]['command']
     assert str(ROOT / 'hooks/codex_bridge.py') in command
@@ -50,7 +48,8 @@ def test_user_install_round_trip_preserves_existing_config(tmp_path: Path) -> No
     assert not list((tmp_path / '.agents/skills').iterdir())
     assert not (codex / 'hooks.json').exists()
     assert tomllib.loads(config.read_text()) == {
-        'sandbox_mode': 'workspace-write', 'other': {'value': 7}
+        'sandbox_mode': 'workspace-write',
+        'other': {'value': 7},
     }
     assert instructions.read_text().strip() == '# Existing policies'
 
