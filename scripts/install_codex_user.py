@@ -88,10 +88,7 @@ def update_config(path: Path, root: Path, *, remove: bool) -> None:
         msg = 'Existing mighty_mcp is not managed by this installer'
         raise ValueError(msg)
     if START not in original:
-        reserved = [
-            name for name in parsed.get('agents', {})
-            if name.startswith('mm-')
-        ]
+        reserved = [name for name in parsed.get('agents', {}) if name.startswith('mm-')]
         if reserved:
             msg = f'Existing unowned MightyModels agent role declarations: {reserved}'
             raise ValueError(msg)
@@ -110,8 +107,7 @@ def update_config(path: Path, root: Path, *, remove: bool) -> None:
         if remove
         else (
             f'[mcp_servers.mighty_mcp]\ncommand = "sh"\nargs = [{quoted}]\n'
-            'startup_timeout_sec = 30\n\n'
-            + '\n\n'.join(role_entries)
+            'startup_timeout_sec = 30\n\n' + '\n\n'.join(role_entries)
         )
     )
     content = managed_text(original, block)

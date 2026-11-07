@@ -103,6 +103,7 @@ def test_uninstall_preserves_unrelated_entries(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     assert tomllib.loads((root / 'config.toml').read_text()) == {'env': {'mode': 'test'}}
 
+
 @pytest.mark.unit
 def test_unowned_custom_role_is_not_overwritten(tmp_path: Path) -> None:
     config = tmp_path / '.codex/config.toml'
