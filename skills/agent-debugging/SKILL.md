@@ -9,6 +9,9 @@ allowed-tools:
   - mcp__plugin_mightymodels_mighty-mcp__failed_fix_record
 ---
 
+> **Codex runtime adapter (MightyModels fork):** When running under Codex, interpret Claude's `Agent` tool as native `spawn_agent` with `agent_type` mapped via the repository's `AGENTS.md` (or `docs/CODEX.md` when installed as a plugin). Reuse an existing agent through the native follow-up messaging tool rather than literal `SendMessage`. Call actual tools exposed by the MightyModels MCP server, not hardcoded `mcp__plugin_mightymodels_mighty-mcp__*` names. Read required companion skills explicitly; Claude `skills:` preloading, `allowed-tools:` and automatic model routing are not Codex permission controls. `\${CLAUDE_SKILL_DIR}` means this SKILL.md's directory; `$ARGUMENTS` means the user's invocation arguments. Do not bypass the existing task-start, owned-file, independent fact-checking or review gates when a tool is unavailable. No Astra model is configured.
+
+
 # agent-debugging
 
 The engineer's form of whats-broken, for one worker with no one to dispatch. The rule is the same: **no fix before evidence.** The engineer does not dispatch architect, code-scout or web-scout here; it reads, runs and tests with its own tools. `failed_fix_record` counts the failed fixes, so the limit holds even when the engineer would rather try one more.
