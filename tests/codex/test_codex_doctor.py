@@ -69,9 +69,10 @@ def test_doctor_detects_foreign_hook_configuration(tmp_path: Path) -> None:
 def test_doctor_accepts_owned_hooks_alongside_foreign_groups(tmp_path: Path) -> None:
     hooks = tmp_path / '.codex/hooks.json'
     hooks.parent.mkdir()
-    original = {'description': 'user hooks', 'hooks': {
-        'PreToolUse': [{'matcher': 'Bash', 'hooks': []}]
-    }}
+    original = {
+        'description': 'user hooks',
+        'hooks': {'PreToolUse': [{'matcher': 'Bash', 'hooks': []}]},
+    }
     hooks.write_text(json.dumps(original) + '\n')
     installed = run_script(INSTALLER, tmp_path)
     assert installed.returncode == 0, installed.stderr
