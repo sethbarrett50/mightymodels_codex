@@ -383,3 +383,35 @@ The doctor makes **no writes**, does not run agent dispatches, and never reads
 hooks actually fired or were trusted, or that scouts were sandboxed.
 Remaining installer transactionality, third-party hook coexistence and
 live host enforcement stay open under #15/#9.
+
+## Project hygiene without unverified Claude hooks — issue #17
+
+The original Claude project settings use Write/Edit suppression prompts,
+post-edit Ruff formatting, Read diagnostics, and approval rules for sensitive
+toolchain files. These Claude matchers are **not** asserted to execute in native
+Codex. The global MightyModels hook bridge is for lifecycle/dispatch, not
+automatic formatting in arbitrary target repositories.
+
+For development **inside this MightyModels checkout**, use the explicit,
+repository-scoped workflow:
+
+```sh
+python3 scripts/codex_hygiene_check.py --base origin/main
+make format
+make check
+```
+
+The hygiene command is read-only, compares tracked Python changes against an
+existing Git base, and returns 1 when new `noqa`, `type: ignore`, or
+`ty: ignore` annotations need review. Exit 2 means the check could not
+complete and must **not** be treated as a pass. It does not examine untracked
+files, validate every type-suppression form, or replace review. It reports
+counts, not potentially sensitive source lines. `make format` intentionally
+changes files; run it only where edits are approved. `make check` runs the
+repo's lint/tests. Review any configuration-file edits and `uv.lock`
+changes explicitly; do not claim they were denied by Codex host policy.
+
+For other repositories, use **their own** format, lint, test and approval
+procedures. Never run MightyModels' Ruff/ty settings against unrelated code
+as an automatic global hook. No live Codex per-read/per-edit hook delivery or
+protected-file approval behavior is claimed by this fallback.
