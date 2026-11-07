@@ -284,6 +284,12 @@ fi
 unset MIGHTYMODELS_CODEX_DISPATCH_PROBE
 ```
 
+Bridge error responses intentionally include only static denial categories and numeric
+subprocess exit codes. They never echo failed-hook stderr, exception text,
+unknown role strings, or malformed raw event payloads, because those may
+contain secrets. Collect separate local diagnostics only with an appropriate
+private log review; never attach raw hook transcripts to public issues.
+
 The opt-in log now distinguishes `pre_tool_use_spawn_agent_seen` (the bridge
 was invoked), `adapter_denied` (the bridge prepared a denial) and
 `adapter_no_denial` (the bridge did not issue a denial). These are **adapter
