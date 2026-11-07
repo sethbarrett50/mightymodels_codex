@@ -87,12 +87,31 @@ def update_config(path: Path, root: Path, *, remove: bool) -> None:
     if START not in original and 'mighty_mcp' in parsed.get('mcp_servers', {}):
         msg = 'Existing mighty_mcp is not managed by this installer'
         raise ValueError(msg)
+    if START not in original:
+        reserved = [
+            name for name in parsed.get('agents', {})
+            if name.startswith('mm-')
+        ]
+        if reserved:
+            msg = f'Existing unowned MightyModels agent role declarations: {reserved}'
+            raise ValueError(msg)
     quoted = json.dumps(str(root / 'bin/mightymodels-mcp-codex'))
+    role_entries = []
+    for role_file in sorted((root / '.codex/agents').glob('mm-*.toml')):
+        name = role_file.stem
+        role_description = tomllib.loads(role_file.read_text(encoding='utf-8'))['description']
+        role_entries.append(
+            f'[agents.{json.dumps(name)}]\n'
+            f'description = {json.dumps(role_description)}\n'
+            f'config_file = {json.dumps(str(role_file))}'
+        )
     block = (
         ''
         if remove
         else (
-            f'[mcp_servers.mighty_mcp]\ncommand = "sh"\nargs = [{quoted}]\nstartup_timeout_sec = 30'
+            f'[mcp_servers.mighty_mcp]\ncommand = "sh"\nargs = [{quoted}]\n'
+            'startup_timeout_sec = 30\n\n'
+            + '\n\n'.join(role_entries)
         )
     )
     content = managed_text(original, block)

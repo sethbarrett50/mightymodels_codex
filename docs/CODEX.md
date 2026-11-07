@@ -138,3 +138,23 @@ and required gates remain pending. The original Claude `AskUserQuestion`
 recorder hook is **not migrated**; do not assume Codex answers were
 automatically recorded. Persist only the user's actual decision/evidence with
 the available investigation tools and preserve the skill's ledger invariants.
+
+## Troubleshooting named scout dispatches
+
+A custom role may be listed in an agent TOML file but rejected at runtime with
+`agent type is currently not available`. This is a **Codex agent registration
+error**, not the normal MCP repository-registration response or an authorization
+denial. The global installer now registers each of the 12 roles explicitly in
+user `~/.codex/config.toml` via `[agents."mm-..."]` with an absolute
+`config_file` path. The source TOML and its instructions remain in
+`~/.codex/agents/` and the MightyModels checkout.
+
+After pulling the updated checkout, run `python3 scripts/install_codex_user.py`,
+close all old Codex sessions and launch a **fresh** Codex session in the target
+repository. Validate a read-only `mm-triage-code-scout` dispatch before resuming
+a persisted investigation. The installer checks for unrelated custom role
+definitions and refuses to overwrite them. If a freshly started Codex session
+still returns this error, collect the actual `spawn_agent` result and
+`codex --version` and treat it as an outstanding host compatibility issue.
+Do not substitute a generic agent while claiming a named MightyModels scout
+ran, and do not relax admission hooks to workaround registry errors.
