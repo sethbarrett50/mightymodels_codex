@@ -372,17 +372,19 @@ python3 scripts/codex_doctor.py
 
 The doctor checks ownership and targets of the global MCP registration,
 11 native agent role entries, 19 generated Codex skill symlinks, and the
-managed global hook manifest. It warns when launched inside this checkout
-because the project-scoped MCP configuration might overlap with the global
-one. Warnings do **not** imply a proven duplicate server: actual config
-precedence must be checked in the CLI. A nonzero exit indicates a missing or
-unexpected installed component.
+managed global hook manifest. The checkout no longer registers its own
+`.codex/config.toml` MCP server or `.codex/hooks.json` hook events: the
+user-level installer owns both. The hook source is preserved separately at
+`hooks/codex-global-template.json`. Plugin-mode hooks at
+`hooks/codex-hooks.json` are still distinct from global mode; do not enable
+both installations without verifying host precedence and duplicate delivery.
+A nonzero exit indicates a missing or unexpected installed component.
 
 The doctor makes **no writes**, does not run agent dispatches, and never reads
 `~/.config/gh`, token files or credential values. It does not establish that
 hooks actually fired or were trusted, or that scouts were sandboxed.
-Remaining installer transactionality, third-party hook coexistence and
-live host enforcement stay open under #15/#9.
+Remaining crash/power-loss transactionality, third-party hook coexistence,
+plugin-vs-global precedence, and live host enforcement stay open under #15/#9.
 
 ## Project hygiene without unverified Claude hooks — issue #17
 
