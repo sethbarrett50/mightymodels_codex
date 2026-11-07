@@ -10,7 +10,7 @@ import sys
 from collections import Counter
 from contextlib import nullcontext
 from pathlib import Path
-from typing import TextIO
+from typing import TextIO  # noqa: TC003 - Python 3.13 evaluates annotations
 
 USAGE_FIELDS = (
     'input_tokens',
@@ -29,7 +29,9 @@ MAX_LINE_LENGTH = 1_000_000
 
 
 def _positive_count(value: object) -> int:
-    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    return 0
 
 
 def summarize(lines: TextIO) -> dict[str, object]:
@@ -55,7 +57,8 @@ def summarize(lines: TextIO) -> dict[str, object]:
             counts['items_started'] += 1
             item = event.get('item')
             item_type = item.get('type') if isinstance(item, dict) else None
-            counts[ITEM_TYPES.get(item_type, 'other_items')] += 1
+            mapped = ITEM_TYPES.get(item_type, 'other_items') if isinstance(item_type, str) else 'other_items'
+            counts[mapped] += 1
         elif kind == 'error':
             counts['errors'] += 1
         elif kind not in ('thread.started', 'item.updated', 'item.completed'):
