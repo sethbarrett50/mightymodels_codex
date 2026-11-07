@@ -4,13 +4,13 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from mightymodels_core.primitives import create_routing_table
 from mightymodels_core.reviews import (
     ReviewDecisionService,
     ReviewService,
     SqliteReviewDecisionRepository,
     SqliteReviewRepository,
 )
-from mightymodels_core.primitives import create_routing_table
 from mightymodels_core.similarity import SqliteSimilarityRepository
 
 from .entry import read_entry, write_entry

@@ -30,8 +30,8 @@ from .use_cases import (
     ReportToAdd,
     StartAtHead,
     add_review_findings,
-    create_review_work,
     codex_runtime,
+    create_review_work,
     gate_review,
     list_reviews,
     override_review,
@@ -135,7 +135,7 @@ async def review_start(
 
 
 async def review_override(request: ReviewOverrideRequest, ctx: ToolContext) -> ReviewView:
-    """Switch the heavier reviewer in Claude; reject unsupported Codex Fable overrides."""
+    """Use when the user explicitly requests one heavier Claude reviewer; reject unsupported Codex Fable overrides."""
     if codex_runtime():
         return ReviewView(
             text='Codex Fable review override disabled: native reviewers remain pinned to '
