@@ -166,7 +166,9 @@ def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901, PLR0911, 
     returned = response.get('answers')
     if not isinstance(questions, list) or not isinstance(returned, dict):
         return None
-    if response.get('afkTimeoutMs') is not None:
+    # Even an explicit JSON null marks a host timeout field as present.
+    # Match the legacy recorder's fail-closed presence check.
+    if 'afkTimeoutMs' in response:
         return None
 
     answers: dict[str, str] = {}
