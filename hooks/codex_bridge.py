@@ -192,7 +192,7 @@ def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901
             return None
         actual = [value.strip() for value in texts if value.strip()]
         if actual:
-            answers[label] = '\\n'.join(actual)
+            answers[label] = '\n'.join(actual)
     if not answers:
         return None
     payload = dict(event)
