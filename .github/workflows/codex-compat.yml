@@ -37,7 +37,7 @@ jobs:
           uv run --no-project --python 3.13 python scripts/install_codex_user.py --help
           uv run --no-project --python 3.13 python scripts/codex_doctor.py --help
           uv run --no-project --python 3.13 python scripts/codex_hygiene_check.py --help
-          uv run --no-project --python 3.13 python -c 'import runpy; runpy.run_path("scripts/install_codex_user.py"); runpy.run_path("scripts/codex_doctor.py")'
+          uv run --no-project --python 3.13 python -c 'import runpy, sys; sys.path.insert(0, "scripts"); runpy.run_path("scripts/install_codex_user.py"); runpy.run_path("scripts/codex_doctor.py")'
 
       - name: Sync locked test dependencies
         run: uv sync --locked --all-packages --group test --python 3.14
