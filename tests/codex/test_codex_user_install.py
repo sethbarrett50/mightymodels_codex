@@ -126,3 +126,35 @@ def test_upgrade_removes_obsolete_wingman_link(tmp_path: Path) -> None:
     assert installed.returncode == 0, installed.stderr
     assert not retired.is_symlink()
     assert len(list(retired.parent.glob('mm-*.toml'))) == 11
+
+
+@pytest.mark.unit
+def test_reinstall_upgrades_owned_previous_hook_manifest(tmp_path: Path) -> None:
+    first = invoke(tmp_path)
+    assert first.returncode == 0, first.stderr
+    hooks = tmp_path / '.codex/hooks.json'
+    current = json.loads(hooks.read_text())
+    previous = dict(current)
+    previous['hooks'] = {
+        key: value
+        for key, value in current['hooks'].items()
+        if key not in ('SessionStart', 'PostToolUse')
+    }
+    hooks.write_text(json.dumps(previous, indent=2) + '\n')
+    second = invoke(tmp_path)
+    assert second.returncode == 0, second.stderr
+    assert json.loads(hooks.read_text()) == current
+
+
+@pytest.mark.unit
+def test_existing_foreign_hook_event_is_not_removed(tmp_path: Path) -> None:
+    current = json.loads((ROOT / '.codex/hooks.json').read_text())
+    current['hooks']['PreToolUse'].append({'matcher': 'Bash', 'hooks': []})
+    hooks = tmp_path / '.codex/hooks.json'
+    hooks.parent.mkdir(parents=True)
+    original = json.dumps(current, indent=2) + '\n'
+    hooks.write_text(original)
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'Unmanaged hooks' in result.stderr
+    assert hooks.read_text() == original
