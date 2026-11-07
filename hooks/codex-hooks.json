@@ -13,6 +13,31 @@
           }
         ]
       }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/codex_bridge.py\"",
+            "timeout": 18,
+            "statusMessage": "Saving MightyModels ticket state"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "^mm-triage-(code-scout|web-scout)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/codex_bridge.py\"",
+            "timeout": 18,
+            "statusMessage": "Recording MightyModels scout evidence"
+          }
+        ]
+      }
     ]
   }
 }

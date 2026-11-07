@@ -5,8 +5,6 @@ Codex hook failures are not intrinsically fail-closed. This adapter returns an e
 denial when a MightyModels dispatch cannot be validated. Hook execution can still be
 disabled or bypassed by the host; this is a guardrail, not a security sandbox.
 """
-from __future__ import annotations
-
 import json
 import os
 from pathlib import Path
@@ -119,6 +117,49 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
         return denial(f"MightyModels admission unavailable; dispatch denied: {exc}")
 
 
+
+def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict | None:
+    """Forward compatible nonblocking events to the existing MightyModels hooks."""
+    if not isinstance(event, dict):
+        return None
+    name = event.get("hook_event_name")
+    command = {"PreCompact": "pre-compact", "SubagentStop": "subagent-record"}.get(name)
+    if command is None:
+        return None
+    payload = dict(event)
+    if name == "SubagentStop":
+        payload["agent_type"] = role(payload.get("agent_type"))
+    env = dict(environ)
+    home = Path(env.get("HOME") or str(Path.home()))
+    data_dir = env.get("CLAUDE_PLUGIN_DATA") or env.get("PLUGIN_DATA") or env.get(
+        "MIGHTYMODELS_DATA_DIR"
+    ) or str(Path(env.get("XDG_DATA_HOME") or (home / ".local/share")) / "mightymodels")
+    env["CLAUDE_PLUGIN_DATA"] = data_dir
+    env["UV_PROJECT"] = str(project_root)
+    env["UV_PROJECT_ENVIRONMENT"] = str(project_root / ".venv")
+    warning = None
+    try:
+        Path(data_dir).mkdir(parents=True, exist_ok=True)
+        result = subprocess.run(
+            ["uv", "run", "--locked", "--no-dev", "--package",
+             "mightymodels-hooks", "mightymodels-hooks", command],
+            input=json.dumps(payload),
+            cwd=str(project_root),
+            env=env,
+            text=True,
+            capture_output=True,
+            timeout=12,
+            check=False,
+        )
+        if result.returncode:
+            warning = f"MightyModels {command} failed ({result.returncode}): {result.stderr[-300:]}"
+    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+        warning = f"MightyModels {command} unavailable: {exc}"
+    if name == "SubagentStop":
+        return {"continue": True, **({"systemMessage": warning} if warning else {})}
+    return {"systemMessage": warning} if warning else None
+
+
 def main() -> int:
     try:
         event = json.load(sys.stdin)
@@ -126,7 +167,10 @@ def main() -> int:
         print(json.dumps(denial(f"Invalid Codex hook event: {exc}")))
         return 0
     root = Path(__file__).resolve().parent.parent
-    result = run_admission(event, project_root=root, environ=dict(os.environ))
+    if isinstance(event, dict) and event.get('hook_event_name') in ('PreCompact', 'SubagentStop'):
+        result = run_lifecycle(event, project_root=root, environ=dict(os.environ))
+    else:
+        result = run_admission(event, project_root=root, environ=dict(os.environ))
     if result is not None:
         print(json.dumps(result))
     return 0

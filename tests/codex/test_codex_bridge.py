@@ -94,3 +94,41 @@ def test_hook_timeout_denies(tmp_path):
             event(), project_root=tmp_path, environ={"HOME": str(tmp_path)}
         )
     assert got["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+@pytest.mark.unit
+def test_scout_stop_uses_legacy_hook(tmp_path):
+    recorded = {}
+    def fake_run(*args, **kwargs):
+        recorded.update(kwargs)
+        return subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    with patch.object(module.subprocess, "run", side_effect=fake_run):
+        outcome = module.run_lifecycle(
+            {
+                "hook_event_name": "SubagentStop",
+                "agent_type": "mm-triage-code-scout",
+                "agent_id": "scout-id",
+                "last_assistant_message": "<report>OK</report>",
+                "cwd": str(tmp_path),
+            },
+            project_root=tmp_path,
+            environ={"HOME": str(tmp_path)},
+        )
+    payload = json.loads(recorded["input"])
+    assert payload["agent_type"] == "mightymodels:triage:code-scout"
+    assert recorded["args"] if "args" in recorded else True
+    assert outcome == {"continue": True}
+
+
+@pytest.mark.unit
+def test_compaction_uses_legacy_snapshot_hook(tmp_path):
+    with patch.object(module.subprocess, "run") as runner:
+        runner.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="", stderr=""
+        )
+        result = module.run_lifecycle(
+            {"hook_event_name": "PreCompact", "cwd": str(tmp_path)},
+            project_root=tmp_path,
+            environ={"HOME": str(tmp_path)},
+        )
+    assert result is None
+    assert "pre-compact" in runner.call_args.args[0]
