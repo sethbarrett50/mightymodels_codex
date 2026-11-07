@@ -156,3 +156,11 @@ def test_mighty_worker_requires_explicit_role() -> None:
     payload, error = module.translate(base)
     assert payload is None
     assert 'explicit approved role' in error
+
+
+@pytest.mark.unit
+def test_fable_wingman_dispatch_is_denied() -> None:
+    payload, error = module.translate(event('mm-triage-wingman'))
+    assert payload is None
+    assert error is not None
+    assert 'disabled' in error

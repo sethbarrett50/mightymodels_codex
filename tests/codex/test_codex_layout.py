@@ -15,14 +15,17 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_all_codex_roles_are_discoverable() -> None:
     originals = list((ROOT / 'agents').rglob('*.md'))
     converted = list((ROOT / '.codex' / 'agents').glob('*.toml'))
-    assert len(originals) == len(converted) == 12
+    assert len(originals) == 12
+    assert len(converted) == 11
+    assert not (ROOT / '.codex/agents/mm-triage-wingman.toml').exists()
     for path in converted:
         role = tomllib.loads(path.read_text(encoding='utf-8'))
         for required in ('name', 'description', 'developer_instructions'):
             assert isinstance(role.get(required), str)
             assert role[required]
         assert role['name'] == path.stem
-        assert 'astra' not in str(role.get('model', '')).lower()
+        assert role['model'] in {'gpt-6-luna', 'gpt-6.1-sol'}
+        assert role['model_reasoning_effort'] in {'medium', 'high'}
 
 
 @pytest.mark.unit

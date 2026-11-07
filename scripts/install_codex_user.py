@@ -14,7 +14,7 @@ from pathlib import Path
 START = '# >>> mightymodels-codex managed >>>'
 END = '# <<< mightymodels-codex managed <<<'
 SKILL_COUNT = 19
-AGENT_COUNT = 12
+AGENT_COUNT = 11
 
 
 def managed_text(text: str, replacement: str) -> str:
@@ -146,7 +146,7 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
     agents = sorted((root / '.codex/agents').glob('mm-*.toml'))
     skills = sorted((root / 'skills').glob('*/SKILL.md'))
     if len(agents) != AGENT_COUNT or len(skills) != SKILL_COUNT:
-        parser.error('Incomplete source checkout (expected 12 agents and 19 skills)')
+        parser.error('Incomplete source checkout (expected 11 enabled agents and 19 skills)')
     codex = home / '.codex'
     # Validate all potential collisions BEFORE changing anything.
     destinations = [(codex / 'agents' / x.name, x) for x in agents]

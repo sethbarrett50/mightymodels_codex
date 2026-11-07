@@ -62,6 +62,8 @@ def translate(event: object) -> tuple[dict | None, str | None]:  # noqa: C901, P
             return None, 'MightyModels worker cannot delegate without an explicit approved role'
         return None, None  # Native Codex default-agent dispatch
     target = role(target)
+    if target == 'mightymodels:triage:wingman':
+        return None, 'Codex wingman is disabled: Fable tier is not configured'
     if not target.startswith('mightymodels:'):
         if is_mighty_caller:
             return None, f'MightyModels worker may not delegate to {target}'
