@@ -372,9 +372,10 @@ python3 scripts/codex_doctor.py
 
 The doctor checks ownership and targets of the global MCP registration,
 11 native agent role entries, 19 generated Codex skill symlinks, and the
-managed global hook manifest. The checkout no longer registers its own
-`.codex/config.toml` MCP server or `.codex/hooks.json` hook events: the
-user-level installer owns both. The hook source is preserved separately at
+managed global hook manifest. The checkout does not register a duplicate
+MCP server or global lifecycle/dispatch hook events. Its project-specific
+`.codex/hooks.json` is limited to `apply_patch` edit hygiene; the user-level
+installer owns MCP and lifecycle hooks. The global hook source is at
 `hooks/codex-global-template.json`. Plugin-mode hooks at
 `hooks/codex-hooks.json` are still distinct from global mode; do not enable
 both installations without verifying host precedence and duplicate delivery.
