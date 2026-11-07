@@ -167,6 +167,33 @@ def test_fable_wingman_dispatch_is_denied() -> None:
 
 
 @pytest.mark.unit
+def test_unknown_mightymodels_role_fails_closed() -> None:
+    payload, error = module.translate(event('mightymodels:workers:invented'))
+    assert payload is None
+    assert 'Unknown MightyModels agent' in error
+
+
+@pytest.mark.unit
+def test_opt_in_probe_records_dispatch_without_prompt_or_path(tmp_path: Path) -> None:
+    probe_event = event('mm-workers-engineer')
+    probe_event['tool_input']['message'] = 'TOP_SECRET_DO_NOT_LOG'
+    module.audit_probe(
+        probe_event,
+        {'HOME': str(tmp_path), 'MIGHTYMODELS_CODEX_DISPATCH_PROBE': '1'},
+    )
+    log = tmp_path / '.local/state/mightymodels/codex-dispatch-probe.log'
+    assert log.is_file()
+    assert 'pre_tool_use_spawn_agent_seen' in log.read_text()
+    assert 'TOP_SECRET_DO_NOT_LOG' not in log.read_text()
+    assert log.stat().st_mode & 0o777 == 0o600
+
+
+@pytest.mark.unit
+def test_probe_disabled_by_default(tmp_path: Path) -> None:
+    module.audit_probe(event(), {'HOME': str(tmp_path)})
+    assert not (tmp_path / '.local/state/mightymodels').exists()
+
+@pytest.mark.unit
 def test_mcp_post_tool_result_records_session_pointer(tmp_path: Path) -> None:
     post_event = {
         'hook_event_name': 'PostToolUse',
