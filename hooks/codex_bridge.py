@@ -301,7 +301,6 @@ def audit_probe(event: object, environ: dict[str, str]) -> None:
     log.chmod(0o600)
 
 
-
 def audit_probe_decision(event: object, environ: dict[str, str], result: object) -> None:
     """Log the adapter's sanitized decision, not proof of a Codex-host block."""
     if environ.get('MIGHTYMODELS_CODEX_DISPATCH_PROBE') != '1':
