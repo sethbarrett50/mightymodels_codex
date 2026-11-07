@@ -1,5 +1,8 @@
 <div align="center">
 
+> **Experimental Codex port:** This fork includes 12 native Codex agents, 19 project-visible skills, MCP startup, and Codex lifecycle adapters. See [Codex setup and remaining limitations](docs/CODEX.md). This is not yet runtime-validated, and safety-critical dispatch guardrails must be verified before production use. No Astra model is configured.
+
+
 # mightymodels
 
 **Context is the bottleneck of agentic coding. mightymodels manages it.**<br>

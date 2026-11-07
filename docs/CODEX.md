@@ -28,7 +28,7 @@ All 19 skills are also linked under `.agents/skills/` to make the existing `skil
 3. Confirm a planned `engineer` dispatch includes an active started task, owned file list, and the correct acceptance criteria; verify an invalid dispatch is **refused**, rather than merely warned.
 4. Confirm an engineer can implement a scoped task and a separate fact-checker independently verifies it; validate persisted state and the three-failed-fix ceiling.
 5. Verify read-only scouts cannot modify files under your actual parent permissions. Run controlled sandbox tests—do not assume the agent prompt enforces this.
-6. Check session-resume, compaction, `SubagentStop` and `AskUserQuestion` equivalents. The original `hooks/hooks.json` still targets Claude events and matchers; do not enable it unchanged without exercising each path.
+6. Check session-resume, compaction, `SubagentStop` and `AskUserQuestion` equivalents. Codex-specific hook files now forward spawn admission, scout completion, and pre-compaction snapshots to the original backend. Live hook event coverage and admission behavior still require integration tests; do not enable the original Claude hooks unchanged.
 7. Confirm GitHub/Jira side effects and CI workflows happen only through permitted tools.
 
 There is not yet a passing live Codex integration test suite for these scenarios. A static TOML or unit test is not proof of runtime enforcement.
@@ -36,3 +36,9 @@ There is not yet a passing live Codex integration test suite for these scenarios
 ## Source of truth
 
 Keep original upstream MightyModels code and Claude support intact. The Codex-specific adaptation lives in `.codex/`, `.agents/skills/`, `AGENTS.md`, root portable manifests and `bin/mightymodels-mcp-codex`. See `.codex/compatibility-report.json` for unmapped Claude frontmatter.
+
+## Codex lifecycle adapters
+
+Codex hook mappings live in `.codex/hooks.json` for a project checkout and `hooks/codex-hooks.json` for a manually installed plugin. Both use `hooks/codex_bridge.py` to translate the `spawn_agent`/`Agent` PreToolUse payload to the existing MightyModels dispatch hook. Its result is returned in Codex’s native hook decision format. If the admission process exits unsuccessfully or times out, the adapter returns a denial for targeted MightyModels roles; this does **not** guarantee that disabled hooks or unhooked tool surfaces are blocked.
+
+`SubagentStop` for `code-scout`/`web-scout` forwards the final report to the original similarity journal. `PreCompact` calls the existing snapshot writer. Both are informational operations and may emit warnings without stopping the host operation. SessionStart and PostToolUse state-pointer behavior have **not** been migrated. These remaining gaps affect post-compaction resume and automatic session tracking.

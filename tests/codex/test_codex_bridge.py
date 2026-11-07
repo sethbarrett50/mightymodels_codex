@@ -115,7 +115,7 @@ def test_scout_stop_uses_legacy_hook(tmp_path):
         )
     payload = json.loads(recorded["input"])
     assert payload["agent_type"] == "mightymodels:triage:code-scout"
-    assert recorded["args"] if "args" in recorded else True
+    assert recorded["input"]
     assert outcome == {"continue": True}
 
 
