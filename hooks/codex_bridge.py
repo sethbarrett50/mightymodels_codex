@@ -78,7 +78,7 @@ def translate(event: object) -> tuple[dict | None, str | None]:  # noqa: C901, P
     return payload, None
 
 
-def run_admission(event: object, *, project_root: Path, environ: dict) -> dict | None:
+def run_admission(event: object, *, project_root: Path, environ: dict) -> dict | None:  # noqa: PLR0911
     translated, error = translate(event)
     if error:
         return denial(error)
@@ -162,9 +162,9 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     warning = None
     try:
         Path(data_dir).mkdir(parents=True, exist_ok=True)
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603
             [
-                'uv',
+                shutil.which('uv') or '/nonexistent/uv',
                 'run',
                 '--locked',
                 '--no-dev',

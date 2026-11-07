@@ -60,7 +60,7 @@ def test_hook_configurations_parse() -> None:
 
 @pytest.mark.unit
 def test_shell_launcher_syntax() -> None:
-    subprocess.run(
+    subprocess.run(  # noqa: S603
         [shutil.which('sh') or '/bin/sh', '-n', 'bin/mightymodels-mcp-codex'],
         check=True,
         cwd=ROOT,
