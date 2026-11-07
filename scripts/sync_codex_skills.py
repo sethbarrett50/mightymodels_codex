@@ -51,12 +51,8 @@ def translated(source: Path) -> str:
         '`SendMessage`': '`native agent follow-up`',
         '`Agent`': '`spawn_agent`',
         'AskUserQuestion': 'Codex user decision gate',
-        (
-            'Claude Code substitutes `${CLAUDE_PLUGIN_ROOT}` in this file as\n'
-            'an absolute path:'
-        ): (
-            'Codex resolves MightyModels helpers through installed '
-            '`$HOME/.agents/skills/` links:'
+        ('Claude Code substitutes `${CLAUDE_PLUGIN_ROOT}` in this file as\nan absolute path:'): (
+            'Codex resolves MightyModels helpers through installed `$HOME/.agents/skills/` links:'
         ),
         (
             'which\nClaude Code substitutes in this file as an absolute path.'
@@ -64,10 +60,7 @@ def translated(source: Path) -> str:
         'Models are the fixed aliases `subagent-models` lists, never memory.': (
             "Use the native Codex role's configured model; never pass Claude model aliases."
         ),
-        (
-            "its `model` the engineer's fixed alias, `sonnet`, "
-            'which `subagent-models` repeats.'
-        ): (
+        ("its `model` the engineer's fixed alias, `sonnet`, which `subagent-models` repeats."): (
             "using the engineer's configured native Codex role and model; "
             'do not pass Claude aliases.'
         ),
