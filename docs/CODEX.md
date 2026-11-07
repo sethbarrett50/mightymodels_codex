@@ -326,6 +326,8 @@ The Codex PostToolUse adapter also handles `request_user_input` responses,
 session ID are present. The translated result reaches the existing
 `ask-recorder` decision ledger; empty/timeout/malformed responses, secret
 questions and Default-mode auto-resolved questions do not become approvals.
+Even an explicit `afkTimeoutMs: null` field is treated as a timeout-marked
+response and cannot satisfy a required decision.
 The adapter forwards only the session ID, checkout directory and
 nonsecret question/answer pairs; raw choices, skipped secret questions,
 transcript metadata and other original tool fields are discarded. A missing
