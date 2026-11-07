@@ -55,7 +55,7 @@ def test_project_scoped_skills() -> None:
 
 @pytest.mark.unit
 def test_hook_configurations_parse() -> None:
-    for path in ('hooks/codex-hooks.json', '.codex/hooks.json'):
+    for path in ('hooks/codex-hooks.json', 'hooks/codex-global-template.json'):
         data = json.loads((ROOT / path).read_text(encoding='utf-8'))
         group = data['hooks']['PreToolUse'][0]
         assert 'Agent' in group['matcher']
