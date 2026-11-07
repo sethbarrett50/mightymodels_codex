@@ -321,3 +321,25 @@ hooks to force installation. This is an intentionally narrow upgrade
 compatibility measure. Full coexistence with unrelated hooks, crash-safe
 multi-file rollback and duplicate-configuration diagnostics remain under
 issue #15. Restart Codex and re-review changed hook trust hashes.
+
+## Generated Codex-only skill files — issue #14 (first migration slice)
+
+The original 19 `skills/*/SKILL.md` remain Claude-compatible and untouched.
+Run `python3 scripts/sync_codex_skills.py` after changes to those sources,
+then `python3 scripts/sync_codex_skills.py --check` (also enforced by Codex CI).
+
+Codex reads separately generated `.codex/skills/<skill>/SKILL.md` files.
+The generator strips Claude-only `allowed-tools` frontmatter, normalizes
+MCP tool identifiers, translates legacy helper-file locations into paths
+under `$HOME/.agents/skills`, and clarifies native user decisions and
+subagent delegation. Original companion directories (`references`,
+`scripts`, `assets`, and `evals`) remain available by symlink without
+copying or changing them. The user-scoped installer migrates its previously
+owned `~/.agents/skills/<name>` symlinks to these generated skill
+directories. Project-scope links in `.agents/skills` also point there.
+
+This is an **initial transport-level translation**; it does NOT make the
+Codex host enforce Claude `allowed-tools`, `maxTurns`, or automatic
+skill preloads. Required decisions remain fail-closed. Certain multi-agent
+Claude-specific workflows and live runtime compatibility still require
+testing before claiming full parity with Claude; issue #14 stays open.

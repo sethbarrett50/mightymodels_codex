@@ -162,16 +162,24 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
     if os.geteuid() == 0:
         parser.error('Run as the intended unprivileged Codex user, not root')
     agents = sorted((root / '.codex/agents').glob('mm-*.toml'))
-    skills = sorted((root / 'skills').glob('*/SKILL.md'))
+    skills = sorted((root / '.codex/skills').glob('*/SKILL.md'))
     if len(agents) != AGENT_COUNT or len(skills) != SKILL_COUNT:
         parser.error('Incomplete source checkout (expected 11 enabled agents and 19 skills)')
     codex = home / '.codex'
     # Validate all potential collisions BEFORE changing anything.
     destinations = [(codex / 'agents' / x.name, x) for x in agents]
     destinations += [(home / '.agents/skills' / x.parent.name, x.parent) for x in skills]
+    old_skill_links = {
+        home / '.agents/skills' / skill.parent.name: root / 'skills' / skill.parent.name
+        for skill in skills
+    }
     for dest, src in destinations:
         if dest.is_symlink():
-            if dest.resolve(strict=False) != src.resolve():
+            previous = old_skill_links.get(dest)
+            accepted = {src.resolve()}
+            if previous is not None:
+                accepted.add(previous.resolve())
+            if dest.resolve(strict=False) not in accepted:
                 parser.error(f'Unmanaged symlink exists: {dest}')
         elif dest.exists():
             parser.error(f'Unmanaged path exists: {dest}')
@@ -197,6 +205,13 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
         if START not in old and 'mighty_mcp' in parsed.get('mcp_servers', {}):
             parser.error('Unmanaged global mighty_mcp exists; merge manually')
         for dest, src in destinations:
+            previous = old_skill_links.get(dest)
+            if (
+                previous is not None
+                and dest.is_symlink()
+                and dest.resolve(strict=False) == previous.resolve()
+            ):
+                dest.unlink()
             reconcile_link(dest, src, remove=args.uninstall)
         reconcile_link(retired, retired_source, remove=True)
         update_config(global_conf, root, remove=args.uninstall)

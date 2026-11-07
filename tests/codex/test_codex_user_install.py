@@ -33,6 +33,8 @@ def test_user_install_round_trip_preserves_existing_config(tmp_path: Path) -> No
     assert first.returncode == 0, first.stderr
     assert len(list((codex / 'agents').glob('mm-*.toml'))) == 11
     assert len(list((tmp_path / '.agents/skills').iterdir())) == 19
+    for skill in (tmp_path / '.agents/skills').iterdir():
+        assert skill.resolve() == (ROOT / '.codex/skills' / skill.name).resolve()
     conf = tomllib.loads(config.read_text())
     assert conf['sandbox_mode'] == 'workspace-write'
     assert conf['other']['value'] == 7
@@ -158,3 +160,15 @@ def test_existing_foreign_hook_event_is_not_removed(tmp_path: Path) -> None:
     assert result.returncode != 0
     assert 'Unmanaged hooks' in result.stderr
     assert hooks.read_text() == original
+
+
+@pytest.mark.unit
+def test_upgrade_reconciles_old_owned_skill_links(tmp_path: Path) -> None:
+    prior = tmp_path / '.agents/skills/lets-investigate'
+    prior.parent.mkdir(parents=True)
+    prior.symlink_to(ROOT / 'skills/lets-investigate', target_is_directory=True)
+    result = invoke(tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert prior.is_symlink()
+    assert prior.resolve() == (ROOT / '.codex/skills/lets-investigate').resolve()
+    assert (prior / 'references').is_dir()

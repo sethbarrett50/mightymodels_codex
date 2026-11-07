@@ -1,0 +1,56 @@
+---
+name: whats-broken
+description: Use when CI has a non-obvious failure, a test resists repair, or behavior contradicts expectations after repeated verification.
+when_to_use: >-
+  Use for "CI is red", "this won't stop failing", "why does this test keep failing", and when
+  stick-the-landing or agents-assemble routes a failure here.
+argument-hint: "[failing check, test or symptom]"
+---
+
+> **Native Codex workflow (generated):** This file is generated from the Claude skill; do not edit it directly. MCP calls must use actual `mighty_mcp` tools exposed by the current Codex session. Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage APIs or inherit model aliases. A required decision in Default mode uses ordinary chat and stops until a real answer; auto-resolution never grants permission. `USER_REQUEST_ARGS` denotes the user-provided invocation text, not a shell variable. Helper paths resolve through the installed `$HOME/.agents/skills/` links; if these links are missing, stop rather than guessing a file location.
+
+
+> **Codex required user-input contract (all skills):** In Default mode, a question that gates further action MUST be asked in ordinary chat; end the turn until the user explicitly replies. The native `request_user_input` popup may auto-resolve and is only for optional feedback in Default mode. In Plan mode, a genuinely blocking native question may be used when the host exposes it, but require a real explicit answer. Empty input, timeout, cancellation, interruption, and automatic resolution never count as consent. Preserve the pending decision and persist only the user's actual answer using available MightyModels tools. This is Codex-only; the Claude `Codex user decision gate` steps below remain unchanged.
+
+
+> **Codex-only recovery:** When the confirmed cause leaves two defensible choices, call the Codex-only decision path in `ask-an-adult`. Do not spawn or claim a Wingman ran; present evidence to the user in ordinary chat and stop for their answer. Continue only after a real user choice.
+
+# whats-broken
+
+The protocol exists because of one failure mode: a plausible quick fix that skips evidence. It looks efficient, it usually patches the symptom, and each round of it pollutes the diff your reviewers later have to litigate. So the phases gate each other, and the one rule with no exceptions is that **no fix is proposed before the evidence phase completes.**
+
+**Entry paths:** stick-the-landing routes a CI failure here when the fix isn't obvious from the log tail; agents-assemble routes a task here after both its engineer attempt and its architect recovery failed; and bare invocation ("CI is red", "this won't stop failing") works with or without an active ticket. With no ticket the hypothesis log lives at `.mightymodels/whats-broken.md`; first make sure `.mightymodels/` is excluded, since nothing under it is ever tracked: `git check-ignore -q .mightymodels || echo '.mightymodels/' >> "$(git rev-parse --git-common-dir)/info/exclude"`.
+
+**Argument:** the failure to diagnose, given when the skill was started: "USER_REQUEST_ARGS". Empty quotes mean nothing was given, and the failure is the one the session or the routing skill named.
+
+## Phases
+
+**1. Reproduce.** A command that fails deterministically, run and shown. Can't make it deterministic → say so explicitly with the observed frequency ("3 of 20 runs") — a probabilistic bug investigated as a deterministic one produces confident nonsense.
+
+**2. Evidence.** Scouts gather facts, each packet built through prompting-subagents: code-scout for the failing path, recent changes touching it (`git log`, `git blame`), what the error actually says versus what everyone assumed it says, and config and environment at the failure site; web-scout only when the cause may be documented upstream behavior (a changed default, a deprecation) at the version the lockfile pins. Gitty-up's fail report (buckets + log tails) is admissible evidence on the CI path. No fixes in this phase — not proposed, not "just noted for later". Full stop.
+
+**3. Hypothesis — exactly one, falsifiable, on disk.** Write to `.mightymodels/<slug>/whats-broken.md`:
+
+```markdown
+# whats-broken: <slug or symptom>
+attempt: <n>
+reproduce: <the command and its failing output, one line>
+hypothesis: I believe <X> is the cause because <evidence>. If true, <Z> will show it.
+test: <the minimal check that could falsify this>
+```
+
+Current-state only — each attempt regenerates the file (prior attempts live in the summary line, not as an appended archive). One hypothesis at a time: two live hypotheses means the test that follows proves neither.
+
+**4. Test the hypothesis, minimally.** The cheapest check that could falsify it — a log line, a one-off command, a narrowed test invocation. Not a fix. Falsified → back to phase 3 with the new evidence, attempt counter up. Confirmed → phase 5.
+
+**5. Fix, through the normal path.** A confirmed cause is new, well-understood work, so it goes to a fresh **engineer** dispatch whose ASKED stanza includes a regression test as an acceptance criterion. A residual fix carries `Fix:` and an outcome sentence; the engineer runs the regression test that shows the outcome in sandboxed Bash and names it. The task the fix goes under is started with `task_start` before the dispatch, because the dispatch hook refuses an engineer while the ticket has no task in progress. The fix targets the confirmed cause: if the diff patches the symptom's location instead of the hypothesis's location, that is the quick fix wearing a lab coat; reject it.
+
+Route to **architect** instead only when the confirmed cause needs a design decision or files outside the task's owned set: `diagnose-replan` when the fix is not yet clear, `systemic-refactor` only after the user approves the expanded envelope, started with `task_start` on the task that is still in progress. A task the architect replans is marked `superseded`, and its revised ASKED stanza is a new task. `diagnose-replan` stays allowed after the architect's one implementation attempt. Diagnosis stays here and implementation stays with them; architect never widens scope it discovered while debugging.
+
+## When a judgment call remains
+
+When the phases end with a confirmed cause but two defensible ways to fix it, or a fix that is expensive to reverse, use **ask-an-adult**: it builds the packet, sends it to wingman and puts wingman's questions to the user. Do not use it before the evidence phase completes, and not for a fact a scout can fetch.
+
+## The breaker
+
+Three failed fixes → **stop.** Every failed engineer or architect dispatch from phase 5 is a strike; a re-dispatch after a strike is a new hypothesis round, not a retry. Summarize the hypothesis log and escalate to the user: "the architecture or the understanding is wrong — which do you want to attack?" A fourth patch is never the answer; by strike three the cheap explanations are exhausted and continuing spends real money relocating the problem. Delete `whats-broken.md` when the debug closes (prune-ticket removes stragglers).
