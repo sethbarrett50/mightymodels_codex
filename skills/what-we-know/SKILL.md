@@ -29,7 +29,7 @@ allowed-tools:
 
 > **Codex required user-input contract (all skills):** In Default mode, a question that gates further action MUST be asked in ordinary chat; end the turn until the user explicitly replies. The native `request_user_input` popup may auto-resolve and is only for optional feedback in Default mode. In Plan mode, a genuinely blocking native question may be used when the host exposes it, but require a real explicit answer. Empty input, timeout, cancellation, interruption, and automatic resolution never count as consent. Preserve the pending decision and persist only the user's actual answer using available MightyModels tools. This is Codex-only; the Claude `AskUserQuestion` steps below remain unchanged.
 
-> **Codex consolidation gate:** Follow the common required user-input contract above for interactive decisions. Sprint mode retains its existing no-questions rule. Do not assume a Claude recorder hook in Codex.
+> **Codex consolidation gate:** Follow the common required user-input contract above for interactive decisions. Sprint mode retains its existing no-questions rule. Allow a free-text user response; do not assume a Claude recorder hook in Codex.
 
 # what-we-know
 
