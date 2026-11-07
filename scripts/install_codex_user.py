@@ -9,11 +9,8 @@ import json
 import os
 import shlex
 import tomllib
+from collections.abc import Iterator  # noqa: TC003 - required by Python 3.13 at runtime
 from contextlib import contextmanager, suppress
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator
 from pathlib import Path
 from stat import S_IMODE
 
