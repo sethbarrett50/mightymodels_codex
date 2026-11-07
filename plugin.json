@@ -1,0 +1,7 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "mightymodels-codex",
+  "version": "0.1.0",
+  "description": "Experimental native Codex adaptation of MightyModels agent roles, skills, and MCP server",
+  "repository": "https://github.com/sethbarrett50/mightymodels_codex"
+}

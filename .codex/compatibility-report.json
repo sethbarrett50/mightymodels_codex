@@ -1,0 +1,122 @@
+{
+  "status": "experimental: generation only, not runtime-verified",
+  "count": 12,
+  "agents": [
+    {
+      "source": "agents/review/fact-checker.md",
+      "role": "mm-review-fact-checker",
+      "source_model": "haiku",
+      "source_effort": "high",
+      "unmapped": [
+        "tools",
+        "maxTurns"
+      ]
+    },
+    {
+      "source": "agents/review/merge-vader.md",
+      "role": "mm-review-merge-vader",
+      "source_model": "opus",
+      "source_effort": "medium",
+      "unmapped": [
+        "tools",
+        "skills"
+      ]
+    },
+    {
+      "source": "agents/review/qualitylens.md",
+      "role": "mm-review-qualitylens",
+      "source_model": "haiku",
+      "source_effort": "high",
+      "unmapped": [
+        "tools",
+        "maxTurns"
+      ]
+    },
+    {
+      "source": "agents/review/uncle-bob.md",
+      "role": "mm-review-uncle-bob",
+      "source_model": "opus",
+      "source_effort": "medium",
+      "unmapped": [
+        "tools",
+        "skills"
+      ]
+    },
+    {
+      "source": "agents/triage/code-scout.md",
+      "role": "mm-triage-code-scout",
+      "source_model": "haiku",
+      "source_effort": "high",
+      "unmapped": [
+        "tools",
+        "maxTurns"
+      ]
+    },
+    {
+      "source": "agents/triage/terry-toolchain.md",
+      "role": "mm-triage-terry-toolchain",
+      "source_model": "sonnet",
+      "source_effort": "medium",
+      "unmapped": [
+        "tools"
+      ]
+    },
+    {
+      "source": "agents/triage/web-scout.md",
+      "role": "mm-triage-web-scout",
+      "source_model": "haiku",
+      "source_effort": "high",
+      "unmapped": [
+        "tools",
+        "maxTurns"
+      ]
+    },
+    {
+      "source": "agents/triage/wingman.md",
+      "role": "mm-triage-wingman",
+      "source_model": "fable",
+      "source_effort": "high",
+      "unmapped": [
+        "tools"
+      ]
+    },
+    {
+      "source": "agents/workers/architect.md",
+      "role": "mm-workers-architect",
+      "source_model": "opus",
+      "source_effort": "medium",
+      "unmapped": [
+        "tools",
+        "skills"
+      ]
+    },
+    {
+      "source": "agents/workers/engineer.md",
+      "role": "mm-workers-engineer",
+      "source_model": "sonnet",
+      "source_effort": "medium",
+      "unmapped": [
+        "tools",
+        "skills"
+      ]
+    },
+    {
+      "source": "agents/workers/gitty-up.md",
+      "role": "mm-workers-gitty-up",
+      "source_model": "haiku",
+      "source_effort": "high",
+      "unmapped": [
+        "tools"
+      ]
+    },
+    {
+      "source": "agents/workers/intern.md",
+      "role": "mm-workers-intern",
+      "source_model": "haiku",
+      "source_effort": "high",
+      "unmapped": [
+        "tools"
+      ]
+    }
+  ]
+}
