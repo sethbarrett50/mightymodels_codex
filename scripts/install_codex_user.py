@@ -44,9 +44,12 @@ def safe_write(path: Path, content: str) -> None:
     tmp.replace(path)
 
 
-def reconcile_link(destination: Path, source: Path, *, remove: bool) -> None:
+def reconcile_link(
+    destination: Path, source: Path, *, remove: bool, previous_source: Path | None = None
+) -> None:
     if destination.is_symlink():
-        if destination.resolve(strict=False) != source.resolve():
+        old_target = previous_source.resolve() if previous_source is not None else None
+        if destination.resolve(strict=False) not in (source.resolve(), old_target):
             msg = f'Refusing unrelated symlink: {destination}'
             raise FileExistsError(msg)
         destination.unlink()
@@ -162,16 +165,24 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
     if os.geteuid() == 0:
         parser.error('Run as the intended unprivileged Codex user, not root')
     agents = sorted((root / '.codex/agents').glob('mm-*.toml'))
-    skills = sorted((root / 'skills').glob('*/SKILL.md'))
+    skills = sorted((root / '.codex/skills').glob('*/SKILL.md'))
     if len(agents) != AGENT_COUNT or len(skills) != SKILL_COUNT:
         parser.error('Incomplete source checkout (expected 11 enabled agents and 19 skills)')
     codex = home / '.codex'
     # Validate all potential collisions BEFORE changing anything.
     destinations = [(codex / 'agents' / x.name, x) for x in agents]
     destinations += [(home / '.agents/skills' / x.parent.name, x.parent) for x in skills]
+    old_skill_links = {
+        home / '.agents/skills' / skill.parent.name: root / 'skills' / skill.parent.name
+        for skill in skills
+    }
     for dest, src in destinations:
         if dest.is_symlink():
-            if dest.resolve(strict=False) != src.resolve():
+            previous = old_skill_links.get(dest)
+            accepted = {src.resolve()}
+            if previous is not None:
+                accepted.add(previous.resolve())
+            if dest.resolve(strict=False) not in accepted:
                 parser.error(f'Unmanaged symlink exists: {dest}')
         elif dest.exists():
             parser.error(f'Unmanaged path exists: {dest}')
@@ -197,7 +208,9 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
         if START not in old and 'mighty_mcp' in parsed.get('mcp_servers', {}):
             parser.error('Unmanaged global mighty_mcp exists; merge manually')
         for dest, src in destinations:
-            reconcile_link(dest, src, remove=args.uninstall)
+            reconcile_link(
+                dest, src, remove=args.uninstall, previous_source=old_skill_links.get(dest)
+            )
         reconcile_link(retired, retired_source, remove=True)
         update_config(global_conf, root, remove=args.uninstall)
         update_hooks(hooks, root, remove=args.uninstall)
