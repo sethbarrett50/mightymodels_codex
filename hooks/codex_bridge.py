@@ -7,10 +7,10 @@ disabled or bypassed by the host; this is a guardrail, not a security sandbox.
 
 import json
 import os
-import time
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROLES = {
