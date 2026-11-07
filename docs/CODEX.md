@@ -111,3 +111,30 @@ is active; prefer the user-scoped setup when working across repos.
 6. Validate GitHub/Jira writes through properly scoped approved tooling.
 
 The project is not production-ready until these acceptance checks pass.
+
+## Native interactive user questions (Codex Default mode)
+
+On the unprivileged `codex` Linux account, add this user-scoped feature flag to
+`~/.codex/config.toml` (preserve existing TOML sections and settings):
+
+```toml
+[features]
+default_mode_request_user_input = true
+```
+
+Restart Codex, then check with `codex features list`. This setting is
+intentionally **not** written by the MightyModels installer; user-specific
+Codex preferences and permissions remain separate from the repository.
+
+For MightyModels' framing and end-of-round gates, translate Claude's
+`AskUserQuestion` into the **actual** native `request_user_input` tool *when
+listed in the active session*. The tool provides choices and supports a custom
+free-text response. Merely printing a list of choices is not an interactive
+prompt. When the tool is unavailable, ask the question in chat and stop for a
+real response. Never announce that a popup was sent without invoking the tool.
+
+In Default mode, unanswered prompts can time out. Timeouts are not approvals,
+and required gates remain pending. The original Claude `AskUserQuestion`
+recorder hook is **not migrated**; do not assume Codex answers were
+automatically recorded. Persist only the user's actual decision/evidence with
+the available investigation tools and preserve the skill's ledger invariants.

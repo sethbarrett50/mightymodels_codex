@@ -27,6 +27,7 @@ allowed-tools:
 
 > **Codex runtime adapter (MightyModels fork):** When running under Codex, interpret Claude's `Agent` tool as native `spawn_agent` with `agent_type` mapped via the repository's `AGENTS.md` (or `docs/CODEX.md` when installed as a plugin). Reuse an existing agent through the native follow-up messaging tool rather than literal `SendMessage`. Call actual tools exposed by the MightyModels MCP server, not hardcoded `mcp__plugin_mightymodels_mighty-mcp__*` names. Read required companion skills explicitly; Claude `skills:` preloading, `allowed-tools:` and automatic model routing are not Codex permission controls. `${CLAUDE_SKILL_DIR}` means this SKILL.md's directory; `$ARGUMENTS` means the user's invocation arguments. Do not bypass the existing task-start, owned-file, independent fact-checking or review gates when a tool is unavailable. No Astra model is configured.
 
+> **Codex interactive-mode questions:** For required user decisions in interactive mode, invoke the actual `request_user_input` tool if available and offer a custom/free-text response. Printed options are not a popup. If unavailable, ask in chat and wait for the real answer. In sprint mode, keep the original no-questions rule. A missing or timed-out answer is not consent. Do not assume Claude's `AskUserQuestion` recorder hook ran under Codex.
 
 # what-we-know
 
