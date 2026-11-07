@@ -7,6 +7,7 @@ disabled or bypassed by the host; this is a guardrail, not a security sandbox.
 
 import json
 import os
+import time
 import shutil
 import subprocess
 import sys
@@ -62,6 +63,8 @@ def translate(event: object) -> tuple[dict | None, str | None]:  # noqa: C901, P
             return None, 'MightyModels worker cannot delegate without an explicit approved role'
         return None, None  # Native Codex default-agent dispatch
     target = role(target)
+    if target.startswith('mightymodels:') and target not in ROLES.values():
+        return None, f'Unknown MightyModels agent role: {target}'
     if target == 'mightymodels:triage:wingman':
         return None, 'Codex wingman is disabled: Fable tier is not configured'
     if not target.startswith('mightymodels:'):
@@ -193,6 +196,24 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     return {'systemMessage': warning} if warning else None
 
 
+def audit_probe(event: object, environ: dict[str, str]) -> None:
+    """Record that the host reached this hook, without persisting tool arguments."""
+    if environ.get('MIGHTYMODELS_CODEX_DISPATCH_PROBE') != '1':
+        return
+    if not isinstance(event, dict):
+        return
+    if event.get('hook_event_name') != 'PreToolUse':
+        return
+    if event.get('tool_name') not in ('Agent', 'spawn_agent'):
+        return
+    home = Path(environ.get('HOME') or str(Path.home()))
+    log = home / '.local/state/mightymodels/codex-dispatch-probe.log'
+    log.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with log.open('a', encoding='utf-8') as stream:
+        stream.write(f'pre_tool_use_spawn_agent_seen {time.time_ns()}\n')
+    log.chmod(0o600)
+
+
 def main() -> int:
     try:
         event = json.load(sys.stdin)
@@ -200,6 +221,7 @@ def main() -> int:
         print(json.dumps(denial(f'Invalid Codex hook event: {exc}')))
         return 0
     root = Path(__file__).resolve().parent.parent
+    audit_probe(event, dict(os.environ))
     if isinstance(event, dict) and event.get('hook_event_name') in ('PreCompact', 'SubagentStop'):
         result = run_lifecycle(event, project_root=root, environ=dict(os.environ))
     else:
