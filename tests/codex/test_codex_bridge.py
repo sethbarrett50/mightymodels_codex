@@ -251,14 +251,18 @@ def test_explicit_plan_answers_translate_to_legacy_decisions() -> None:
         'tool_name': 'request_user_input',
         'permission_mode': 'plan',
         'session_id': 'session-001',
-        'tool_input': {'questions': [
-            {'id': 'design', 'question': 'Which design?'},
-            {'id': 'secrets', 'question': 'Password?', 'is_secret': True},
-        ]},
-        'tool_response': {'answers': {
-            'design': {'answers': ['Option A', 'detail B']},
-            'secrets': {'answers': ['TOP_SECRET_DO_NOT_STORE']},
-        }},
+        'tool_input': {
+            'questions': [
+                {'id': 'design', 'question': 'Which design?'},
+                {'id': 'secrets', 'question': 'Password?', 'is_secret': True},
+            ]
+        },
+        'tool_response': {
+            'answers': {
+                'design': {'answers': ['Option A', 'detail B']},
+                'secrets': {'answers': ['TOP_SECRET_DO_NOT_STORE']},
+            }
+        },
     }
     payload = module.translate_plan_answers(event)
     assert payload is not None
