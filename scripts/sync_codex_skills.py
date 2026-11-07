@@ -40,7 +40,7 @@ def translated(source: Path) -> str:
         msg = f'Missing frontmatter: {source}'
         raise ValueError(msg)
     front = ALLOWLIST.sub('', match.group(1) + '\n').rstrip('\n')
-    body = LEGACY_ADAPTER.sub('', raw[match.end():])
+    body = LEGACY_ADAPTER.sub('', raw[match.end() :])
     name = source.parent.name
     changes = {
         MCP_PREFIX: CODEX_PREFIX,

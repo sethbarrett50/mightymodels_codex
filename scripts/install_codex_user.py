@@ -44,12 +44,9 @@ def safe_write(path: Path, content: str) -> None:
     tmp.replace(path)
 
 
-def reconcile_link(
-    destination: Path, source: Path, *, remove: bool, previous_source: Path | None = None
-) -> None:  # noqa: PLR0913
+def reconcile_link(destination: Path, source: Path, *, remove: bool) -> None:
     if destination.is_symlink():
-        old_target = previous_source.resolve() if previous_source is not None else None
-        if destination.resolve(strict=False) not in (source.resolve(), old_target):
+        if destination.resolve(strict=False) != source.resolve():
             msg = f'Refusing unrelated symlink: {destination}'
             raise FileExistsError(msg)
         destination.unlink()
@@ -208,9 +205,11 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
         if START not in old and 'mighty_mcp' in parsed.get('mcp_servers', {}):
             parser.error('Unmanaged global mighty_mcp exists; merge manually')
         for dest, src in destinations:
-            reconcile_link(
-                dest, src, remove=args.uninstall, previous_source=old_skill_links.get(dest)
-            )
+            previous = old_skill_links.get(dest)
+            if previous is not None and dest.is_symlink():
+                if dest.resolve(strict=False) == previous.resolve():
+                    dest.unlink()
+            reconcile_link(dest, src, remove=args.uninstall)
         reconcile_link(retired, retired_source, remove=True)
         update_config(global_conf, root, remove=args.uninstall)
         update_hooks(hooks, root, remove=args.uninstall)
