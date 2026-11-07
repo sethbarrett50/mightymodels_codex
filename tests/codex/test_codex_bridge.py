@@ -164,3 +164,51 @@ def test_fable_wingman_dispatch_is_denied() -> None:
     assert payload is None
     assert error is not None
     assert 'disabled' in error
+
+
+@pytest.mark.unit
+def test_mcp_post_tool_result_records_session_pointer(tmp_path: Path) -> None:
+    post_event = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'mcp__mighty_mcp__ticket_show',
+        'tool_input': {'slug': 'example'},
+        'session_id': 'codex-session-1',
+        'cwd': str(tmp_path),
+    }
+    with patch.object(module.subprocess, 'run') as runner:
+        runner.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout='', stderr=''
+        )
+        result = module.run_lifecycle(
+            post_event, project_root=tmp_path, environ={'HOME': str(tmp_path)}
+        )
+    assert result is None
+    assert 'session-pointer' in runner.call_args.args[0]
+    sent = json.loads(runner.call_args.kwargs['input'])
+    assert sent['tool_name'] == 'mcp__mighty_mcp__ticket_show'
+    assert sent['session_id'] == 'codex-session-1'
+
+
+@pytest.mark.unit
+def test_non_mighty_mcp_post_tool_result_is_ignored(tmp_path: Path) -> None:
+    with patch.object(module.subprocess, 'run') as runner:
+        outcome = module.run_lifecycle(
+            {'hook_event_name': 'PostToolUse', 'tool_name': 'Bash'},
+            project_root=tmp_path, environ={'HOME': str(tmp_path)}
+        )
+    assert outcome is None
+    runner.assert_not_called()
+
+
+@pytest.mark.unit
+def test_session_start_runs_prune_only(tmp_path: Path) -> None:
+    with patch.object(module.subprocess, 'run') as runner:
+        runner.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout='', stderr=''
+        )
+        outcome = module.run_lifecycle(
+            {'hook_event_name': 'SessionStart', 'cwd': str(tmp_path)},
+            project_root=tmp_path, environ={'HOME': str(tmp_path)}
+        )
+    assert outcome is None
+    assert 'session-prune' in runner.call_args.args[0]

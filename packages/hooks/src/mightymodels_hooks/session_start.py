@@ -111,3 +111,28 @@ class SessionStartHandler:
             self.note(error)
 
         return None
+
+
+@dataclass(slots=True, kw_only=True, frozen=True)
+class SessionPruneHandler:
+    """Prune stale Codex session pointers without a Claude-only env-file export."""
+
+    environ: Mapping[str, str]
+    stderr: TextIO
+    clock: Clock
+
+    async def handle(self, payload: SessionStartPayload) -> str | None:
+        data = data_directory_from(self.environ, PLUGIN_DATA_VARIABLE)
+        if isinstance(data, DataDirectoryMissingError):
+            self.stderr.write(f'mightymodels-hooks: session-prune: {data}\n')
+            return None
+
+        start = find_root(self.environ, directory_of(payload.cwd))
+        handler = SessionStartHandler(
+            environ=self.environ, stderr=self.stderr, clock=self.clock
+        )
+        try:
+            await handler.prune_pointers(data, start)
+        except STATE_UNREADABLE as error:
+            self.stderr.write(f'mightymodels-hooks: session-prune: {error}\n')
+        return None

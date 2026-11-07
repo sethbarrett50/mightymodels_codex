@@ -204,3 +204,23 @@ unavailable wingman; those paths must block rather than dispatch it.
 OpenAI references:
 https://learn.chatgpt.com/docs/agent-configuration/subagents
 https://learn.chatgpt.com/docs/models?surface=cli
+
+## Codex session lifecycle restoration — issue #8
+
+Codex `SessionStart` now invokes a pruning-only handler, avoiding Claude's
+`CLAUDE_ENV_FILE` requirement. Codex `PostToolUse` responses from
+`mcp__mighty_mcp__*` invoke the existing session-pointer handler to connect
+the session with the most recently used ticket or investigation. Neither hook
+prints credentials or logs raw MCP payloads. These records support later
+compaction and handoff, and preserve Claude's existing `session-start`
+export functionality in its own runtime.
+
+**Important limitations:** hook trust, event presence and the actual
+Codex session identifier need real-host verification. No Claude
+`AskUserQuestion` recorder equivalent has been assumed: Codex's
+`request_user_input` may time out, and unanswered decisions must never
+be converted to persisted approvals. The session-pointer handler can
+only record tools whose inputs identify the target; a bare
+`investigation_start` response is not automatically linked until a
+subsequent named investigation tool call. The remaining user-decision
+recording work is tracked under #8 and #11.

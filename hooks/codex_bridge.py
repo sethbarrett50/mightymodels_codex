@@ -144,9 +144,18 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     if not isinstance(event, dict):
         return None
     name = event.get('hook_event_name')
-    command = {'PreCompact': 'pre-compact', 'SubagentStop': 'subagent-record'}.get(name)
+    command = {
+        'PreCompact': 'pre-compact',
+        'SubagentStop': 'subagent-record',
+        'SessionStart': 'session-prune',
+        'PostToolUse': 'session-pointer',
+    }.get(name)
     if command is None:
         return None
+    if name == 'PostToolUse':
+        tool = event.get('tool_name')
+        if not isinstance(tool, str) or not tool.startswith('mcp__mighty_mcp__'):
+            return None
     payload = dict(event)
     if name == 'SubagentStop':
         payload['agent_type'] = role(payload.get('agent_type'))
@@ -200,7 +209,9 @@ def main() -> int:
         print(json.dumps(denial(f'Invalid Codex hook event: {exc}')))
         return 0
     root = Path(__file__).resolve().parent.parent
-    if isinstance(event, dict) and event.get('hook_event_name') in ('PreCompact', 'SubagentStop'):
+    if isinstance(event, dict) and event.get('hook_event_name') in (
+        'PreCompact', 'SubagentStop', 'SessionStart', 'PostToolUse'
+    ):
         result = run_lifecycle(event, project_root=root, environ=dict(os.environ))
     else:
         result = run_admission(event, project_root=root, environ=dict(os.environ))
