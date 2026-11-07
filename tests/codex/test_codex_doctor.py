@@ -1,0 +1,64 @@
+"""Read-only doctor cannot disclose secrets or silently bless missing setup."""
+
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[2]
+INSTALLER = ROOT / 'scripts/install_codex_user.py'
+DOCTOR = ROOT / 'scripts/codex_doctor.py'
+
+
+def run_script(script: Path, home: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
+        [sys.executable, str(script), '--home', str(home), '--root', str(ROOT)],
+        text=True,
+        capture_output=True,
+        check=False,
+        cwd=ROOT,
+    )
+
+
+@pytest.mark.unit
+def test_doctor_reports_missing_install_without_modifying_home(tmp_path: Path) -> None:
+    check = run_script(DOCTOR, tmp_path)
+    assert check.returncode == 1
+    assert '[FAIL]' in check.stdout
+    assert not (tmp_path / '.codex').exists()
+
+
+@pytest.mark.unit
+def test_doctor_verifies_installed_roles_skills_and_hooks(tmp_path: Path) -> None:
+    result = run_script(INSTALLER, tmp_path)
+    assert result.returncode == 0, result.stderr
+    check = run_script(DOCTOR, tmp_path)
+    assert check.returncode == 0, check.stderr
+    assert '11/11' in check.stdout
+    assert '19/19' in check.stdout
+    assert 'runtime trust not verified' in check.stdout
+    assert 'project-scoped mighty_mcp' in check.stdout
+
+
+@pytest.mark.unit
+def test_doctor_never_outputs_unrelated_config_secret_values(tmp_path: Path) -> None:
+    installed = run_script(INSTALLER, tmp_path)
+    assert installed.returncode == 0, installed.stderr
+    config = tmp_path / '.codex/config.toml'
+    config.write_text('secret_canary = "DO_NOT_LOG_TOKEN_1234"\n' + config.read_text())
+    result = run_script(DOCTOR, tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert 'DO_NOT_LOG_TOKEN_1234' not in result.stdout + result.stderr
+
+
+@pytest.mark.unit
+def test_doctor_detects_foreign_hook_configuration(tmp_path: Path) -> None:
+    installed = run_script(INSTALLER, tmp_path)
+    assert installed.returncode == 0, installed.stderr
+    hooks = tmp_path / '.codex/hooks.json'
+    hooks.write_text('{"hooks":{"Other":[]}}\n')
+    result = run_script(DOCTOR, tmp_path)
+    assert result.returncode == 1
+    assert 'differ from managed' in result.stdout
+    assert hooks.read_text() == '{"hooks":{"Other":[]}}\n'
