@@ -376,3 +376,48 @@ def test_probe_non_denial_is_not_reported_as_host_permission(tmp_path: Path) -> 
 def test_probe_outcome_disabled_by_default(tmp_path: Path) -> None:
     module.audit_probe_decision(event(), {'HOME': str(tmp_path)}, module.denial('blocked'))
     assert not (tmp_path / '.local/state/mightymodels').exists()
+
+
+@pytest.mark.unit
+def test_subprocess_errors_do_not_disclose_sensitive_stderr(tmp_path: Path) -> None:
+    secret = 'PRIVATE_TOKEN_NOT_FOR_HOOK_OUTPUT'
+    failed = subprocess.CompletedProcess(args=[], returncode=19, stdout='', stderr=secret)
+    with patch.object(module.subprocess, 'run', return_value=failed):
+        result = module.run_admission(event(), project_root=tmp_path, environ={'HOME': str(tmp_path)})
+    assert result['hookSpecificOutput']['permissionDecision'] == 'deny'
+    assert secret not in json.dumps(result)
+
+
+@pytest.mark.unit
+def test_lifecycle_failures_do_not_echo_sensitive_stderr(tmp_path: Path) -> None:
+    secret = 'PRIVATE_TOKEN_NOT_FOR_HOOK_OUTPUT'
+    failed = subprocess.CompletedProcess(args=[], returncode=19, stdout='', stderr=secret)
+    with patch.object(module.subprocess, 'run', return_value=failed):
+        result = module.run_lifecycle(
+            {'hook_event_name': 'PreCompact', 'cwd': str(tmp_path)},
+            project_root=tmp_path,
+            environ={'HOME': str(tmp_path)},
+        )
+    assert result is not None
+    assert 'failed' in result['systemMessage']
+    assert secret not in json.dumps(result)
+
+
+@pytest.mark.unit
+def test_untrusted_role_or_parser_error_never_echoed_in_denial() -> None:
+    secret = 'MY_PRIVATE_KEY_NEVER_ECHO'
+    payload, reason = module.translate(event('mightymodels:workers:' + secret))
+    assert payload is None
+    assert secret not in str(reason)
+    payload, reason = module.translate(event('external-' + secret, 'mm-workers-engineer'))
+    assert payload is None
+    assert secret not in str(reason)
+
+
+@pytest.mark.unit
+def test_failing_subprocess_exception_is_not_disclosed(tmp_path: Path) -> None:
+    secret = 'VERY_SECRET_SUBPROCESS_PATH'
+    with patch.object(module.subprocess, 'run', side_effect=OSError(secret)):
+        result = module.run_admission(event(), project_root=tmp_path, environ={'HOME': str(tmp_path)})
+    assert result['hookSpecificOutput']['permissionDecision'] == 'deny'
+    assert secret not in json.dumps(result)
