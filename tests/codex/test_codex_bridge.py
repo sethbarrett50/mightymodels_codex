@@ -1,20 +1,24 @@
 """Regression tests for the Codex-to-MightyModels dispatch gate."""
 
 import json
+import runpy
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 import subprocess
 from unittest.mock import patch
 
 import pytest
 
-from hooks import codex_bridge as module
+module = SimpleNamespace(**runpy.run_path(str(Path(__file__).resolve().parents[2] / 'hooks' / 'codex_bridge.py')))
 
 
-def event(target='mm-workers-engineer', caller=None):
+def event(target: str = 'mm-workers-engineer', caller: str | None = None) -> dict[str, Any]:
     result = {
         'hook_event_name': 'PreToolUse',
         'tool_name': 'spawn_agent',
         'tool_input': {'agent_type': target, 'message': 'test'},
-        'cwd': '/tmp/repo',
+        'cwd': str(Path.cwd()),
         'session_id': 'test-session',
     }
     if caller is not None:
@@ -48,14 +52,14 @@ def test_plain_codex_role_not_policed() -> None:
         {'hook_event_name': 'PostToolUse', 'tool_name': 'spawn_agent'},
     ],
 )
-def test_malformed_events_fail_closed(value) -> None:
+def test_malformed_events_fail_closed(value: object) -> None:
     payload, error = module.translate(value)
     assert payload is None
     assert error
 
 
 @pytest.mark.unit
-def test_legacy_denial_preserved(tmp_path) -> None:
+def test_legacy_denial_preserved(tmp_path: Path) -> None:
     denial = module.denial('ticket not started')
     fake = subprocess.CompletedProcess(args=[], returncode=0, stdout=json.dumps(denial), stderr='')
     with patch.object(module.subprocess, 'run', return_value=fake) as runner:
@@ -67,7 +71,7 @@ def test_legacy_denial_preserved(tmp_path) -> None:
 
 
 @pytest.mark.unit
-def test_hook_failure_denies(tmp_path) -> None:
+def test_hook_failure_denies(tmp_path: Path) -> None:
     fake = subprocess.CompletedProcess(args=[], returncode=2, stdout='', stderr='bad state')
     with patch.object(module.subprocess, 'run', return_value=fake):
         got = module.run_admission(event(), project_root=tmp_path, environ={'HOME': str(tmp_path)})
@@ -75,7 +79,7 @@ def test_hook_failure_denies(tmp_path) -> None:
 
 
 @pytest.mark.unit
-def test_hook_timeout_denies(tmp_path) -> None:
+def test_hook_timeout_denies(tmp_path: Path) -> None:
     with patch.object(
         module.subprocess,
         'run',
@@ -86,10 +90,10 @@ def test_hook_timeout_denies(tmp_path) -> None:
 
 
 @pytest.mark.unit
-def test_scout_stop_uses_legacy_hook(tmp_path) -> None:
+def test_scout_stop_uses_legacy_hook(tmp_path: Path) -> None:
     recorded = {}
 
-    def fake_run(*args, **kwargs):
+    def fake_run(*_args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
         recorded.update(kwargs)
         return subprocess.CompletedProcess(args=[], returncode=0, stdout='', stderr='')
 
@@ -113,7 +117,7 @@ def test_scout_stop_uses_legacy_hook(tmp_path) -> None:
 
 
 @pytest.mark.unit
-def test_compaction_uses_legacy_snapshot_hook(tmp_path) -> None:
+def test_compaction_uses_legacy_snapshot_hook(tmp_path: Path) -> None:
     with patch.object(module.subprocess, 'run') as runner:
         runner.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout='', stderr=''

@@ -13,6 +13,7 @@ import tomllib
 from pathlib import Path
 
 SOURCE = re.compile(r'\A---\r?\n([\s\S]*?)\r?\n---\r?\n')
+EXPECTED_AGENTS = 12
 DESCRIPTION = re.compile(r'^description:\s*>-\s*\n((?:[ \t]+[^\n]*\n?)*)', re.MULTILINE)
 
 
@@ -21,11 +22,11 @@ def field(frontmatter: str, key: str) -> str | None:
     return match.group(1).strip() if match is not None else None
 
 
-def generate(root: Path) -> dict[str, str]:
+def generate(root: Path) -> dict[str, str]:  # noqa: PLR0914, PLR0915
     result = {}
     report = []
     sources = sorted((root / 'agents').glob('*/*.md'))
-    if len(sources) != 12:
+    if len(sources) != EXPECTED_AGENTS:
         msg = f'Expected 12 MightyModels agents; got {len(sources)}'
         raise ValueError(msg)
     for source in sources:
@@ -52,7 +53,7 @@ def generate(root: Path) -> dict[str, str]:
             'their MCP and safety controls are validated.\n\n'
         )
 
-        def encoded(value):
+        def encoded(value: str) -> str:
             return json.dumps(value, ensure_ascii=False)
 
         lines = [f'name = {encoded(role)}', f'description = {encoded(description)}']

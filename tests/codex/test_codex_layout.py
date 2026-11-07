@@ -1,6 +1,7 @@
 """Structural smoke tests for Codex plugin and project packaging."""
 
 import json
+import shutil
 import subprocess
 import tomllib
 from pathlib import Path
@@ -60,7 +61,7 @@ def test_hook_configurations_parse() -> None:
 @pytest.mark.unit
 def test_shell_launcher_syntax() -> None:
     subprocess.run(
-        ['sh', '-n', 'bin/mightymodels-mcp-codex'],
+        [shutil.which('sh') or '/bin/sh', '-n', 'bin/mightymodels-mcp-codex'],
         check=True,
         cwd=ROOT,
     )

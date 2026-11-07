@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Translate Codex PreToolUse agent-dispatch events into MightyModels admission hooks.
 
 Codex hook failures are not intrinsically fail-closed. This adapter returns an explicit
@@ -8,6 +7,7 @@ disabled or bypassed by the host; this is a guardrail, not a security sandbox.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -38,7 +38,7 @@ def role(value: object) -> object:
     return ROLES.get(value, value) if isinstance(value, str) else value
 
 
-def translate(event: object) -> tuple[dict | None, str | None]:
+def translate(event: object) -> tuple[dict | None, str | None]:  # noqa: C901, PLR0911
     """Return translated legacy hook input, or a denial reason.
 
     A non-MightyModels dispatch returns (None, None). Missing role information is
@@ -100,9 +100,9 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
     try:
         # State initialization is not an authorization decision.
         Path(data_dir).mkdir(parents=True, exist_ok=True)
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603
             [
-                'uv',
+                shutil.which('uv') or '/nonexistent/uv',
                 'run',
                 '--locked',
                 '--no-dev',
@@ -119,20 +119,22 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
             timeout=HOOK_TIMEOUT,
             check=False,
         )
-        if result.returncode:
-            return denial(
+    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+        return denial(f'MightyModels admission unavailable; dispatch denied: {exc}')
+    if result.returncode:
+        return denial(
                 'MightyModels admission check failed; dispatch denied '
                 f'(exit {result.returncode}; {result.stderr[-500:]})'
             )
-        if not result.stdout.strip():
-            return None
+    if not result.stdout.strip():
+        return None
+    try:
         decision = json.loads(result.stdout)
-        if not isinstance(decision, dict):
-            msg = 'Admission handler did not return a JSON object'
-            raise ValueError(msg)
-        return decision
-    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
-        return denial(f'MightyModels admission unavailable; dispatch denied: {exc}')
+    except ValueError as exc:
+        return denial(f'MightyModels admission returned malformed JSON: {exc}')
+    if not isinstance(decision, dict):
+        return denial('Admission handler did not return a JSON object')
+    return decision
 
 
 def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict | None:
@@ -179,10 +181,11 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
             timeout=12,
             check=False,
         )
-        if result.returncode:
-            warning = f'MightyModels {command} failed ({result.returncode}): {result.stderr[-300:]}'
     except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
         warning = f'MightyModels {command} unavailable: {exc}'
+    else:
+        if result.returncode:
+            warning = f'MightyModels {command} failed ({result.returncode}): {result.stderr[-300:]}'
     if name == 'SubagentStop':
         return {'continue': True, **({'systemMessage': warning} if warning else {})}
     return {'systemMessage': warning} if warning else None
