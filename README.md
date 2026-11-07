@@ -1,21 +1,22 @@
 <div align="center">
 
-> **Experimental Codex port:** This fork includes 12 native Codex agents, 19 project-visible skills, MCP startup, and Codex lifecycle adapters. See [Codex setup, user-wide installer, and live validation](docs/CODEX.md). This is not yet runtime-validated, and safety-critical dispatch guardrails must be verified before production use. No Astra model is configured.
+> **Experimental Codex port:** This fork generates **11 enabled native Codex agents** (plus one disabled Claude-only Fable/wingman source), **19 Codex-specific skills**, MCP startup, and lifecycle adapters. See [Codex setup, user-wide installer, and live validation](docs/CODEX.md). Only partial interactive CLI behavior has been observed; dispatch denial, read-only scout isolation, model identity and complete lifecycle acceptance are **not host-verified**. No Astra model is configured.
 
 # mightymodels
 
 **Context is the bottleneck of agentic coding. mightymodels manages it.**<br>
 A Claude Code harness that treats every subagent as a unit of context: the main session keeps its window for judgment, every task runs in a clean one, and the record of the work lives in GitHub or Jira, not your repository.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/rhawk117/mightymodels/ci.yml?event=pull_request&label=CI&logo=githubactions&logoColor=white)](https://github.com/rhawk117/mightymodels/actions/workflows/ci.yml)
-[![Supply chain](https://img.shields.io/github/actions/workflow/status/rhawk117/mightymodels/weekly-security-scan.yml?label=supply%20chain&logo=githubactions&logoColor=white)](https://github.com/rhawk117/mightymodels/actions/workflows/weekly-security-scan.yml)
-[![Release](https://img.shields.io/github/v/release/rhawk117/mightymodels?label=release&logo=github)](https://github.com/rhawk117/mightymodels/releases)
-[![License](https://img.shields.io/github/license/rhawk117/mightymodels)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/sethbarrett50/mightymodels_codex/ci.yml?event=pull_request&label=CI&logo=githubactions&logoColor=white)](https://github.com/sethbarrett50/mightymodels_codex/actions/workflows/ci.yml)
+[![Supply chain](https://img.shields.io/github/actions/workflow/status/sethbarrett50/mightymodels_codex/weekly-security-scan.yml?label=supply%20chain&logo=githubactions&logoColor=white)](https://github.com/sethbarrett50/mightymodels_codex/actions/workflows/weekly-security-scan.yml)
+[![Upstream releases](https://img.shields.io/github/v/release/rhawk117/mightymodels?label=upstream%20Claude%20release&logo=github)](https://github.com/rhawk117/mightymodels/releases)
+[![License](https://img.shields.io/github/license/sethbarrett50/mightymodels_codex)](LICENSE)
 
 [![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-D97757?logo=claude&logoColor=white)](https://code.claude.com/docs/en/plugins)
 [![Skills](https://img.shields.io/badge/skills-19-6E56CF)](#skills)
-[![Workers](https://img.shields.io/badge/workers-12-6E56CF)](#workers)
-[![Hooks](https://img.shields.io/badge/hooks-7-6E56CF)](#under-the-hood)
+[![Claude workers](https://img.shields.io/badge/Claude%20workers-12-6E56CF)](#workers)
+[![Codex agents](https://img.shields.io/badge/Codex%20agents-11-6E56CF)](docs/CODEX.md)
+[![Claude hooks](https://img.shields.io/badge/Claude%20hooks-7-6E56CF)](#under-the-hood)
 
 [![Python 3.14](https://img.shields.io/badge/python-3.14-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
@@ -28,6 +29,8 @@ A Claude Code harness that treats every subagent as a unit of context: the main 
 </div>
 
 ______________________________________________________________________
+
+> **Scope of this README:** Unless explicitly identified as Codex-specific, the descriptions below document the **original Claude Code plugin**, including its 12 workers, Fable/wingman, seven hooks, installation commands and model tiers. The Codex fork enables 11 roles and 19 generated skills; use [Codex setup](docs/CODEX.md) instead of the Claude plugin installer. Native Codex security and parity claims remain subject to [open acceptance issues](https://github.com/sethbarrett50/mightymodels_codex/issues).
 
 Every long agent session hits the same wall:
 

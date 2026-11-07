@@ -1,17 +1,19 @@
 # MightyModels Codex port — status and installation
 
-The port provides native Codex definitions for **12 agents**, **19 skills**, and a
+The port provides native Codex definitions for **11 enabled agents** (from 12 Claude source roles; Fable/wingman is disabled), **19 skills**, and a
 local **35-tool MCP server**. Claude support is retained. It is **experimental**:
 static tests and one live read-only subagent test do not establish complete
 dispatch authorization or end-to-end workflow equivalence.
 
 ## Observed live results — Debian 13, Codex CLI 0.167.0 (November 2026)
 
+**Historical observations, not current end-to-end acceptance.** Static checks and CLI discovery do not demonstrate host-enforced dispatch denial, read-only scout isolation, actual spawned-agent model identity, decision persistence, or complete lifecycle behavior. Track these separately under issues [#9](https://github.com/sethbarrett50/mightymodels_codex/issues/9), [#8](https://github.com/sethbarrett50/mightymodels_codex/issues/8), [#14](https://github.com/sethbarrett50/mightymodels_codex/issues/14) and [#16](https://github.com/sethbarrett50/mightymodels_codex/issues/16).
+
 The separate, unprivileged `codex` user on Debian 13 successfully:
 
 - Installed uv 0.13.7 with Python 3.14 and cloned this repository.
-- Passed `scripts/sync_codex_agents.py --check` (12 TOML roles, 19 skills).
-- Discovered all 12 roles and all 19 skills in an interactive Codex session.
+- Passed the generator check in an earlier state (12 Claude sources; currently 11 enabled Codex roles and 19 skills).
+- Discovered 12 roles and 19 skills in an earlier session **before Fable/wingman was disabled**; the current 11-role registry has not been host-verified.
 - Connected to `mighty_mcp`; 35 tools were listed. A real
   `investigation_list({})` request reached the server, but state reads returned
   "no repository is recorded" because no write unit of work had registered it.
@@ -23,6 +25,10 @@ The separate, unprivileged `codex` user on Debian 13 successfully:
 
 The scout's `/root/...` agent identifier is a coordinator hierarchy identifier;
 the OS account was verified as UID 1002 (`codex`), not Linux root.
+
+## Source, enabled and reported roles
+
+The source tree includes 12 original Claude roles. The native Codex generator emits 11 enabled roles and deliberately omits Fable/wingman. `.codex/compatibility-report.json` counts the **12 source roles**, including the disabled one: its `count` is not the enabled-install count. All 19 skills have Codex-specific generated equivalents. Run `python3 scripts/sync_codex_agents.py --check` and `python3 scripts/sync_codex_skills.py --check` for generation drift; these checks are not live host acceptance.
 
 ## User-scoped installation across repositories
 
@@ -36,7 +42,7 @@ python3 scripts/install_codex_user.py
 codex mcp list
 ```
 
-The installer symlinks the 12 native roles into `~/.codex/agents/` and 19
+The installer symlinks the 11 enabled native roles into `~/.codex/agents/` and 19
 skills into `~/.agents/skills/`, adds a clearly marked `mighty_mcp` section
 to `~/.codex/config.toml`, installs absolute-path hooks at
 `~/.codex/hooks.json`, and adds a managed instruction stanza in
@@ -165,7 +171,7 @@ the available investigation tools and preserve the skill's ledger invariants.
 A custom role may be listed in an agent TOML file but rejected at runtime with
 `agent type is currently not available`. This is a **Codex agent registration
 error**, not the normal MCP repository-registration response or an authorization
-denial. The global installer now registers each of the 12 roles explicitly in
+denial. The global installer now registers each of the 11 enabled roles explicitly in
 user `~/.codex/config.toml` via `[agents."mm-..."]` with an absolute
 `config_file` path. The source TOML and its instructions remain in
 `~/.codex/agents/` and the MightyModels checkout.
@@ -181,6 +187,15 @@ Do not substitute a generic agent while claiming a named MightyModels scout
 ran, and do not relax admission hooks to workaround registry errors.
 
 ## Cost-aware native agent routing (issue #6)
+
+| Original Claude tier | Configured Codex tier | Validation |
+| --- | --- | --- |
+| Haiku | `gpt-6-luna`, medium | Generated; effective model unverified |
+| Sonnet | `gpt-6.1-sol`, medium | Generated; effective model unverified |
+| Opus | `gpt-6.1-sol`, high | Generated; effective model unverified |
+| Fable/wingman | None (disabled) | Escalate decisions to the user |
+
+This documents configured roles, not actual model dispatch or quota savings (issue #16).
 
 Codex roles are generated from the original Claude role tiers. Haiku maps to
 `gpt-6-luna` at medium effort (six focused retrieval/mechanical workers).
