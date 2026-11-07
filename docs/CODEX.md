@@ -1,44 +1,113 @@
-# MightyModels Codex port — current status
+# MightyModels Codex port — status and installation
 
-This branch adds Codex native agent definitions for all 12 MightyModels roles, a portable plugin manifest, an MCP launcher and project-local skill discovery. It is an experimental port, **not an end-to-end validated replacement for Claude Code**.
+The port provides native Codex definitions for **12 agents**, **19 skills**, and a
+local **35-tool MCP server**. Claude support is retained. It is **experimental**:
+static tests and one live read-only subagent test do not establish complete
+dispatch authorization or end-to-end workflow equivalence.
 
-## Local checkout usage
+## Observed live results — Debian 13, Codex CLI 0.167.0 (November 2026)
 
-1. Install Python >= 3.14 and [uv](https://docs.astral.sh/uv/).
-2. From this repository root, run `uv sync --locked --no-dev`.
-3. Start `codex` from this directory; Codex should read `AGENTS.md`, discover `.codex/agents/`, and connect `mighty_mcp` configured in `.codex/config.toml`.
-4. Verify the MCP connection is active and the expected `ticket_*` and `task_*` tools appear. If it fails, run `sh ./bin/mightymodels-mcp-codex` separately for logs; the stdio MCP server normally stays running.
-5. If using the manually installed plugin instead, the root portable `plugin.json` and `mcp.json` provide skills and server wiring; the launch wrapper expects `PLUGIN_ROOT` from the plugin environment.
+The separate, unprivileged `codex` user on Debian 13 successfully:
 
-All 19 skills are also linked under `.agents/skills/` to make the existing `skills/` tree available for project-scoped Codex skill discovery. Symlinks work on Linux/macOS; Windows users may need a checkout with symlink support.
+- Installed uv 0.13.7 with Python 3.14 and cloned this repository.
+- Passed `scripts/sync_codex_agents.py --check` (12 TOML roles, 19 skills).
+- Discovered all 12 roles and all 19 skills in an interactive Codex session.
+- Connected to `mighty_mcp`; 35 tools were listed. A real
+  `investigation_list({})` request reached the server, but state reads returned
+  "no repository is recorded" because no write unit of work had registered it.
+- Ran the native `mm-triage-code-scout` agent to inspect MCP registration code;
+  the agent finished and reported the nine registrars.
+- Created `~/.local/share/mightymodels/state.db` and an MCP log.
+- **Did not establish** that `PreToolUse` blocked unauthorized dispatch or that
+  `SubagentStop` persisted the scout report. No implementation workflow ran.
 
-## Adaptation rules
+The scout's `/root/...` agent identifier is a coordinator hierarchy identifier;
+the OS account was verified as UID 1002 (`codex`), not Linux root.
 
-- Agent roles are named `mm-{triage,workers,review}-<name>`; see root `AGENTS.md` for exact mappings.
-- Claude `Agent` and `SendMessage` refer to Codex's native delegation/follow-up tools, not to literal tools of those names.
-- Claude plugin-qualified MCP names must resolve to the actual exposed `mighty_mcp` tool. If it is unavailable, block the workflow instead of guessing or editing ticket state manually.
-- Original frontmatter is still in `agents/**/*.md`. Codex TOML sets the role, instructions and reasoning effort. The original model pins, `maxTurns`, tool allowlists and `skills:` preloads do not directly enforce Codex behavior.
-- Codex parent permissions govern all children. A prompt-only read-only claim cannot replace the Claude `tools:` allowlist or dispatch guard.
-- No Astra usage: the model is inherited from the active Codex session.
+## User-scoped installation across repositories
 
-## Known gaps and manual acceptance tests
+Run this as the unprivileged Linux user that will launch Codex. Do not use sudo
+or place GitHub PATs inside the MightyModels checkout.
 
-1. Validate actual Codex CLI discovery of all 12 custom agents and the 19 skills.
-2. Test MCP startup and tool invocation using a real Codex client, with a clean environment and both checkout and installed-plugin modes.
-3. Confirm a planned `engineer` dispatch includes an active started task, owned file list, and the correct acceptance criteria; verify an invalid dispatch is **refused**, rather than merely warned.
-4. Confirm an engineer can implement a scoped task and a separate fact-checker independently verifies it; validate persisted state and the three-failed-fix ceiling.
-5. Verify read-only scouts cannot modify files under your actual parent permissions. Run controlled sandbox tests—do not assume the agent prompt enforces this.
-6. Check session-resume, compaction, `SubagentStop` and `AskUserQuestion` equivalents. Codex-specific hook files now forward spawn admission, scout completion, and pre-compaction snapshots to the original backend. Live hook event coverage and admission behavior still require integration tests; do not enable the original Claude hooks unchanged.
-7. Confirm GitHub/Jira side effects and CI workflows happen only through permitted tools.
+```sh
+cd ~/code/mightymodels_codex
+uv sync --locked --no-dev
+python3 scripts/install_codex_user.py
+codex mcp list
+```
 
-There is not yet a passing live Codex integration test suite for these scenarios. A static TOML or unit test is not proof of runtime enforcement.
+The installer symlinks the 12 native roles into `~/.codex/agents/` and 19
+skills into `~/.agents/skills/`, adds a clearly marked `mighty_mcp` section
+to `~/.codex/config.toml`, installs absolute-path hooks at
+`~/.codex/hooks.json`, and adds a managed instruction stanza in
+`~/.codex/AGENTS.md`. It refuses to overwrite unrelated files and does not
+modify sandbox, approval, model, or network settings. It can be rerun.
 
-## Source of truth
+```sh
+python3 scripts/install_codex_user.py --uninstall
+```
 
-Keep original upstream MightyModels code and Claude support intact. The Codex-specific adaptation lives in `.codex/`, `.agents/skills/`, `AGENTS.md`, root portable manifests and `bin/mightymodels-mcp-codex`. See `.codex/compatibility-report.json` for unmapped Claude frontmatter.
+Uninstall removes only owned links and managed stanzas. It preserves Codex
+authentication, unrelated configuration, all user repositories, PAT files, and
+the MightyModels state database. Keep this checkout at its installed location;
+reinstall after moving it. Restart Codex after installing or uninstalling.
 
-## Codex lifecycle adapters
+**Caution:** Codex may require explicit trust for newly installed hooks; hooks
+being present on disk is not evidence they executed. An unrelated preexisting
+`~/.codex/hooks.json` causes the installer to stop rather than overwrite it.
+Merge hook definitions manually in that case.
 
-Codex hook mappings live in `.codex/hooks.json` for a project checkout and `hooks/codex-hooks.json` for a manually installed plugin. Both use `hooks/codex_bridge.py` to translate the `spawn_agent`/`Agent` PreToolUse payload to the existing MightyModels dispatch hook. Its result is returned in Codex’s native hook decision format. If the admission process exits unsuccessfully or times out, the adapter returns a denial for targeted MightyModels roles; this does **not** guarantee that disabled hooks or unhooked tool surfaces are blocked.
+### Per-repository workflow
 
-`SubagentStop` for `code-scout`/`web-scout` forwards the final report to the original similarity journal. `PreCompact` calls the existing snapshot writer. Both are informational operations and may emit warnings without stopping the host operation. SessionStart and PostToolUse state-pointer behavior have **not** been migrated. These remaining gaps affect post-compaction resume and automatic session tracking.
+```sh
+cd ~/kc/YOUR_REPO
+codex mcp list
+codex
+```
+
+In the interactive session, ask Codex to list the *registered* `mighty_mcp`
+ticket/task tools and delegate a **read-only** scout. Compare with the actual
+tools and agent event trace, not just configuration files.
+
+The MCP launcher now keeps the target repository working directory while
+loading the MightyModels Python package from this checkout. Repository state is
+distinct from the plugin source tree. If the host starts MCP from a different
+directory, confirm its reported repository identity before writing state.
+
+## Source checkout mode
+
+From the repository root, install Python >=3.14 and uv, run
+`uv sync --locked --no-dev`, then start `codex`. The checkout includes its
+own `.codex/config.toml`, local agent definitions and skill links. Do not
+run a second duplicate MCP server unintentionally when user-level installation
+is active; prefer the user-scoped setup when working across repos.
+
+## Adaptation and safety limitations
+
+- Original Claude definitions live in `agents/**/*.md`. Generated TOML files
+  set names, instructions and reasoning effort, but do **not** enforce Claude
+  model aliases, `maxTurns`, tool restrictions or automatic skill preloads.
+- Codex native delegation replaces Claude's Agent / SendMessage tool names.
+  Resolve MCP calls to exposed `mighty_mcp` tools. Never guess tool names.
+- Read-only instructions are **not a filesystem sandbox**. Parent permissions
+  apply to children.
+- The hook adapter converts Codex spawn events into the original admission hook,
+  but disabled, untrusted or differently-shaped hooks may bypass the guardrail.
+  Verify actual blocked dispatches before write-capable use.
+- SubagentStop and PreCompact adapters are implemented; SessionStart and
+  PostToolUse state-pointer handling remains unmigrated.
+
+## Remaining live acceptance tests
+
+1. In an unrelated scratch repo, confirm all global agents, skills and MCP
+   tools appear, and a read-only scout completes.
+2. Verify a missing/invalid started task causes a **real host-level denial** of
+   `mm-workers-engineer` delegation. Do not substitute a prompt-only refusal.
+3. Verify a valid scoped engineer task, owned-file check, independent
+   fact-checker, persisted verdict and three-failed-fix ceiling.
+4. Verify scout write prevention using actual sandbox permissions.
+5. Verify SubagentStop evidence, compaction, resume, session state and user
+   approvals, then test installed-plugin mode separately.
+6. Validate GitHub/Jira writes through properly scoped approved tooling.
+
+The project is not production-ready until these acceptance checks pass.

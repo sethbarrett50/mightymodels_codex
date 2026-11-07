@@ -1,5 +1,5 @@
 #!/bin/sh
-# Resolve the MightyModels workspace, with a persistent directory for MCP state.
+# Resolve the MightyModels Python workspace without changing the target project cwd.
 set -eu
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 root=$(CDPATH= cd -- "$here/.." && pwd -P)
@@ -10,5 +10,4 @@ export UV_PROJECT_ENVIRONMENT="$root/.venv"
 export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA:-${PLUGIN_DATA:-${MIGHTYMODELS_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mightymodels}}}"
 mkdir -p "$CLAUDE_PLUGIN_DATA"
 chmod 700 "$CLAUDE_PLUGIN_DATA"
-cd "$root"
-exec uv run --locked --no-dev --package mightymodels-mcp mightymodels-mcp
+exec uv run --project "$root" --locked --no-dev --package mightymodels-mcp mightymodels-mcp

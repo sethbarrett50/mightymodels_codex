@@ -1,0 +1,98 @@
+"""Isolated tests for user-scoped Codex installation and uninstall."""
+
+import json
+import subprocess
+import sys
+import tomllib
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[2]
+INSTALLER = ROOT / 'scripts/install_codex_user.py'
+
+
+def invoke(home: Path, *, uninstall: bool = False) -> subprocess.CompletedProcess[str]:
+    args = [sys.executable, str(INSTALLER), '--home', str(home), '--root', str(ROOT)]
+    if uninstall:
+        args.append('--uninstall')
+    return subprocess.run(  # noqa: S603
+        args, text=True, capture_output=True, check=False, cwd=ROOT
+    )
+
+
+@pytest.mark.unit
+def test_user_install_round_trip_preserves_existing_config(tmp_path: Path) -> None:  # noqa: PLR0915
+    codex = tmp_path / '.codex'
+    codex.mkdir()
+    config = codex / 'config.toml'
+    config.write_text('sandbox_mode = "workspace-write"\n\n[other]\nvalue = 7\n')
+    instructions = codex / 'AGENTS.md'
+    instructions.write_text('# Existing policies\n')
+    first = invoke(tmp_path)
+    assert first.returncode == 0, first.stderr
+    assert len(list((codex / 'agents').glob('mm-*.toml'))) == 12
+    assert len(list((tmp_path / '.agents/skills').iterdir())) == 19
+    conf = tomllib.loads(config.read_text())
+    assert conf['sandbox_mode'] == 'workspace-write'
+    assert conf['other']['value'] == 7
+    assert conf['mcp_servers']['mighty_mcp']['args'] == [str(ROOT / 'bin/mightymodels-mcp-codex')]
+    hooks = json.loads((codex / 'hooks.json').read_text())
+    command = hooks['hooks']['PreToolUse'][0]['hooks'][0]['command']
+    assert str(ROOT / 'hooks/codex_bridge.py') in command
+    assert 'git rev-parse' not in command
+    assert invoke(tmp_path).returncode == 0
+    undone = invoke(tmp_path, uninstall=True)
+    assert undone.returncode == 0, undone.stderr
+    assert not list((codex / 'agents').glob('mm-*.toml'))
+    assert not list((tmp_path / '.agents/skills').iterdir())
+    assert not (codex / 'hooks.json').exists()
+    assert tomllib.loads(config.read_text()) == {
+        'sandbox_mode': 'workspace-write',
+        'other': {'value': 7},
+    }
+    assert instructions.read_text().strip() == '# Existing policies'
+
+
+@pytest.mark.unit
+def test_refuses_unmanaged_skill(tmp_path: Path) -> None:
+    existing = tmp_path / '.agents/skills/agents-assemble'
+    existing.mkdir(parents=True)
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'Unmanaged path' in result.stderr
+    assert not (tmp_path / '.codex/config.toml').exists()
+
+
+@pytest.mark.unit
+def test_refuses_unmanaged_mcp_config(tmp_path: Path) -> None:
+    config = tmp_path / '.codex/config.toml'
+    config.parent.mkdir()
+    original = '[mcp_servers.mighty_mcp]\ncommand = "elsewhere"\n'
+    config.write_text(original)
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert config.read_text() == original
+    assert not (tmp_path / '.codex/agents').exists()
+
+
+@pytest.mark.unit
+def test_refuses_unmanaged_hook_file(tmp_path: Path) -> None:
+    hooks = tmp_path / '.codex/hooks.json'
+    hooks.parent.mkdir()
+    hooks.write_text('{"hooks": {}}\n')
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert hooks.read_text() == '{"hooks": {}}\n'
+
+
+@pytest.mark.unit
+def test_uninstall_preserves_unrelated_entries(tmp_path: Path) -> None:
+    root = tmp_path / '.codex'
+    root.mkdir()
+    (root / 'config.toml').write_text('[env]\nmode = "test"\n')
+    result = invoke(tmp_path)
+    assert result.returncode == 0, result.stderr
+    result = invoke(tmp_path, uninstall=True)
+    assert result.returncode == 0, result.stderr
+    assert tomllib.loads((root / 'config.toml').read_text()) == {'env': {'mode': 'test'}}

@@ -1,6 +1,6 @@
 <div align="center">
 
-> **Experimental Codex port:** This fork includes 12 native Codex agents, 19 project-visible skills, MCP startup, and Codex lifecycle adapters. See [Codex setup and remaining limitations](docs/CODEX.md). This is not yet runtime-validated, and safety-critical dispatch guardrails must be verified before production use. No Astra model is configured.
+> **Experimental Codex port:** This fork includes 12 native Codex agents, 19 project-visible skills, MCP startup, and Codex lifecycle adapters. See [Codex setup, user-wide installer, and live validation](docs/CODEX.md). This is not yet runtime-validated, and safety-critical dispatch guardrails must be verified before production use. No Astra model is configured.
 
 # mightymodels
 
