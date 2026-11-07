@@ -8,9 +8,8 @@ import argparse
 import json
 import sys
 from collections import Counter
-from contextlib import nullcontext
 from pathlib import Path
-from typing import TextIO  # noqa: TC003 - Python 3.13 evaluates annotations
+from typing import TextIO
 
 USAGE_FIELDS = (
     'input_tokens',
@@ -34,42 +33,56 @@ def _positive_count(value: object) -> int:
     return 0
 
 
+def _parse_event(line: str) -> dict | None:
+    if len(line) > MAX_LINE_LENGTH:
+        return None
+    try:
+        parsed = json.loads(line)
+    except ValueError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def _count_usage(usage: object, counts: Counter[str], tokens: Counter[str]) -> None:
+    if not isinstance(usage, dict):
+        counts['turns_without_usage'] += 1
+        return
+    for name in USAGE_FIELDS:
+        tokens[name] += _positive_count(usage.get(name))
+
+
+def _count_event(event: dict, counts: Counter[str], tokens: Counter[str]) -> None:
+    kind = event.get('type')
+    if kind in ('turn.started', 'turn.completed', 'turn.failed'):
+        counts[kind.replace('.', '_')] += 1
+    elif kind == 'item.started':
+        counts['items_started'] += 1
+        item = event.get('item')
+        item_type = item.get('type') if isinstance(item, dict) else None
+        mapped = (
+            ITEM_TYPES.get(item_type, 'other_items')
+            if isinstance(item_type, str)
+            else 'other_items'
+        )
+        counts[mapped] += 1
+    elif kind == 'error':
+        counts['errors'] += 1
+    elif kind not in ('thread.started', 'item.updated', 'item.completed'):
+        counts['unknown_events'] += 1
+    if kind == 'turn.completed':
+        _count_usage(event.get('usage'), counts, tokens)
+
+
 def summarize(lines: TextIO) -> dict[str, object]:
     """Consume only event kinds, operation classes and numeric usage fields."""
     counts: Counter[str] = Counter()
     tokens: Counter[str] = Counter()
     for line in lines:
-        if len(line) > MAX_LINE_LENGTH:
+        event = _parse_event(line)
+        if event is None:
             counts['malformed_events'] += 1
-            continue
-        try:
-            event = json.loads(line)
-        except ValueError:
-            counts['malformed_events'] += 1
-            continue
-        if not isinstance(event, dict):
-            counts['malformed_events'] += 1
-            continue
-        kind = event.get('type')
-        if kind in ('turn.started', 'turn.completed', 'turn.failed'):
-            counts[kind.replace('.', '_')] += 1
-        elif kind == 'item.started':
-            counts['items_started'] += 1
-            item = event.get('item')
-            item_type = item.get('type') if isinstance(item, dict) else None
-            mapped = ITEM_TYPES.get(item_type, 'other_items') if isinstance(item_type, str) else 'other_items'
-            counts[mapped] += 1
-        elif kind == 'error':
-            counts['errors'] += 1
-        elif kind not in ('thread.started', 'item.updated', 'item.completed'):
-            counts['unknown_events'] += 1
-        if kind == 'turn.completed':
-            usage = event.get('usage')
-            if isinstance(usage, dict):
-                for name in USAGE_FIELDS:
-                    tokens[name] += _positive_count(usage.get(name))
-            else:
-                counts['turns_without_usage'] += 1
+        else:
+            _count_event(event, counts, tokens)
     return {
         'source': 'codex-exec-jsonl',
         'effective_model_identity': 'unverified',
