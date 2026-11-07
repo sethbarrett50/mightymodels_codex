@@ -353,6 +353,11 @@ copying or changing them. The user-scoped installer migrates its previously
 owned `~/.agents/skills/<name>` symlinks to these generated skill
 directories. Project-scope links in `.agents/skills` also point there.
 
+The generator also rewrites legacy Claude `CLAUDE_PLUGIN_ROOT` prose and
+Claude-only model-alias instructions in the affected workflows so the Codex
+copies reference installed skill links and native role model configuration.
+The original Claude skill sources are unchanged.
+
 This is an **initial transport-level translation**; it does NOT make the
 Codex host enforce Claude `allowed-tools`, `maxTurns`, or automatic
 skill preloads. Required decisions remain fail-closed. Certain multi-agent

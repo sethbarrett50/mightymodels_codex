@@ -28,8 +28,7 @@ The bridge from "work done" to "work reviewable". It is its own stage so the use
 between the sprint's last commit and anything public, and so CI failures are routed by cause,
 not handled by whoever is cheapest.
 
-Run from the repository root. Claude Code substitutes `${CLAUDE_PLUGIN_ROOT}` in this file as
-an absolute path:
+Run from the repository root. Codex resolves MightyModels helpers through installed `$HOME/.agents/skills/` links:
 
 - `task_ready`, `task_start`, `task_verify`, `task_mark` and `task_show` for task state.
 - `python3 "$HOME/.agents/skills/open-ticket/scripts/humanize_tracker_body.py"` for the PR body.

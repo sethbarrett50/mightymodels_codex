@@ -54,6 +54,15 @@ def test_project_scoped_skills() -> None:
 
 
 @pytest.mark.unit
+def test_generated_skills_avoid_claude_runtime_assumptions() -> None:
+    for skill in (ROOT / '.codex/skills').glob('*/SKILL.md'):
+        instructions = skill.read_text(encoding='utf-8')
+        assert '${CLAUDE_PLUGIN_ROOT}' not in instructions
+        assert 'Models are the fixed aliases `subagent-models` lists' not in instructions
+        assert 'Claude Codex user decision gate recorder' not in instructions
+
+
+@pytest.mark.unit
 def test_hook_configurations_parse() -> None:
     for path in ('hooks/codex-hooks.json', 'hooks/codex-global-template.json'):
         data = json.loads((ROOT / path).read_text(encoding='utf-8'))
