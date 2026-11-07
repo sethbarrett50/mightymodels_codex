@@ -23,13 +23,23 @@ This fork has two runtimes: native Codex roles in `.codex/agents/`, and legacy C
 2. Call MCP tools exposed by `mighty_mcp` using the tool names that Codex actually lists; Claude-qualified `mcp__plugin_mightymodels_mighty-mcp__tool` in skills means the corresponding `tool` from this MCP server. Never guess a tool that isn't exposed.
 3. Read the named skill's `SKILL.md` and its references before running the workflow; Claude `skills:` frontmatter was not automatically migrated to a preloaded Codex context.
 4. Resolve Claude model aliases (haiku, sonnet, opus, fable) to the **currently selected Codex model**. Never request Anthropic or Astra models. Use each role's declared reasoning effort where supported.
-5. When a skill calls for Claude's `AskUserQuestion`, use Codex's native `request_user_input` tool **if it is actually available in the current session**. Offer concise selectable options with a custom/free-text answer path. Invoke the tool; printing bullets or claiming to have opened a popup is not equivalent. If unavailable, ask the same question explicitly in chat, stop and await the user's answer. Never fabricate or auto-select an answer. This input tool is distinct from execution approval.
+5. When a skill calls for Claude's `AskUserQuestion`, distinguish **optional feedback** from a **required decision gate**. For optional feedback, use Codex's native `request_user_input` only when actually available in the current session; offer concise options and a free-text path. For a required gate in Default mode, ask directly in chat and stop until the user answers, because the native popup can auto-resolve. In Plan mode a native blocking question may be used when available, but verify a real answer was received. Never claim to have opened a popup without invoking the tool, and never fabricate or auto-select an answer. This tool is distinct from execution approval.
 
 ## Interactive gate behavior
 
 On the `codex` Linux account, enabling `[features] default_mode_request_user_input = true` in `~/.codex/config.toml` makes the native question tool available in supported Default-mode sessions. Restart Codex after changing it. This is a user-level setting, not a project or plugin setting. The availability of a tool must still be checked at runtime. Codex Default-mode prompts may time out; a timeout or empty answer is **not** consent to progress past a required gate.
 
 For the `lets-investigate` and other interactive MightyModels skills, the investigation framing, user classification, and end-of-round decision must reflect a real user response. Claude's `AskUserQuestion` recorder hook has not been migrated to Codex. If a Codex reply is not automatically persisted by MCP, record the exact user-provided evidence/decision through the existing permitted investigation tools, following the skill's data rules; never invent user decisions.
+
+## Required user decisions — fail closed
+
+- Identify decision gates explicitly (investigation framing, user classification, end-of-round choice, workflow approval, or any step whose correct next action depends on the user).
+- In **Default mode**, do not rely on `request_user_input` for a required decision: its popup can auto-resolve without an answer. Ask one clear question in ordinary chat and **end the turn** until the user responds. Native `request_user_input` is appropriate for optional, non-gating feedback only.
+- In **Plan mode**, a native `request_user_input` question can be blocking if the tool is available. A missing/empty/tool-cancelled response is still not a decision.
+- A timeout, missing/empty answer, auto-resolution, tool failure, or interrupted session must **never** be interpreted as approval or as permission to advance a required gate.
+- Do not dispatch workers, change ticket/investigation state, perform gated writes, or select defaults while the required decision is pending. Unrelated non-gated work may continue only when safe.
+- Persist the pending decision using existing permitted MightyModels state/evidence mechanisms when available; restore it across compaction or resume. Never invent a reply or claim a prompt remains visually open.
+- Do not attempt to set `autoResolutionMs` or `isBlocking` in a model-facing call unless the active tool schema exposes and documents that parameter. Instructions cannot override Codex TUI timeout behavior.
 
 ## Safety invariants — not optional
 
