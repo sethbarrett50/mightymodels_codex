@@ -343,3 +343,28 @@ Codex host enforce Claude `allowed-tools`, `maxTurns`, or automatic
 skill preloads. Required decisions remain fail-closed. Certain multi-agent
 Claude-specific workflows and live runtime compatibility still require
 testing before claiming full parity with Claude; issue #14 stays open.
+
+## Read-only Codex install doctor — issue #15 (diagnostic slice)
+
+After updating or moving the MightyModels checkout, run as the unprivileged
+`codex` account:
+
+```sh
+cd ~/code/mightymodels_codex
+python3 scripts/install_codex_user.py
+python3 scripts/codex_doctor.py
+```
+
+The doctor checks ownership and targets of the global MCP registration,
+11 native agent role entries, 19 generated Codex skill symlinks, and the
+managed global hook manifest. It warns when launched inside this checkout
+because the project-scoped MCP configuration might overlap with the global
+one. Warnings do **not** imply a proven duplicate server: actual config
+precedence must be checked in the CLI. A nonzero exit indicates a missing or
+unexpected installed component.
+
+The doctor makes **no writes**, does not run agent dispatches, and never reads
+`~/.config/gh`, token files or credential values. It does not establish that
+hooks actually fired or were trusted, or that scouts were sandboxed.
+Remaining installer transactionality, third-party hook coexistence and
+live host enforcement stay open under #15/#9.
