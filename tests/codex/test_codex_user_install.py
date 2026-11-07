@@ -36,6 +36,12 @@ def test_user_install_round_trip_preserves_existing_config(tmp_path: Path) -> No
     conf = tomllib.loads(config.read_text())
     assert conf['sandbox_mode'] == 'workspace-write'
     assert conf['other']['value'] == 7
+    roles = {name: value for name, value in conf['agents'].items() if name.startswith('mm-')}
+    assert len(roles) == 12
+    assert roles['mm-triage-code-scout']['config_file'] == str(
+        ROOT / '.codex/agents/mm-triage-code-scout.toml'
+    )
+    assert roles['mm-triage-code-scout']['description']
     assert conf['mcp_servers']['mighty_mcp']['args'] == [str(ROOT / 'bin/mightymodels-mcp-codex')]
     hooks = json.loads((codex / 'hooks.json').read_text())
     command = hooks['hooks']['PreToolUse'][0]['hooks'][0]['command']
@@ -96,3 +102,15 @@ def test_uninstall_preserves_unrelated_entries(tmp_path: Path) -> None:
     result = invoke(tmp_path, uninstall=True)
     assert result.returncode == 0, result.stderr
     assert tomllib.loads((root / 'config.toml').read_text()) == {'env': {'mode': 'test'}}
+
+
+@pytest.mark.unit
+def test_unowned_custom_role_is_not_overwritten(tmp_path: Path) -> None:
+    config = tmp_path / '.codex/config.toml'
+    config.parent.mkdir()
+    original = '[agents."mm-triage-code-scout"]\ndescription = "custom"\n'
+    config.write_text(original)
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'unowned MightyModels agent role' in result.stderr
+    assert config.read_text() == original
