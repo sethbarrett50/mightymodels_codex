@@ -16,7 +16,8 @@ SCRIPT = SimpleNamespace(**runpy.run_path(str(ROOT / 'scripts/codex_live_accepta
 @pytest.mark.unit
 def test_successful_read_only_smoke_emits_only_counters_and_unverified_flags() -> None:
     completed = subprocess.CompletedProcess(
-        args=[], returncode=0,
+        args=[],
+        returncode=0,
         stdout='{"type":"turn.completed","usage":{"input_tokens":15}}\n'
         '{"type":"item.completed","item":{"text":"SECRET_API_KEY_DO_NOT_LOG"}}\n',
         stderr='SECRET_AUTH_LOG_DO_NOT_LOG',
@@ -33,7 +34,8 @@ def test_successful_read_only_smoke_emits_only_counters_and_unverified_flags() -
 @pytest.mark.unit
 def test_failed_executable_and_suspicious_version_are_not_reported_as_success() -> None:
     completed = subprocess.CompletedProcess(
-        args=[], returncode=1,
+        args=[],
+        returncode=1,
         stdout='{"type":"turn.failed","error":"SECRET"}\n',
         stderr='SECRET',
     )
