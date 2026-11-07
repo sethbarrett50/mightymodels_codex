@@ -46,7 +46,7 @@ def safe_write(path: Path, content: str) -> None:
 
 def reconcile_link(
     destination: Path, source: Path, *, remove: bool, previous_source: Path | None = None
-) -> None:
+) -> None:  # noqa: PLR0913
     if destination.is_symlink():
         old_target = previous_source.resolve() if previous_source is not None else None
         if destination.resolve(strict=False) not in (source.resolve(), old_target):

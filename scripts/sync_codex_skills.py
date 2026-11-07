@@ -17,6 +17,7 @@ LEGACY_ADAPTER = re.compile(
 )
 MCP_PREFIX = 'mcp__plugin_mightymodels_mighty-mcp__'
 CODEX_PREFIX = 'mcp__mighty_mcp__'
+EXPECTED_SKILLS = 19
 BANNER = (
     '> **Native Codex workflow (generated):** This file is generated from the '
     'Claude skill; do not edit it directly. MCP calls must use actual '
@@ -59,8 +60,8 @@ def translated(source: Path) -> str:
 
 def generate(root: Path) -> dict[str, str]:
     sources = sorted((root / 'skills').glob('*/SKILL.md'))
-    if len(sources) != 19:
-        msg = f'Expected 19 source skills, found {len(sources)}'
+    if len(sources) != EXPECTED_SKILLS:
+        msg = f'Expected {EXPECTED_SKILLS} source skills, found {len(sources)}'
         raise ValueError(msg)
     result = {}
     for source in sources:
