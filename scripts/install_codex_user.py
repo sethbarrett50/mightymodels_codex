@@ -329,11 +329,15 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
         parser.error(f'Unmanaged retired agent path: {retired}')
     hooks = codex / 'hooks.json'
     expected_hooks = hook_config(root)
-    if hooks.is_symlink() or (
-        hooks.exists() and not hooks_are_owned(hooks.read_text(encoding='utf-8'), expected_hooks)
-    ):
-        parser.error(f'Unmanaged hooks configuration exists: {hooks}; merge manually')
+    if hooks.is_symlink():
+        parser.error(f'Unmanaged hooks symlink exists: {hooks}')
     try:  # noqa: PLW0717, PLR1702
+        # Check user hooks can be merged before touching any links.
+        merge_hook_text(
+            hooks.read_text(encoding='utf-8') if hooks.exists() else None,
+            expected_hooks,
+            remove=args.uninstall,
+        )
         # Validate global config before modifying installed links.
         global_conf = codex / 'config.toml'
         if global_conf.is_symlink():
