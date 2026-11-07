@@ -63,6 +63,30 @@ def test_generated_skills_avoid_claude_runtime_assumptions() -> None:
 
 
 @pytest.mark.unit
+def test_native_roles_do_not_require_legacy_claude_tools_or_skill_preloads() -> None:
+    role_files = sorted((ROOT / '.codex/agents').glob('mm-*.toml'))
+    assert len(role_files) == 11
+    forbidden = (
+        '`Read`',
+        '`Grep`',
+        '`Glob`',
+        '`Bash`',
+        '`Agent`',
+        '`Edit`',
+        '`Write`',
+        'preloaded `prompting-subagents` skill',
+        'preloaded `becoming-merge-vader` skill',
+        'preloaded `becoming-uncle-bob` skill',
+    )
+    for path in role_files:
+        role = tomllib.loads(path.read_text(encoding='utf-8'))
+        instructions = role['developer_instructions']
+        assert all(legacy not in instructions for legacy in forbidden), path.name
+        assert 'Load required skills explicitly from $HOME/.agents/skills' in instructions
+        assert 'NOT automatically enforced by Codex' in instructions
+
+
+@pytest.mark.unit
 def test_hook_configurations_parse() -> None:
     for path in ('hooks/codex-hooks.json', 'hooks/codex-global-template.json'):
         data = json.loads((ROOT / path).read_text(encoding='utf-8'))

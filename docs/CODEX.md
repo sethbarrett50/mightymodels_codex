@@ -26,6 +26,25 @@ The separate, unprivileged `codex` user on Debian 13 successfully:
 The scout's `/root/...` agent identifier is a coordinator hierarchy identifier;
 the OS account was verified as UID 1002 (`codex`), not Linux root.
 
+## Native agent instructions (issue #14)
+
+The generated `.codex/agents/mm-*.toml` role bodies translate supported
+Claude-specific tool names into the corresponding Codex interactions:
+`exec_command` for file/shell inspection, `apply_patch` for changes, and
+`spawn_agent` for permitted delegation. Native roles are referred to by
+their full `mm-` names. References claiming MightyModels skills are
+automatically preloaded have been replaced with instructions to read the
+installed skill's `SKILL.md` explicitly under `$HOME/.agents/skills/`.
+The original `agents/**/*.md` definitions remain unchanged.
+
+This mapping is a **textual runtime translation**, not host-enforced permissions:
+the source `tools`, `skills`, `maxTurns`, and other Claude frontmatter
+fields remain documented as unmapped in the compatibility report. Custom
+Codex agents inherit the parent's sandbox and approvals. The agent can only
+use native tool operations that are actually exposed in its current session;
+if unavailable, it must stop rather than silently fall back to a different
+tool or unregistered agent. Live workflow acceptance is still required.
+
 ## Source, enabled and reported roles
 
 The source tree includes 12 original Claude roles. The native Codex generator emits 11 enabled roles and deliberately omits Fable/wingman. `.codex/compatibility-report.json` counts the **12 source roles**, including the disabled one: its `count` is not the enabled-install count. All 19 skills have Codex-specific generated equivalents. Run `python3 scripts/sync_codex_agents.py --check` and `python3 scripts/sync_codex_skills.py --check` for generation drift; these checks are not live host acceptance.

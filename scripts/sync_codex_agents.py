@@ -29,6 +29,52 @@ def field(frontmatter: str, key: str) -> str | None:
     return match.group(1).strip() if match is not None else None
 
 
+# Translate tool-specific source instructions only in generated Codex agent copies.
+# Order compound aliases before single names to avoid double replacement.
+ROLE_TRANSLATIONS = (
+    ('`Read`, `Grep`, `Glob`', '`exec_command` (file reads, `rg`, `rg --files`)'),
+    ('`Read`, `Grep`', '`exec_command` (file reads and `rg`)'),
+    ('`Grep`, `Glob`', '`exec_command` (`rg` and `rg --files`)'),
+    ('`Edit`, `Write`', '`apply_patch`'),
+    ('`Read`', '`exec_command` (read-only file inspection)'),
+    ('`Grep`', '`exec_command` with `rg`'),
+    ('`Glob`', '`exec_command` with `rg --files`'),
+    ('`Edit`', '`apply_patch`'),
+    ('`Write`', '`apply_patch`'),
+    ('`Bash`', '`exec_command`'),
+    ('`Agent`', '`spawn_agent`'),
+    ('`code-scout`', '`mm-triage-code-scout`'),
+    ('`web-scout`', '`mm-triage-web-scout`'),
+    ('`qualitylens`', '`mm-review-qualitylens`'),
+    (
+        'preloaded `prompting-subagents` skill',
+        'installed `$prompting-subagents` skill (read its SKILL.md explicitly)',
+    ),
+    (
+        'preloaded `becoming-merge-vader` skill',
+        'installed `$becoming-merge-vader` skill (read its SKILL.md explicitly)',
+    ),
+    (
+        'preloaded `becoming-uncle-bob` skill',
+        'installed `$becoming-uncle-bob` skill (read its SKILL.md explicitly)',
+    ),
+    (
+        (
+            'Its text is in your context from the start, under a line that reads '
+            '"Base directory for this skill:" and gives the skill\'s absolute path;'
+        ),
+        'Read the skill from $HOME/.agents/skills/ before continuing;',
+    ),
+)
+
+
+def native_body(source: str) -> str:
+    """Translate supported Claude tool references; never infer host enforcement."""
+    for original, native in ROLE_TRANSLATIONS:
+        source = source.replace(original, native)
+    return source
+
+
 def generate(root: Path) -> dict[str, str]:  # noqa: PLR0914, PLR0915
     result = {}
     report = []
@@ -71,7 +117,10 @@ def generate(root: Path) -> dict[str, str]:  # noqa: PLR0914, PLR0915
             f'Ported from {relative}.\n'
             'IMPORTANT: Claude-specific tool allowlists, skill preloads, '
             'and agent dispatch identifiers are NOT automatically enforced by Codex. '
-            'Consult docs/CODEX.md. Do not execute write-capable workflows until '
+            'Load required skills explicitly from $HOME/.agents/skills and use native '
+            'Codex role names (mm-triage-code-scout, mm-triage-web-scout, '
+            'mm-review-qualitylens). Consult docs/CODEX.md. '
+            'Do not execute write-capable workflows until '
             'their MCP and safety controls are validated.\n\n'
         )
 
@@ -81,7 +130,7 @@ def generate(root: Path) -> dict[str, str]:  # noqa: PLR0914, PLR0915
         lines = [f'name = {encoded(role)}', f'description = {encoded(description)}']
         lines.append(f'model = {encoded(model)}')
         lines.append(f'model_reasoning_effort = {encoded(routed_effort)}')
-        lines.append(f'developer_instructions = {encoded(notes + raw[match.end() :])}')
+        lines.append(f'developer_instructions = {encoded(notes + native_body(raw[match.end() :]))}')
         target = (root / '.codex/agents' / f'{role}.toml').relative_to(root).as_posix()
         result[target] = '\n'.join(lines) + '\n'
         unmapped = [
