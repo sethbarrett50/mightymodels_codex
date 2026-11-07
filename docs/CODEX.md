@@ -59,9 +59,13 @@ the MightyModels state database. Keep this checkout at its installed location;
 reinstall after moving it. Restart Codex after installing or uninstalling.
 
 **Caution:** Codex may require explicit trust for newly installed hooks; hooks
-being present on disk is not evidence they executed. An unrelated preexisting
-`~/.codex/hooks.json` causes the installer to stop rather than overwrite it.
-Merge hook definitions manually in that case.
+being present on disk is not evidence they executed. The installer now safely
+merges exact MightyModels event groups into an existing valid global hook file
+without deleting unrelated event definitions. It refuses malformed JSON,
+symlinked hook manifests, duplicate managed groups and unexpected commands
+that resemble a modified MightyModels bridge. Uninstall removes only its
+recognized groups while keeping foreign hooks. This is a structural merge,
+not a guarantee that Codex loads, trusts or executes both hook sources.
 
 ### Per-repository workflow
 
@@ -398,7 +402,7 @@ A nonzero exit indicates a missing or unexpected installed component.
 The doctor makes **no writes**, does not run agent dispatches, and never reads
 `~/.config/gh`, token files or credential values. It does not establish that
 hooks actually fired or were trusted, or that scouts were sandboxed.
-Remaining crash/power-loss transactionality, third-party hook coexistence,
+Remaining crash/power-loss transactionality, mixed-hook upgrade edge cases,
 plugin-vs-global precedence, and live host enforcement stay open under #15/#9.
 
 ## Project hygiene without unverified Claude hooks — issue #17
