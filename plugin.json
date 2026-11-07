@@ -1,0 +1,13 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "mightymodels-codex",
+  "version": "0.1.0",
+  "description": "Experimental native Codex adaptation of MightyModels roles, skills and MCP state server",
+  "repository": "https://github.com/sethbarrett50/mightymodels_codex",
+  "license": "Apache-2.0",
+  "extensions": {
+    "com.openai": {
+      "hooks": "./hooks/codex-hooks.json"
+    }
+  }
+}

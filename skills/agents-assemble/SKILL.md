@@ -18,6 +18,9 @@ allowed-tools:
   - mcp__plugin_mightymodels_mighty-mcp__task_show
 ---
 
+> **Codex runtime adapter (MightyModels fork):** When running under Codex, interpret Claude's `Agent` tool as native `spawn_agent` with `agent_type` mapped via the repository's `AGENTS.md` (or `docs/CODEX.md` when installed as a plugin). Reuse an existing agent through the native follow-up messaging tool rather than literal `SendMessage`. Call actual tools exposed by the MightyModels MCP server, not hardcoded `mcp__plugin_mightymodels_mighty-mcp__*` names. Read required companion skills explicitly; Claude `skills:` preloading, `allowed-tools:` and automatic model routing are not Codex permission controls. `${CLAUDE_SKILL_DIR}` means this SKILL.md's directory; `$ARGUMENTS` means the user's invocation arguments. Do not bypass the existing task-start, owned-file, independent fact-checking or review gates when a tool is unavailable. No Astra model is configured.
+
+
 # agents-assemble
 
 The per-task loop. Its design bet is that verification has a persisted target: the ASKED half of each brief is written *before* the engineer starts, so "done" is checkable against what was asked rather than against what got built. The second bet is that you are a skeptical manager, not a second implementer. Your context is the scarce resource that grounds the whole workflow, so workers do the work and the checking, and you keep each one accountable through checks and balances: the implementer's report set against the fact-checker's report. You compare the two and look further yourself only on a contradiction or on vagueness; rereading the whole diff by yourself is how your context fills with what a worker should have read. You decide the verdict and record it. Read `references/contracts.md` once per session: it carries the severity table, verdict vocabularies, the two-half brief schema, and the caps this file assumes.

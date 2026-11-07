@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "mighty-mcp": {
+      "type": "stdio",
+      "command": "./bin/mightymodels-mcp-codex"
+    }
+  }
+}
