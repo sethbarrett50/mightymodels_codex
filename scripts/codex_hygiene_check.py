@@ -11,6 +11,8 @@ from collections import Counter
 from pathlib import Path
 from shutil import which
 
+_SOURCE_READ_ERRORS = (OSError, UnicodeError)
+
 GIT_BINARY = which('git')
 
 SUPPRESSION = re.compile(r'(?i)#\s*(?:ruff:\s*)?noqa\b|#\s*(?:type|ty):\s*ignore\b')
@@ -48,7 +50,7 @@ def audit_file(base: str, root: Path, relative: Path) -> int:
     previous_source = '' if previous.returncode else previous.stdout
     try:
         current_source = target.read_text(encoding='utf-8')
-    except OSError, UnicodeError:
+    except _SOURCE_READ_ERRORS:
         print(f'Could not read Python source: {relative}')
         return -1
     return added_suppression_count(previous_source, current_source)

@@ -6,6 +6,8 @@ from pathlib import Path
 
 from install_codex_user import AGENT_COUNT, SKILL_COUNT, hook_config, hooks_are_owned
 
+_CONFIG_READ_ERRORS = (OSError, ValueError)
+
 
 def note(message: str, *, ok: bool) -> str:
     return f'[{"OK" if ok else "FAIL"}] {message}'
@@ -59,7 +61,7 @@ def check_hooks(home: Path, root: Path) -> str:
         return note('Global MightyModels hooks missing or a symlink', ok=False)
     try:
         owned = hooks_are_owned(hooks.read_text(encoding='utf-8'), hook_config(root))
-    except OSError, ValueError:
+    except _CONFIG_READ_ERRORS:
         owned = False
     message = (
         'Installed MightyModels hooks are owned; runtime trust not verified'
@@ -75,7 +77,7 @@ def check_project_overlap(root: Path, cwd: Path) -> str | None:
         return None
     try:
         project = tomllib.loads(config.read_text(encoding='utf-8'))
-    except OSError, ValueError:
+    except _CONFIG_READ_ERRORS:
         return '[WARN] Project-scoped Codex config missing or malformed'
     if 'mighty_mcp' not in project.get('mcp_servers', {}):
         return None
@@ -91,7 +93,7 @@ def diagnose(home: Path, root: Path, cwd: Path) -> tuple[list[str], bool]:
         return ['[FAIL] MightyModels MCP launcher missing from checkout'], False
     try:
         config = tomllib.loads((home / '.codex/config.toml').read_text(encoding='utf-8'))
-    except OSError, ValueError:
+    except _CONFIG_READ_ERRORS:
         return ['[FAIL] Global Codex config missing or malformed'], False
 
     reports = [
