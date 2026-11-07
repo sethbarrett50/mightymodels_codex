@@ -9,8 +9,11 @@ import json
 import os
 import shlex
 import tomllib
-from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 from pathlib import Path
 from stat import S_IMODE
 
@@ -49,46 +52,55 @@ def safe_write(path: Path, content: str) -> None:
 
 
 
+Snapshot = tuple[Path, str, bytes | Path | None, int]
+
+
+def capture_snapshot(path: Path) -> Snapshot:
+    if path.is_symlink():
+        return path, 'link', path.readlink(), 0
+    if path.is_file():
+        return path, 'file', path.read_bytes(), S_IMODE(path.stat().st_mode)
+    if path.exists():
+        msg = f'Refusing to snapshot non-file destination: {path}'
+        raise FileExistsError(msg)
+    return path, 'absent', None, 0
+
+
+def restore_snapshot(snapshot: Snapshot) -> None:
+    path, kind, saved, mode = snapshot
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    if kind == 'link' and isinstance(saved, Path):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.symlink_to(saved)
+    elif kind == 'file' and isinstance(saved, bytes):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(saved)
+        path.chmod(mode)
+
+
+def remove_empty_created_directories(directories: set[Path]) -> None:
+    for directory in sorted(directories, key=lambda item: len(item.parts), reverse=True):
+        with suppress(OSError):
+            directory.rmdir()
+
+
 @contextmanager
 def restore_on_failure(paths: list[Path]) -> Iterator[None]:
     """Undo file/link mutations on ordinary failures; not a crash-safe journal."""
-    snapshots: list[tuple[Path, str, bytes | str | None, int]] = []
+    snapshots = [capture_snapshot(path) for path in paths]
     missing_dirs: set[Path] = set()
     for path in paths:
-        if path.is_symlink():
-            snapshots.append((path, 'link', os.readlink(path), 0))
-        elif path.is_file():
-            snapshots.append((path, 'file', path.read_bytes(), S_IMODE(path.stat().st_mode)))
-        elif path.exists():
-            msg = f'Refusing to snapshot non-file destination: {path}'
-            raise FileExistsError(msg)
-        else:
-            snapshots.append((path, 'absent', None, 0))
         parent = path.parent
         while not parent.exists():
             missing_dirs.add(parent)
             parent = parent.parent
-
     try:
         yield
     except _ROLLBACK_ERRORS:
-        for path, kind, saved, mode in reversed(snapshots):
-            if path.is_symlink() or path.is_file():
-                path.unlink()
-            if kind == 'link':
-                assert isinstance(saved, str)
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.symlink_to(saved)
-            elif kind == 'file':
-                assert isinstance(saved, bytes)
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(saved)
-                path.chmod(mode)
-        for directory in sorted(missing_dirs, key=lambda item: len(item.parts), reverse=True):
-            try:
-                directory.rmdir()
-            except OSError:
-                pass  # Do not remove nonempty directories, even after an interrupted install.
+        for snapshot in reversed(snapshots):
+            restore_snapshot(snapshot)
+        remove_empty_created_directories(missing_dirs)
         raise
 
 
@@ -199,7 +211,7 @@ def update_instructions(path: Path, root: Path, *, remove: bool) -> None:
         safe_write(path, content)
 
 
-def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
+def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915, PLR1702
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--uninstall', action='store_true')
     parser.add_argument('--home', type=Path, default=Path.home())
