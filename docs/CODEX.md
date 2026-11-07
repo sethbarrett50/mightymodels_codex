@@ -83,7 +83,10 @@ merges exact MightyModels event groups into an existing valid global hook file
 without deleting unrelated event definitions. It refuses malformed JSON,
 symlinked hook manifests, duplicate managed groups and unexpected commands
 that resemble a modified MightyModels bridge. Uninstall removes only its
-recognized groups while keeping foreign hooks. This is a structural merge,
+recognized groups while keeping foreign hooks. A hook file carrying unrelated
+top-level metadata is never replaced by a template or deleted just because
+its recognized MightyModels hook groups are gone. The doctor also rejects
+duplicated managed event groups rather than calling such an installation healthy. This is a structural merge,
 not a guarantee that Codex loads, trusts or executes both hook sources.
 
 ### Per-repository workflow

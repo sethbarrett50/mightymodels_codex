@@ -132,7 +132,11 @@ def hooks_are_owned(held: str, expected: str) -> bool:
         current = json.loads(expected)
     except ValueError:
         return False
-    if not isinstance(original, dict) or original.get('description') != current['description']:
+    if (
+        not isinstance(original, dict)
+        or set(original) != set(current)
+        or original.get('description') != current['description']
+    ):
         return False
     observed = original.get('hooks')
     supported = current['hooks']
@@ -160,7 +164,8 @@ def managed_hooks_present(held: str, expected: str) -> bool:
         return False
     observed = original['hooks']
     return all(
-        isinstance(observed.get(event), list) and all(group in observed[event] for group in groups)
+        isinstance(observed.get(event), list)
+        and all(observed[event].count(group) == 1 for group in groups)
         for event, groups in required['hooks'].items()
     )
 
@@ -226,7 +231,10 @@ def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str
             del held['hooks'][event]
     if not changed:
         return existing
-    if remove and not held['hooks'] and held.get('description') == required['description']:
+    only_owned_metadata = (
+        set(held) == set(required) and held.get('description') == required['description']
+    )
+    if remove and not held['hooks'] and only_owned_metadata:
         return None
     return json.dumps(held, indent=2) + '\n'
 
