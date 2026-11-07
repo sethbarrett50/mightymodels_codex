@@ -326,7 +326,7 @@ def main() -> int:
     try:
         event = json.load(sys.stdin)
     except INPUT_ERRORS:
-        print(json.dumps(denial('Invalid Codex hook event'))
+        print(json.dumps(denial('Invalid Codex hook event')))
         return 0
     root = Path(__file__).resolve().parent.parent
     audit_probe(event, dict(os.environ))
