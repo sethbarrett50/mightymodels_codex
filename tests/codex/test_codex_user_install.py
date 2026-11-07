@@ -87,13 +87,22 @@ def test_refuses_unmanaged_mcp_config(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
-def test_refuses_unmanaged_hook_file(tmp_path: Path) -> None:
+def test_valid_existing_global_hooks_are_merged_and_preserved(tmp_path: Path) -> None:
     hooks = tmp_path / '.codex/hooks.json'
     hooks.parent.mkdir()
-    hooks.write_text('{"hooks": {}}\n')
-    result = invoke(tmp_path)
-    assert result.returncode != 0
-    assert hooks.read_text() == '{"hooks": {}}\n'
+    original = {'description': 'personal hooks', 'hooks': {'Other': []}}
+    hooks.write_text(json.dumps(original) + '\n')
+    installed = invoke(tmp_path)
+    assert installed.returncode == 0, installed.stderr
+    merged = json.loads(hooks.read_text())
+    assert merged['description'] == 'personal hooks'
+    assert merged['hooks']['Other'] == []
+    assert len(merged['hooks']['PreToolUse']) == 1
+    assert invoke(tmp_path).returncode == 0
+    assert len(json.loads(hooks.read_text())['hooks']['PreToolUse']) == 1
+    undone = invoke(tmp_path, uninstall=True)
+    assert undone.returncode == 0, undone.stderr
+    assert json.loads(hooks.read_text()) == original
 
 
 @pytest.mark.unit
@@ -151,16 +160,17 @@ def test_reinstall_upgrades_owned_previous_hook_manifest(tmp_path: Path) -> None
 
 @pytest.mark.unit
 def test_existing_foreign_hook_event_is_not_removed(tmp_path: Path) -> None:
-    current = json.loads((ROOT / 'hooks/codex-global-template.json').read_text())
-    current['hooks']['PreToolUse'].append({'matcher': 'Bash', 'hooks': []})
+    assert invoke(tmp_path).returncode == 0
     hooks = tmp_path / '.codex/hooks.json'
-    hooks.parent.mkdir(parents=True)
-    original = json.dumps(current, indent=2) + '\n'
-    hooks.write_text(original)
+    current = json.loads(hooks.read_text())
+    foreign = {'matcher': 'Bash', 'hooks': [{'type': 'command', 'command': 'true'}]}
+    current['hooks']['PreToolUse'].append(foreign)
+    hooks.write_text(json.dumps(current, indent=2) + '\n')
     result = invoke(tmp_path)
-    assert result.returncode != 0
-    assert 'Unmanaged hooks' in result.stderr
-    assert hooks.read_text() == original
+    assert result.returncode == 0, result.stderr
+    assert foreign in json.loads(hooks.read_text())['hooks']['PreToolUse']
+    assert invoke(tmp_path, uninstall=True).returncode == 0
+    assert json.loads(hooks.read_text())['hooks']['PreToolUse'] == [foreign]
 
 
 @pytest.mark.unit
@@ -224,7 +234,7 @@ def test_dangling_hook_symlink_preflight_does_not_install_links(tmp_path: Path) 
     hooks.symlink_to(tmp_path / 'missing-unmanaged-hooks.json')
     result = invoke(tmp_path)
     assert result.returncode != 0
-    assert 'Unmanaged hooks configuration' in result.stderr
+    assert 'Unmanaged hooks symlink' in result.stderr
     assert hooks.is_symlink()
     assert not (tmp_path / '.codex/agents').exists()
     assert not (tmp_path / '.agents/skills').exists()
@@ -290,3 +300,31 @@ def test_upgrade_preserves_owned_previous_post_tool_groups(tmp_path: Path) -> No
     upgraded = json.loads(hooks_path.read_text())
     assert len(upgraded['hooks']['PostToolUse']) == 2
     assert upgraded['hooks']['PostToolUse'][1]['matcher'] == '^request_user_input$'
+
+
+@pytest.mark.unit
+def test_malformed_foreign_hook_file_preflight_preserves_home(tmp_path: Path) -> None:
+    path = tmp_path / '.codex/hooks.json'
+    path.parent.mkdir()
+    path.write_text('{"hooks": false}\n')
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'hooks object' in result.stderr
+    assert not (tmp_path / '.codex/agents').exists()
+    assert not (tmp_path / '.agents/skills').exists()
+
+
+@pytest.mark.unit
+def test_conflicting_bridge_hook_cannot_be_silently_duplicated(tmp_path: Path) -> None:
+    path = tmp_path / '.codex/hooks.json'
+    path.parent.mkdir()
+    original = {'hooks': {'PreToolUse': [{
+        'matcher': 'Agent',
+        'hooks': [{'type': 'command', 'command': 'python3 /other/codex_bridge.py'}],
+    }]}}
+    path.write_text(json.dumps(original) + '\n')
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'bridge hook differs' in result.stderr
+    assert json.loads(path.read_text()) == original
+    assert not (tmp_path / '.codex/agents').exists()
