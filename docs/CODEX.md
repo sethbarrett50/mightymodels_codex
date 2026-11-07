@@ -204,3 +204,51 @@ unavailable wingman; those paths must block rather than dispatch it.
 OpenAI references:
 https://learn.chatgpt.com/docs/agent-configuration/subagents
 https://learn.chatgpt.com/docs/models?surface=cli
+
+## Codex live dispatch authorization probe — issue #9
+
+**Safety status: NOT host-verified.** A direct invocation of
+`hooks/codex_bridge.py` proves only that its Python logic runs, not that
+the Codex host invokes it before native `spawn_agent`. An upstream Codex
+report describes `spawn_agent` bypassing `PreToolUse`, allowing an agent
+to start without consulting a deny hook:
+https://github.com/openai/codex/issues/49736
+
+A scoped opt-in audit marker helps distinguish an installed hook from a
+**live host hook invocation**. It contains only a constant event label and
+timestamp, never a prompt, argument, role name, token or repository content.
+It is OFF by default, and written under the Codex user's private
+`~/.local/state/mightymodels/codex-dispatch-probe.log`.
+
+In an unprivileged `codex` shell:
+
+```sh
+export MIGHTYMODELS_CODEX_DISPATCH_PROBE=1
+rm -f ~/.local/state/mightymodels/codex-dispatch-probe.log
+cd ~/kc/kc-backend-core  # or a disposable test repo
+codex
+```
+
+In that **new** session, ask for a single read-only
+`mm-triage-code-scout` to list the repository's top-level filenames.
+Exit, then check:
+
+```sh
+if test -s ~/.local/state/mightymodels/codex-dispatch-probe.log; then
+    echo 'PreToolUse reached the bridge; verify actual denial separately'
+else
+    echo 'UNVERIFIED/UNSAFE: no native spawn_agent PreToolUse event was observed'
+fi
+unset MIGHTYMODELS_CODEX_DISPATCH_PROBE
+```
+
+**Do not test with a destructive command or an unauthorized live write.**
+The next acceptance test should be a benign attempted engineer dispatch
+without a started task, requiring a real host-level denial before declaring
+the gate reliable. Even a marker plus a deny on one CLI version cannot
+guarantee protection when hooks are untrusted, disabled or bypassed, and
+Codex custom subagents inherit the parent's sandbox. A scout instructed
+'read-only' is NOT a separate sandbox; run read-only investigations with a
+read-only parent permission mode where possible, and do not rely on an
+advisory restriction as security enforcement. This is a bounded diagnostic,
+not a workaround that relaxes the gate.
