@@ -301,6 +301,26 @@ def audit_probe(event: object, environ: dict[str, str]) -> None:
     log.chmod(0o600)
 
 
+
+def audit_probe_decision(event: object, environ: dict[str, str], result: object) -> None:
+    """Log the adapter's sanitized decision, not proof of a Codex-host block."""
+    if environ.get('MIGHTYMODELS_CODEX_DISPATCH_PROBE') != '1':
+        return
+    if not isinstance(event, dict) or event.get('hook_event_name') != 'PreToolUse':
+        return
+    if event.get('tool_name') not in ('Agent', 'spawn_agent'):
+        return
+    hook_output = result.get('hookSpecificOutput') if isinstance(result, dict) else None
+    denied = isinstance(hook_output, dict) and hook_output.get('permissionDecision') == 'deny'
+    status = 'adapter_denied' if denied else 'adapter_no_denial'
+    home = Path(environ.get('HOME') or str(Path.home()))
+    log = home / '.local/state/mightymodels/codex-dispatch-probe.log'
+    log.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with log.open('a', encoding='utf-8') as stream:
+        stream.write(f'{status} {time.time_ns()}\n')
+    log.chmod(0o600)
+
+
 def main() -> int:
     try:
         event = json.load(sys.stdin)
@@ -318,6 +338,7 @@ def main() -> int:
         result = run_lifecycle(event, project_root=root, environ=dict(os.environ))
     else:
         result = run_admission(event, project_root=root, environ=dict(os.environ))
+    audit_probe_decision(event, dict(os.environ), result)
     if result is not None:
         print(json.dumps(result))
     return 0
