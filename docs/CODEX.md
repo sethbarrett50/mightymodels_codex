@@ -155,7 +155,7 @@ an explicit answer. Do not append a duplicate managed stanza.
 
 The `default_mode_request_user_input` feature flag enables the optional
 Default-mode question tool but does not make its prompts blocking.
- The original Claude `AskUserQuestion`
+The original Claude `AskUserQuestion`
 recorder hook is **not migrated**; do not assume Codex answers were
 automatically recorded. Persist only the user's actual decision/evidence with
 the available investigation tools and preserve the skill's ledger invariants.
