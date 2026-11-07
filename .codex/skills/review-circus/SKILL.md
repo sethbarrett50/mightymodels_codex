@@ -32,8 +32,7 @@ sets the profile, measures, dispatches, normalizes, and routes what the user cho
 It never reviews code itself and never invents a finding. An empty run means the reviewers
 have not reported, not that the primary should improvise.
 
-Run the commands from the repository root. `$HOME/.agents/skills/review-circus` is this skill's directory, which
-Claude Code substitutes in this file as an absolute path. Subagents do not inherit it, so every
+Run the commands from the repository root. `$HOME/.agents/skills/review-circus` is this skill's directory, which resolves through the installed Codex skill directory. Subagents do not inherit it, so every
 path a dispatch carries is absolute.
 
 - `review_metrics` measures structure (fan-in, fan-out, cycles, sizes) into the run directory. Only this session's primary calls it.
