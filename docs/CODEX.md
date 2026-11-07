@@ -197,7 +197,6 @@ ran, and do not relax admission hooks to workaround registry errors.
 
 This documents configured roles, not actual model dispatch or quota savings (issue #16).
 
-
 Codex roles are generated from the original Claude role tiers. Haiku maps to
 `gpt-6-luna` at medium effort (six focused retrieval/mechanical workers).
 Sonnet maps to `gpt-6.1-sol` medium (engineer and Terry).
