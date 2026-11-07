@@ -126,15 +126,36 @@ Restart Codex, then check with `codex features list`. This setting is
 intentionally **not** written by the MightyModels installer; user-specific
 Codex preferences and permissions remain separate from the repository.
 
-For MightyModels' framing and end-of-round gates, translate Claude's
-`AskUserQuestion` into the **actual** native `request_user_input` tool *when
-listed in the active session*. The tool provides choices and supports a custom
-free-text response. Merely printing a list of choices is not an interactive
-prompt. When the tool is unavailable, ask the question in chat and stop for a
-real response. Never announce that a popup was sent without invoking the tool.
+For **optional** feedback, use the actual native `request_user_input` tool
+when listed in the active session. It provides choices and free-text input; do
+not claim a popup was shown unless the tool was actually called.
 
-In Default mode, unanswered prompts can time out. Timeouts are not approvals,
-and required gates remain pending. The original Claude `AskUserQuestion`
+For **required MightyModels decisions** (including investigation framing and
+end-of-round gates), Default-mode Codex popups can auto-resolve. Ask the user
+in ordinary conversation and end the turn without progressing the gate.
+In Plan mode, the native question can be blocking when available, but a real
+answer is still required. Never treat an empty reply, timeout, failure, or
+interruption as consent. Persist pending decisions through existing MCP state
+mechanisms where supported and verify resumption behavior before relying on it.
+
+`autoResolutionMs` is deprecated in current Codex; `isBlocking` is decided
+by the host/collaboration mode and isn't a general model-controlled timeout
+switch. No documented `AGENTS.md` directive can force a Default-mode popup
+to remain indefinitely. The safest fallback is a regular chat question.
+
+### Global instructions under `~/.codex/AGENTS.md`
+
+The installer manages a stanza in the user's global instructions that points
+to this repository's `AGENTS.md`. Keep that managed stanza intact. An older
+user-authored instruction such as “never specify `autoResolutionMs`” is
+harmless but **does not disable the popup timeout**. Replace any promise that
+questions will always remain visually pending with the accurate fallback:
+required decisions use a normal chat question and pause the workflow until
+an explicit answer. Do not append a duplicate managed stanza.
+
+The `default_mode_request_user_input` feature flag enables the optional
+Default-mode question tool but does not make its prompts blocking.
+ The original Claude `AskUserQuestion`
 recorder hook is **not migrated**; do not assume Codex answers were
 automatically recorded. Persist only the user's actual decision/evidence with
 the available investigation tools and preserve the skill's ledger invariants.
