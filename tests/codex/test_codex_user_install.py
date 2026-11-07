@@ -358,9 +358,6 @@ def test_installer_preserves_foreign_top_level_hook_metadata(tmp_path: Path) -> 
 
 @pytest.mark.unit
 def test_install_refuses_duplicate_owned_hook_groups_before_link_changes(tmp_path: Path) -> None:
-    source = json.loads((ROOT / 'hooks/codex-global-template.json').read_text())
-    from runpy import run_path
-
     namespace = run_path(str(INSTALLER))
     expected = namespace['hook_config'](ROOT)
     manifest = json.loads(expected)
