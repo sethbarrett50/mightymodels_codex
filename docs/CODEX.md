@@ -272,3 +272,38 @@ only record tools whose inputs identify the target; a bare
 `investigation_start` response is not automatically linked until a
 subsequent named investigation tool call. The remaining user-decision
 recording work is tracked under #8 and #11.
+
+## Use existing GitHub CLI credentials without exposing secrets (issue #12)
+
+When the `codex` Unix user needs to read Kart-Chaser or other repositories,
+first check its existing GitHub CLI session:
+
+```sh
+gh auth status -h github.com
+gh api user --jq .login
+gh repo view OWNER/REPO --json nameWithOwner
+```
+
+GitHub CLI commonly keeps its configuration at
+`${XDG_CONFIG_HOME:-$HOME/.config}/gh`. This location may include
+`hosts.yml`, whose contents can contain PATs. **Treat it as sensitive.**
+Use `gh`'s credential management; never read, print, grep, paste, upload,
+persist or log raw token material. Never access a different Linux account's
+configuration with sudo or copy a user's GitHub token to another account.
+
+To check whether a token environment variable is present without printing it:
+
+```sh
+python3 - <<'PY'
+import os
+for key in ('GH_TOKEN', 'GITHUB_TOKEN'):
+    print(key, 'set' if os.environ.get(key) else 'unset')
+PY
+```
+
+A scoped GitHub command may still need additional approval, authentication
+or repository authorization. A failed read does not mean there is no PAT;
+a successful read does not authorize unrelated writes. Preserve GitHub
+scopes and sandbox/approval boundaries. For missing credentials, ask the
+user to use `gh auth login` or the approved credential connector; never
+request a token be pasted into the conversation.

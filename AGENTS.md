@@ -49,6 +49,14 @@ For the `lets-investigate` and other interactive MightyModels skills, the invest
 - Persist the pending decision using existing permitted MightyModels state/evidence mechanisms when available; restore it across compaction or resume. Never invent a reply or claim a prompt remains visually open.
 - Do not attempt to set `autoResolutionMs` or `isBlocking` in a model-facing call unless the active tool schema exposes and documents that parameter. Instructions cannot override Codex TUI timeout behavior.
 
+## Existing GitHub authentication — discover safely
+
+For GitHub tasks, **use the current Linux user's existing `gh` credentials**, not a copied PAT. Start with `gh auth status -h github.com` and `gh api user --jq .login`; test repository access with an innocuous read (for example `gh repo view OWNER/REPO --json nameWithOwner`) before a permitted write. Honor sandbox/network approval prompts and the current repository's authorization instructions.
+
+`$XDG_CONFIG_HOME/gh` (usually `~/.config/gh`) is a **configuration location**, not blanket permission to read secret files. `hosts.yml`, Git credential helpers, token stores and environment variables may contain access tokens. **Never cat, print, grep token values, paste them into a chat/agent prompt, store them in MightyModels MCP state, check them into git or put them in logs/issues.** Do not inspect another Unix account's credentials or use sudo to bypass access limits. If necessary, check only whether `GH_TOKEN` or `GITHUB_TOKEN` is set, without displaying its value; let `gh` use the token internally.
+
+When authentication or permissions fail, report the actual `gh` error, identify the required scope, and ask the user to complete a secure `gh auth login` or grant the proper access. Never silently switch accounts, fetch a raw PAT or bypass sandbox restrictions.
+
 ## Safety invariants — not optional
 
 - **Start the task through the MightyModels MCP server before dispatching an implementer.** The task must have declared ownership, scoped acceptance outcomes, and required verification.
