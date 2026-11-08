@@ -5,7 +5,7 @@ description: >-
   with a checked body, have gitty-up watch CI, and route each failing check as a recorded C task
   (mechanical fixes to an engineer residual, then architect once; non-obvious causes to
   whats-broken), treating CI as the hard gate at every new HEAD.
-  On green, ask through Codex user decision gate whether to review now (review-circus) or hand off (baton-pass).
+  On green, ask in ordinary chat whether to review now (review-circus) or hand off (baton-pass), then wait for an explicit answer.
   Not for Jira sprint operations, not the review itself
   (review-circus), and not for mid-sprint work (agents-assemble owns the loop).
 when_to_use: >-
@@ -125,7 +125,7 @@ are the state; the conversation is not.
 ## 7. On green
 
 Every check passes and `task_ready` answers `ready`. Tell the user, then
-ask once through `Codex user decision gate` (up to four questions a call, two to four options each):
+ask in ordinary chat whether to review now or hand off, then end the turn until the user explicitly chooses. Neither a timeout nor an automatic response is consent:
 
 - **Review now**: invoke review-circus in this session. Recommended when this session runs a
   mid-tier primary and has context to spare.
