@@ -192,6 +192,51 @@ def native_game_plan_decisions(body: str) -> str:
     return body
 
 
+def native_review_routing(front: str, body: str) -> tuple[str, str]:
+    """Remove Claude reviewer model and preload claims from Codex output."""
+    front_old = (
+        'Codex user decision gate gate sets depth (quick runs its reviewers on '
+        'sonnet, standard and deep on opus)'
+    )
+    front_new = (
+        'An ordinary-chat decision sets review depth (quick, standard, deep) '
+        'without changing native reviewer model pins'
+    )
+    body_changes = (
+        (
+            ('quick is one persona on sonnet, standard and deep run their reviewers on opus.'),
+            (
+                'quick runs one persona, while standard and deep change review '
+                'coverage; all native Codex reviewers use their registered Sol '
+                'model settings (Claude aliases in profiles.md are not Codex pins).'
+            ),
+        ),
+        (
+            (
+                'Each persona preloads its doctrine as a skill of its own\n'
+                '(`becoming-merge-vader`, `becoming-uncle-bob`) and is passed '
+                'no doctrine path.'
+            ),
+            (
+                'Each persona must explicitly read its installed doctrine skill\n'
+                '(`becoming-merge-vader` or `becoming-uncle-bob`) through '
+                '`$HOME/.agents/skills/` before reviewing; native Codex dispatch '
+                'does not guarantee automatic preloads.'
+            ),
+        ),
+    )
+    if front.count(front_old) != 1:
+        msg = 'Expected exactly one review routing frontmatter clause'
+        raise ValueError(msg)
+    front = front.replace(front_old, front_new)
+    for old, new in body_changes:
+        if body.count(old) != 1:
+            msg = 'Expected exactly one review routing body clause'
+            raise ValueError(msg)
+        body = body.replace(old, new)
+    return front, body
+
+
 def native_review_circus_decisions(body: str) -> str:
     """Translate unsupported reviewer overrides and user dialogs for Codex."""
     changes = (
@@ -480,6 +525,8 @@ def translated(source: Path) -> str:
         'stick-the-landing': native_landing_decisions,
         'break-it-down': native_task_split_decisions,
     }
+    if name == 'review-circus':
+        front, body = native_review_routing(front, body)
     transformer = transformers.get(name)
     if transformer is not None:
         body = transformer(body)
