@@ -179,3 +179,10 @@ def test_absolute_native_patch_file_outside_checkout_is_rejected(tmp_path: Path)
     source = tmp_path / 'outside.py'
     source.write_text('value = 1')
     assert python_paths(edit_event(checkout, patch_for(str(source))), checkout) == ()
+
+
+@pytest.mark.unit
+def test_post_edit_hook_source_uses_python313_compatible_except_syntax() -> None:
+    source = (ROOT / 'scripts/codex_post_edit_check.py').read_text()
+    assert 'except (ValueError, UnicodeError):' in source
+    assert 'except ValueError, UnicodeError:' not in source
