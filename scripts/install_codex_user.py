@@ -186,9 +186,22 @@ def validate_hook_groups(groups: list, expected: list) -> None:
 
 
 def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:  # noqa: PLR0913
-    """Apply exact owned group additions/removals without touching foreign entries."""
-    validate_hook_groups(groups, wanted)
+    """Replace only recognized legacy dispatch matchers; preserve foreign hooks."""
+    legacy = []
+    if event == 'PreToolUse':
+        for group in wanted:
+            if group.get('matcher') == '^(Agent|(?:.*[._:/])?spawn_agent)$':
+                legacy.append({**group, 'matcher': '^(spawn_agent|Agent)$'})
+    validate_hook_groups(groups, [*wanted, *legacy])
     changed = False
+    for old in legacy:
+        count = groups.count(old)
+        if count > 1 or (count and any(group in groups for group in wanted)):
+            msg = 'Duplicate or conflicting MightyModels spawn hook group'
+            raise ValueError(msg)
+        if count:
+            groups.remove(old)
+            changed = True
     for group in wanted:
         count = groups.count(group)
         if count > 1:
