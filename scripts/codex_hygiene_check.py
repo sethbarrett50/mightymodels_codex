@@ -46,7 +46,13 @@ def audit_file(base: str, root: Path, relative: Path) -> int:
         print(f'Skipped unsafe or missing Python path: {relative}')
         return -1
     previous = git(root, 'show', f'{base}:{relative.as_posix()}')
-    # New files have no version at the requested base.
+    if previous.returncode:
+        # An absent baseline is expected for a new file. A failed read of a
+        # baseline that *does* exist must not be treated as an empty file.
+        listing = git(root, 'ls-tree', '--name-only', base, '--', relative.as_posix())
+        if listing.returncode or listing.stdout:
+            print(f'Could not read baseline Python source: {relative}')
+            return -1
     previous_source = '' if previous.returncode else previous.stdout
     try:
         current_source = target.read_text(encoding='utf-8')
