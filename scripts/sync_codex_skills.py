@@ -513,7 +513,7 @@ def native_companion_guidance(name: str) -> str:
         '`git -C "$(realpath "$HOME/.agents/skills/' + name + '")" rev-parse --show-toplevel`, '
         'then read `skills/' + name + '/<relative companion path>` from that root. '
         'Do not look for those files in the unrelated target repository, and '
-        'never proceed by inventing a missing template.\\n\\n'
+        'never proceed by inventing a missing template.\n\n'
     )
 
 
