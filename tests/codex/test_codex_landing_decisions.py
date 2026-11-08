@@ -18,7 +18,9 @@ def test_landing_asks_in_chat_and_matches_generated_asset() -> None:
     assert 'end the turn until the user explicitly chooses' in generated
     assert 'Neither a timeout nor an automatic response is consent' in generated
     assert 'ask once through `Codex user decision gate`' not in generated
-    assert generated == (ROOT / '.codex/skills/stick-the-landing/SKILL.md').read_text(encoding='utf-8')
+    assert generated == (ROOT / '.codex/skills/stick-the-landing/SKILL.md').read_text(
+        encoding='utf-8'
+    )
 
 
 @pytest.mark.unit
