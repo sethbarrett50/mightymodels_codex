@@ -6,6 +6,7 @@ import sys
 import tomllib
 from pathlib import Path
 from runpy import run_path
+from typing import Any
 
 import pytest
 
@@ -485,7 +486,7 @@ def test_safe_write_does_not_delete_racing_foreign_temp(
     assert temporary.read_bytes() == b'foreign content'
 
 
-def relocated_commands(manifest: dict, old_root: Path) -> None:
+def relocated_commands(manifest: dict[str, Any], old_root: Path) -> None:
     """Simulate a previous installation referencing a moved checkout."""
     for groups in manifest['hooks'].values():
         for group in groups:
@@ -493,7 +494,7 @@ def relocated_commands(manifest: dict, old_root: Path) -> None:
                 hook['command'] = hook['command'].replace(str(ROOT), str(old_root))
 
 
-def bridge_commands(manifest: dict) -> list[str]:
+def bridge_commands(manifest: dict[str, Any]) -> list[str]:
     """Collect only MightyModels launchers for upgrade assertions."""
     return [
         hook['command']
