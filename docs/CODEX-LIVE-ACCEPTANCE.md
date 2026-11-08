@@ -61,7 +61,6 @@ not conversation content, auth tokens or private repository paths.
 | #16 | Capture sanitized trace counters and independently observed spawned model/effort identifiers, if the host exposes these | Identity is **unverified** unless effective runtime values are observed; no quota savings claim without comparable baseline |
 | #17 | Verify project PreToolUse edit guard and PostToolUse read-only Ruff check actually fire in the MightyModels checkout; compare with an unrelated repository | Warn/deny where supported, no modifications to unrelated code; missing events must not silently count as pass |
 
-
 ## Targeted PostToolUse delivery canary (opt-in, one live turn)
 
 A direct `scripts/codex_post_edit_check.py` subprocess test verifies only the
