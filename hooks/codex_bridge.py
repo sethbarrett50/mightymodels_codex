@@ -29,6 +29,7 @@ SPAWN_TOOL_NAMES = frozenset((
     'collaboration.spawn_agent',
 ))
 HOOK_TIMEOUT = 8
+MAX_RESUME_CONTEXT = 600
 HOOK_ERRORS = (OSError, subprocess.TimeoutExpired, ValueError)
 INPUT_ERRORS = (ValueError, UnicodeError)
 
@@ -260,15 +261,26 @@ def lifecycle_command(event: dict) -> str | None:
             else None
         )
     if name == 'SessionStart':
-        return (
-            'session-resume'
-            if event.get('source') in ('resume', 'compact')
-            else 'session-prune'
-        )
+        return 'session-resume' if event.get('source') in ('resume', 'compact') else 'session-prune'
     return {
         'PreCompact': 'pre-compact',
         'SubagentStop': 'subagent-record',
     }.get(name)
+
+
+def resume_hook_output(command: str, result: subprocess.CompletedProcess[str]) -> dict | None:
+    """Expose only the bounded successful resume hint as SessionStart context."""
+    if command != 'session-resume' or result.returncode:
+        return None
+    hint = result.stdout.strip()
+    if not hint or len(hint) > MAX_RESUME_CONTEXT:
+        return None
+    return {
+        'hookSpecificOutput': {
+            'hookEventName': 'SessionStart',
+            'additionalContext': hint,
+        }
+    }
 
 
 def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict | None:  # noqa: C901, PLR0912, PLR0915
@@ -309,7 +321,7 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     env['UV_PROJECT'] = str(project_root)
     env['UV_PROJECT_ENVIRONMENT'] = str(project_root / '.venv')
     warning = None
-    resume_context = None
+    result = None
     try:
         Path(data_dir).mkdir(parents=True, exist_ok=True)
         result = subprocess.run(  # noqa: S603
@@ -336,19 +348,10 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     else:
         if result.returncode:
             warning = f'MightyModels {command} failed (exit {result.returncode})'
-        elif command == 'session-resume':
-            hint = result.stdout.strip()
-            if hint and len(hint) <= 600:
-                resume_context = hint
     if name == 'SubagentStop':
         return {'continue': True, **({'systemMessage': warning} if warning else {})}
-    if resume_context is not None:
-        return {
-            'hookSpecificOutput': {
-                'hookEventName': 'SessionStart',
-                'additionalContext': resume_context,
-            }
-        }
+    if warning is None and result is not None:
+        return resume_hook_output(command, result)
     return {'systemMessage': warning} if warning else None
 
 
