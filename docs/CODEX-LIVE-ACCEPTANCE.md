@@ -31,8 +31,7 @@ After the allocation actually resets, invoke this **once**:
 python3 scripts/codex_reset_acceptance.py --live --timeout 90
 ```
 
-This delegates to the existing single `codex exec --json --sandbox
-read-only` disposable Git fixture: read `README.md`; do not write,
+This delegates to the existing single `codex exec --json --sandbox read-only` disposable Git fixture: read `README.md`; do not write,
 delegate or use credentials. It emits sanitized counters and
 `fixture_unchanged`, never a transcript, raw error, or secret. It
 does not retry on quota errors. Success is
