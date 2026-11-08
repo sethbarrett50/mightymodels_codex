@@ -184,5 +184,5 @@ def test_absolute_native_patch_file_outside_checkout_is_rejected(tmp_path: Path)
 @pytest.mark.unit
 def test_post_edit_hook_source_uses_python313_compatible_except_syntax() -> None:
     source = (ROOT / 'scripts/codex_post_edit_check.py').read_text()
-    assert 'except (ValueError, UnicodeError):' in source
+    assert 'except ValueError:' in source
     assert 'except ValueError, UnicodeError:' not in source
