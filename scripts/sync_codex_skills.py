@@ -209,6 +209,22 @@ def native_landing_decisions(body: str) -> str:
     return body.replace(before, after)
 
 
+def native_landing_frontmatter(front: str) -> str:
+    """Describe the same blocking user choice in the generated skill summary."""
+    old = (
+        'On green, ask through Codex user decision gate whether to review now '
+        '(review-circus) or hand off (baton-pass).'
+    )
+    new = (
+        'On green, ask in ordinary chat whether to review now (review-circus) '
+        'or hand off (baton-pass), then wait for an explicit answer.'
+    )
+    if front.count(old) != 1:
+        msg = 'Expected exactly one landing frontmatter decision instruction'
+        raise ValueError(msg)
+    return front.replace(old, new)
+
+
 def translated(source: Path) -> str:
     """Preserve skill semantics while rewriting host-specific transport syntax."""
     raw = source.read_text(encoding='utf-8')
@@ -248,8 +264,7 @@ def translated(source: Path) -> str:
     for previous, replacement in changes.items():
         front = front.replace(previous, replacement)
         body = body.replace(previous, replacement)
-    if name == 'stick-the-landing':
-        front = front.replace("On green, ask through Codex user decision gate whether to review now (review-circus) or hand off (baton-pass).", "On green, ask in ordinary chat whether to review now (review-circus) or hand off (baton-pass), then wait for an explicit answer.")
+    front = native_landing_frontmatter(front) if name == 'stick-the-landing' else front
     if name == 'prompting-subagents':
         body = native_dispatch_steps(body)
     if name == 'open-ticket':
