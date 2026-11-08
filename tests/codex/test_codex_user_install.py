@@ -416,6 +416,7 @@ def test_restore_on_type_error_recovers_files_and_new_links(tmp_path: Path) -> N
     config.parent.mkdir()
     config.write_text('sandbox_mode = "read-only"\n')
     new_link = tmp_path / '.agents/skills/new'
+
     def mutate_then_fail() -> None:
         config.write_text('sandbox_mode = "changed"\n')
         new_link.parent.mkdir(parents=True)
