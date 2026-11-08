@@ -13,7 +13,7 @@ python_paths = MODULE['python_paths']
 feedback = MODULE['feedback']
 
 
-def edit_event(cwd: Path, patch_text: str, response: object = None) -> dict:
+def edit_event(cwd: Path, patch_text: str, response: object = None) -> dict[str, object]:
     return {
         'hook_event_name': 'PostToolUse',
         'tool_name': 'apply_patch',
@@ -85,7 +85,9 @@ def test_successful_checks_do_not_emit_fake_diagnostics(tmp_path: Path) -> None:
     assert execute.call_count == 2
     assert all(call.kwargs['cwd'] == tmp_path for call in execute.call_args_list)
     assert all(call.kwargs['timeout'] == 8 for call in execute.call_args_list)
-    assert all('--no-fix' in call.args[0] or '--check' in call.args[0] for call in execute.call_args_list)
+    assert all(
+        '--no-fix' in call.args[0] or '--check' in call.args[0] for call in execute.call_args_list
+    )
 
 
 @pytest.mark.unit
@@ -103,7 +105,8 @@ def test_failed_check_hides_tool_output_and_recommends_manual_check(tmp_path: Pa
     message = report['hookSpecificOutput']['additionalContext']
     assert 'format did not pass' in message
     assert 'lint did not pass' in message
-    assert 'PRIVATE' not in message and 'SECRET' not in message
+    assert 'PRIVATE' not in message
+    assert 'SECRET' not in message
 
 
 @pytest.mark.unit
