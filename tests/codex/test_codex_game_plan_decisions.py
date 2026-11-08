@@ -18,9 +18,7 @@ def test_generated_game_plan_uses_chat_for_all_three_decision_gates() -> None:
     assert 'Ask one blocking question in ordinary chat' in generated
     assert 'stop for an explicit choice: approve, revise, or abandon' in generated
     assert 'One `Codex user decision gate` dialog' not in generated
-    assert generated == (ROOT / '.codex/skills/game-plan/SKILL.md').read_text(
-        encoding='utf-8'
-    )
+    assert generated == (ROOT / '.codex/skills/game-plan/SKILL.md').read_text(encoding='utf-8')
 
 
 @pytest.mark.unit
