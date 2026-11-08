@@ -259,10 +259,15 @@ def lifecycle_command(event: dict) -> str | None:
             if isinstance(tool, str) and tool.startswith('mcp__mighty_mcp__')
             else None
         )
+    if name == 'SessionStart':
+        return (
+            'session-resume'
+            if event.get('source') in ('resume', 'compact')
+            else 'session-prune'
+        )
     return {
         'PreCompact': 'pre-compact',
         'SubagentStop': 'subagent-record',
-        'SessionStart': 'session-prune',
     }.get(name)
 
 
@@ -304,6 +309,7 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     env['UV_PROJECT'] = str(project_root)
     env['UV_PROJECT_ENVIRONMENT'] = str(project_root / '.venv')
     warning = None
+    resume_context = None
     try:
         Path(data_dir).mkdir(parents=True, exist_ok=True)
         result = subprocess.run(  # noqa: S603
@@ -330,8 +336,19 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     else:
         if result.returncode:
             warning = f'MightyModels {command} failed (exit {result.returncode})'
+        elif command == 'session-resume':
+            hint = result.stdout.strip()
+            if hint and len(hint) <= 600:
+                resume_context = hint
     if name == 'SubagentStop':
         return {'continue': True, **({'systemMessage': warning} if warning else {})}
+    if resume_context is not None:
+        return {
+            'hookSpecificOutput': {
+                'hookEventName': 'SessionStart',
+                'additionalContext': resume_context,
+            }
+        }
     return {'systemMessage': warning} if warning else None
 
 
