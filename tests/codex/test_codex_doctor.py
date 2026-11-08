@@ -44,6 +44,47 @@ def test_doctor_verifies_installed_roles_skills_and_hooks(tmp_path: Path) -> Non
 
 
 @pytest.mark.unit
+def test_installer_migrates_owned_legacy_role_links_without_changing_explicit_roles(
+    tmp_path: Path,
+) -> None:
+    installed = run_script(INSTALLER, tmp_path)
+    assert installed.returncode == 0, installed.stderr
+    config = tmp_path / '.codex/config.toml'
+    before = config.read_text(encoding='utf-8')
+    agents_dir = tmp_path / '.codex/agents'
+    agents_dir.mkdir(parents=True, exist_ok=True)
+    for source in (ROOT / '.codex/agents').glob('mm-*.toml'):
+        (agents_dir / source.name).symlink_to(source)
+    check = run_script(DOCTOR, tmp_path)
+    assert check.returncode == 1
+    assert '0/11' in check.stdout
+
+    migrated = run_script(INSTALLER, tmp_path)
+    assert migrated.returncode == 0, migrated.stderr
+    assert config.read_text(encoding='utf-8') == before
+    assert not list(agents_dir.glob('mm-*.toml'))
+    check = run_script(DOCTOR, tmp_path)
+    assert check.returncode == 0, check.stderr
+    assert '11/11' in check.stdout
+
+
+@pytest.mark.unit
+def test_installer_refuses_unmanaged_agent_file_without_changes(tmp_path: Path) -> None:
+    installed = run_script(INSTALLER, tmp_path)
+    assert installed.returncode == 0, installed.stderr
+    config = tmp_path / '.codex/config.toml'
+    before = config.read_bytes()
+    agents_dir = tmp_path / '.codex/agents'
+    agents_dir.mkdir(parents=True, exist_ok=True)
+    foreign = agents_dir / 'mm-workers-engineer.toml'
+    foreign.write_text('foreign role', encoding='utf-8')
+    rerun = run_script(INSTALLER, tmp_path)
+    assert rerun.returncode != 0
+    assert foreign.read_text(encoding='utf-8') == 'foreign role'
+    assert config.read_bytes() == before
+
+
+@pytest.mark.unit
 def test_doctor_never_outputs_unrelated_config_secret_values(tmp_path: Path) -> None:
     installed = run_script(INSTALLER, tmp_path)
     assert installed.returncode == 0, installed.stderr
