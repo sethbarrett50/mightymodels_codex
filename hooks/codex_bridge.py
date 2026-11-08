@@ -239,7 +239,11 @@ def translate_pointer_event(event: dict) -> dict | None:
     cwd = event.get('cwd')
     name = event.get('tool_name')
     supplied = event.get('tool_input')
-    if failed_mcp_result(event.get('tool_response')) or not isinstance(session_id, str) or not session_id.strip():
+    if (
+        failed_mcp_result(event.get('tool_response'))
+        or not isinstance(session_id, str)
+        or not session_id.strip()
+    ):
         return None
     if not isinstance(cwd, str) or not cwd.strip():
         return None
