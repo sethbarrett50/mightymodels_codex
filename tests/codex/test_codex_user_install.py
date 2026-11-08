@@ -370,6 +370,7 @@ def test_install_refuses_duplicate_owned_hook_groups_before_link_changes(tmp_pat
     assert 'Duplicate managed' in result.stderr
     assert not (tmp_path / '.codex/agents').exists()
 
+
 @pytest.mark.unit
 def test_upgrade_migrates_legacy_spawn_hook_and_preserves_foreign_hooks(tmp_path: Path) -> None:
     assert invoke(tmp_path).returncode == 0
