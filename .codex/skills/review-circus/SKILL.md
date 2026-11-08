@@ -58,20 +58,19 @@ and `emphasis` that the call leaves out to the user and starts the run with the 
 {"scope": "ticket", "slug": "SLUG", "base": "main"}
 ```
 
-An answer starting `needs input` means no one could be asked through the tool: put each question
-it names to the user in one `Codex user decision gate` dialog, then call again with those arguments. A refusal
-naming a missing argument means: ask the user for it, then call again.
+When `review_start` returns `needs input` or a missing-argument refusal,
+ask for each required choice in ordinary chat and end the turn until the user
+explicitly answers. Then call again with only those actual answers; do not
+assume that a nonexistent popup or a timeout supplied them.
 
 It answers with the run id, the run directory, and each persona's model. Every later step
 names the run with `run_id`.
 
-A run may spend one override on its heavier-weighted reviewer (the first persona, merge-vader, on equal weights), moving it to fable. Ask for it only when the user wants the strongest reviewer, with `review_override`:
-
-```json
-{"run_id": "20261005-103000"}
-```
-
-The answer names the reviewer and says to dispatch it with effort high. A ticket's reviewer keys change no review.
+Codex disables the Fable review override. Never call `review_override`
+or claim it changed the model. Both registered reviewer roles use their
+native Sol model settings; review depth changes review scope, not model.
+If the user requests an unavailable reviewer upgrade, disclose that
+limitation and ask how to proceed instead of silently substituting a model.
 
 ## 2. Measure
 
@@ -143,9 +142,10 @@ makes about it. Call again while the answer shows findings still undecided:
 {"run_id": "20261005-103000"}
 ```
 
-The answer says which findings are still undecided. An answer starting `needs input` means no one
-could be asked through the tool: put the question it names to the user in one `Codex user decision gate`
-dialog, then call again with `decisions` (several findings may go in one call):
+The answer identifies findings still undecided. For `needs input`,
+ask the user about those finding IDs in ordinary chat and stop for their
+explicit choices. Call again with `decisions` containing only confirmed
+answers (multiple findings may be included together):
 
 ```json
 {"run_id": "20261005-103000", "by": "user", "decisions": {"F1": {"decision": "fix"}, "F2": {"decision": "accept-risk", "reason": "..."}}}
