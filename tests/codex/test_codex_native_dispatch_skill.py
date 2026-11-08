@@ -23,9 +23,9 @@ def test_prompting_subagents_uses_native_roles_without_claude_model_aliases() ->
     assert 'Pass the alias (haiku, sonnet, opus or fable)' not in generated
     assert '`subagent_type` the plugin-qualified' not in generated
     assert 'SendMessage` instead of a fresh dispatch' not in generated
-    assert generated == (
-        ROOT / '.codex/skills/prompting-subagents/SKILL.md'
-    ).read_text(encoding='utf-8')
+    assert generated == (ROOT / '.codex/skills/prompting-subagents/SKILL.md').read_text(
+        encoding='utf-8'
+    )
 
 
 @pytest.mark.unit
