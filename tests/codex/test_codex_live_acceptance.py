@@ -123,8 +123,8 @@ def test_completed_turn_with_streamed_error_is_not_clean_acceptance(problem: str
         args=[],
         returncode=0,
         stdout=(
-            '{"type":"turn.completed","usage":{"input_tokens":15}}\\n'
-            + '{"type":"' + problem + '","message":"SECRET_DO_NOT_ECHO"}\\n'
+            '{"type":"turn.completed","usage":{"input_tokens":15}}\n'
+            + '{"type":"' + problem + '","message":"SECRET_DO_NOT_ECHO"}\n'
         ),
         stderr='',
     )
