@@ -483,3 +483,56 @@ def test_safe_write_does_not_delete_racing_foreign_temp(
         safe_write(destination, 'new content\n')
     assert destination.read_text() == 'original\n'
     assert temporary.read_bytes() == b'foreign content'
+
+
+@pytest.mark.unit
+def test_reinstall_repairs_dangling_links_and_bridge_hooks_after_checkout_move(
+    tmp_path: Path,
+) -> None:
+    assert invoke(tmp_path).returncode == 0
+    old_root = tmp_path / 'old/mightymodels_codex'
+    agent = tmp_path / '.codex/agents/mm-workers-engineer.toml'
+    skill = tmp_path / '.agents/skills/open-ticket'
+    for link, relative in (
+        (agent, '.codex/agents/mm-workers-engineer.toml'),
+        (skill, '.codex/skills/open-ticket'),
+    ):
+        link.unlink()
+        link.symlink_to(old_root / relative, target_is_directory=link == skill)
+
+    hooks_path = tmp_path / '.codex/hooks.json'
+    hooks = json.loads(hooks_path.read_text())
+    for groups in hooks['hooks'].values():
+        for group in groups:
+            for hook in group['hooks']:
+                hook['command'] = hook['command'].replace(str(ROOT), str(old_root))
+    foreign = {'matcher': '^Bash$', 'hooks': [{'type': 'command', 'command': 'true'}]}
+    hooks['hooks']['PreToolUse'].append(foreign)
+    hooks_path.write_text(json.dumps(hooks, indent=2) + '\n')
+
+    upgraded = invoke(tmp_path)
+    assert upgraded.returncode == 0, upgraded.stderr
+    assert agent.resolve() == (ROOT / '.codex/agents/mm-workers-engineer.toml').resolve()
+    assert skill.resolve() == (ROOT / '.codex/skills/open-ticket').resolve()
+    installed = json.loads(hooks_path.read_text())
+    assert foreign in installed['hooks']['PreToolUse']
+    for groups in installed['hooks'].values():
+        for group in groups:
+            for hook in group['hooks']:
+                if 'codex_bridge.py' in hook['command']:
+                    assert str(ROOT / 'hooks/codex_bridge.py') in hook['command']
+
+
+@pytest.mark.unit
+def test_relocated_link_without_prior_managed_config_is_rejected(tmp_path: Path) -> None:
+    link = tmp_path / '.agents/skills/open-ticket'
+    link.parent.mkdir(parents=True)
+    link.symlink_to(
+        tmp_path / 'old/mightymodels_codex/.codex/skills/open-ticket',
+        target_is_directory=True,
+    )
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'Unmanaged symlink' in result.stderr
+    assert link.is_symlink()
+    assert not (tmp_path / '.codex/config.toml').exists()
