@@ -154,7 +154,7 @@ def feedback(event: object, root: Path) -> dict | None:
 def main() -> int:
     try:
         event = json.load(sys.stdin)
-    except ValueError, UnicodeError:
+    except (ValueError, UnicodeError):
         return 0
     result = feedback(event, Path(__file__).resolve().parents[1])
     if result is not None:
