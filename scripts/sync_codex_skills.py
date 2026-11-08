@@ -260,6 +260,20 @@ def native_assembly_roles(body: str) -> str:
     changes = (
         (
             (
+                "The engineer's model is `sonnet`, as ticket.yml repeats; "
+                'bump it one tier for a genuinely gnarly task, with the '
+                'reason logged in the stanza.'
+            ),
+            (
+                'Use the registered `mm-workers-engineer` native role model '
+                "and reasoning effort. The ticket's Claude alias is historical; "
+                'it must not override the Codex model. Request an explicit '
+                'user decision before changing native routing, and do not '
+                'claim the configured model proves effective runtime identity.'
+            ),
+        ),
+        (
+            (
                 'Then dispatch `mightymodels:workers:engineer` through the '
                 "`spawn_agent` tool, using the engineer's configured native Codex "
                 'role and model; do not pass Claude aliases.'
