@@ -165,6 +165,33 @@ def native_baton_pass_decisions(body: str) -> str:
     return body
 
 
+def native_game_plan_decisions(body: str) -> str:
+    """Use actual Codex chat rather than a nonexistent question dialog."""
+    changes = (
+        (
+            (
+                'One `Codex user decision gate` dialog, risks batched up to four a call, '
+                'each offering the same'
+            ),
+            'Ask in ordinary chat, at most four risks per turn, each offering the same',
+        ),
+        (
+            'One `Codex user decision gate` dialog with one question, the',
+            'Ask one blocking question in ordinary chat and wait for a real answer, the',
+        ),
+        (
+            'ask through\n`Codex user decision gate`: approve, revise, or abandon.',
+            'ask in ordinary chat and stop for an explicit choice: approve, revise, or abandon.',
+        ),
+    )
+    for old, new in changes:
+        if body.count(old) != 1:
+            msg = 'Expected exactly one game-plan user decision instruction'
+            raise ValueError(msg)
+        body = body.replace(old, new)
+    return body
+
+
 def translated(source: Path) -> str:
     """Preserve skill semantics while rewriting host-specific transport syntax."""
     raw = source.read_text(encoding='utf-8')
@@ -210,6 +237,8 @@ def translated(source: Path) -> str:
         body = native_open_ticket_decisions(body)
     if name == 'baton-pass':
         body = native_baton_pass_decisions(body)
+    if name == 'game-plan':
+        body = native_game_plan_decisions(body)
     return f'---\n{front}\n---\n\n{BANNER}\n\n{body}'
 
 
