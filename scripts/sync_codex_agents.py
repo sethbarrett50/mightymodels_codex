@@ -91,7 +91,7 @@ def native_web_scout_tools(body: str) -> str:
     return guidance + body
 
 
-def _native_terry_replace(body: str, start: str, end: str, new: str) -> str:
+def _native_terry_replace(body: str, *, start: str, end: str, new: str) -> str:
     """Replace one versioned Claude survey section, failing on missing markers."""
     if body.count(start) != 1 or body.count(end) != 1:
         msg = 'Expected exactly one Terry survey source section'
@@ -105,87 +105,90 @@ def native_terry_toolchain(body: str) -> str:
     """Port the CLI inventory to Codex without claiming unobserved enforcement."""
     sections = (
         (
-            "Three limits of a sandboxed session",
-            "</context>",
+            'Three limits of a sandboxed session',
+            '</context>',
             (
-            "Codex host limits must be observed, not inferred from Claude Cod"
-            "e. A readable\nconfiguration establishes declarations but cannot "
-            "prove a hook fired, a server\nconnected, or a sandbox permission "
-            "was enforced. Mark such claims unverified.\nDo not run commits, h"
-            "ooks or edit probes in this read-only survey.\n"
-        ),
+                'Codex host limits must be observed, not inferred from Claude Cod'
+                'e. A readable\nconfiguration establishes declarations but cannot '
+                'prove a hook fired, a server\nconnected, or a sandbox permission '
+                'was enforced. Mark such claims unverified.\nDo not run commits, h'
+                'ooks or edit probes in this read-only survey.\n'
+            ),
         ),
         (
             "2. Survey the harness's tools through the CLI",
-            "\n3. Survey the installed skills",
+            '\n3. Survey the installed skills',
             (
-            "2. Survey the active Codex tools and MCP declarations. If shell "
-            "access is\n   available, run `codex mcp list` once; it reports co"
-            "nfiguration, not proof\n   of an active or trusted connection. Re"
-            "ad accessible `.codex/config.toml`,\n   `$HOME/.codex/config.toml"
-            "`, `.codex/hooks.json` and project `AGENTS.md`.\n   Codex plugin "
-            "inventory has no assumed CLI. Existing Claude manifests can\n   b"
-            "e read as legacy evidence but do not prove active Codex behavior"
-            ". Put any\n   unavailable CLI, tool, permission or configuration "
-            "path under `Not seen`.\n"
-        ),
+                '2. Survey the active Codex tools and MCP declarations. If shell '
+                'access is\n   available, run `codex mcp list` once; it reports co'
+                'nfiguration, not proof\n   of an active or trusted connection. Re'
+                'ad accessible `.codex/config.toml`,\n   `$HOME/.codex/config.toml'
+                '`, `.codex/hooks.json` and project `AGENTS.md`.\n   Codex plugin '
+                'inventory has no assumed CLI. Existing Claude manifests can\n   b'
+                'e read as legacy evidence but do not prove active Codex behavior'
+                '. Put any\n   unavailable CLI, tool, permission or configuration '
+                'path under `Not seen`.\n'
+            ),
         ),
         (
-            "3. Survey the installed skills",
+            '3. Survey the installed skills',
             "\n4. Survey the repository's own toolchain",
             (
-            "3. Survey relevant installed Codex skills in\n   `$HOME/.agents/s"
-            "kills/*/SKILL.md` and native role declarations in\n   `$HOME/.cod"
-            "ex/agents/*.toml` and `.codex/agents/*.toml` where accessible.\n "
-            "  Read their descriptions and model pins; do not assume the skil"
-            "l was\n   preloaded or that a configured role proves effective ru"
-            "ntime identity.\n"
-        ),
-        ),
-        (
-            "5. Survey the sandbox and permission limits.",
-            "\n6. Compose the report",
-            (
-            "5. Inspect accessible Codex user/project config for sandbox, app"
-            "roval,\n   trust and hook declarations. Only report a restriction"
-            " as enforced when\n   this session actually observed host evidenc"
-            "e of it. Do not test by\n   writing or editing any files. Report "
-            "unverified rules under `Not seen`.\n"
-        ),
+                '3. Survey relevant installed Codex skills in\n   `$HOME/.agents/s'
+                'kills/*/SKILL.md` and native role declarations in\n   `$HOME/.cod'
+                'ex/agents/*.toml` and `.codex/agents/*.toml` where accessible.\n '
+                '  Read their descriptions and model pins; do not assume the skil'
+                'l was\n   preloaded or that a configured role proves effective ru'
+                'ntime identity.\n'
+            ),
         ),
         (
-            "- Run only these through `exec_command`:",
-            "\n- You hold no `spawn_agent` tool",
+            '5. Survey the sandbox and permission limits.',
+            '\n6. Compose the report',
             (
-            "- Remain read-only. If `exec_command` is available, run only\n  `"
-            "codex mcp list`, `codex --version`, `git config --get`,\n  `git r"
-            "ev-parse`, `git ls-files`, `ls`, `test`, `rg`, or a\n  tool's `--"
-            "version`. Do not run tests, builds, formatters, hooks or commits"
-            ".\n  Report missing tools under `Not seen`.\n"
+                '5. Inspect accessible Codex user/project config for sandbox, app'
+                'roval,\n   trust and hook declarations. Only report a restriction'
+                ' as enforced when\n   this session actually observed host evidenc'
+                'e of it. Do not test by\n   writing or editing any files. Report '
+                'unverified rules under `Not seen`.\n'
+            ),
         ),
+        (
+            '- Run only these through `exec_command`:',
+            '\n- You hold no `spawn_agent` tool',
+            (
+                '- Remain read-only. If `exec_command` is available, run only\n  `'
+                'codex mcp list`, `codex --version`, `git config --get`,\n  `git r'
+                "ev-parse`, `git ls-files`, `ls`, `test`, `rg`, or a\n  tool's `--"
+                'version`. Do not run tests, builds, formatters, hooks or commits'
+                '.\n  Report missing tools under `Not seen`.\n'
+            ),
         ),
     )
     for start, end, new in sections:
-        body = _native_terry_replace(body, start, end, new)
+        body = _native_terry_replace(body, start=start, end=end, new=new)
     replacements = (
-        ("claude mcp list", "codex mcp list"),
-        ("claude --version", "codex --version"),
-        ("head: 4f2a9c1 | claude: 2.1.296", "head: 4f2a9c1 | codex: observed-version"),
-        ((
-            "`claude plugin list --json`: refused (`connect EPERM api.anthrop"
-            "ic.com`); plugins are from manifests only"
-        ), "Codex plugin inventory: not observed; no verified source"),
-        ((
-            "`test -w ~/.claude/plugins/data` failed: plugin state servers an"
-            "d plugin hooks do not run here"
-        ), "`codex mcp list`: server declared; activation not verified"),
-        ((
-            ".claude/settings.json:12: `permissions.deny` holds `Read(**/*.pe"
-            "m)`"
-        ), (
-            ".codex/config.toml:12: sandbox declared; effective restrictions "
-            "unverified"
-        )),
+        ('claude mcp list', 'codex mcp list'),
+        ('claude --version', 'codex --version'),
+        ('head: 4f2a9c1 | claude: 2.1.296', 'head: 4f2a9c1 | codex: observed-version'),
+        (
+            (
+                '`claude plugin list --json`: refused (`connect EPERM api.anthrop'
+                'ic.com`); plugins are from manifests only'
+            ),
+            'Codex plugin inventory: not observed; no verified source',
+        ),
+        (
+            (
+                '`test -w ~/.claude/plugins/data` failed: plugin state servers an'
+                'd plugin hooks do not run here'
+            ),
+            '`codex mcp list`: server declared; activation not verified',
+        ),
+        (
+            ('.claude/settings.json:12: `permissions.deny` holds `Read(**/*.pem)`'),
+            ('.codex/config.toml:12: sandbox declared; effective restrictions unverified'),
+        ),
     )
     for old, new in replacements:
         if old not in body:
