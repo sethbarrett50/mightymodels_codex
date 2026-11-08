@@ -218,7 +218,10 @@ def test_post_edit_delivery_receipt_is_opt_in_exclusive_and_redacted(tmp_path: P
     checkout.mkdir()
     marker = tmp_path / 'hook-seen'
     event = edit_event(checkout, patch_for('demo.py'))
-    event['tool_input']['private'] = 'PRIVATE_TOKEN_DO_NOT_RETAIN'
+    event['tool_input'] = {
+        'command': patch_for('demo.py'),
+        'private': 'PRIVATE_TOKEN_DO_NOT_RETAIN',
+    }
 
     probe_delivery(event, checkout, {})
     assert not marker.exists()
