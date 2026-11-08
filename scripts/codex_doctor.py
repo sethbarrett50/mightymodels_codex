@@ -108,6 +108,46 @@ def check_project_overlap(root: Path, cwd: Path) -> str | None:
     )
 
 
+def check_project_mcp_overlap(config_path: Path) -> list[str]:
+    """Read only a project MCP declaration; never print its values."""
+    if config_path.is_symlink():
+        return ['[WARN] Project Codex config is a symlink; scope not inspected']
+    if not config_path.is_file():
+        return []
+    try:
+        config = tomllib.loads(config_path.read_text(encoding='utf-8'))
+    except _CONFIG_READ_ERRORS:
+        return ['[WARN] Active project Codex config malformed or unreadable']
+    servers = config.get('mcp_servers')
+    if isinstance(servers, dict) and 'mighty_mcp' in servers:
+        return [
+            '[WARN] Active project and global scopes both declare mighty_mcp; '
+            'trust, precedence and duplicate startup unverified'
+        ]
+    return []
+
+
+def check_project_hook_overlap(hook_path: Path) -> list[str]:
+    """Report potential hook overlap without reading or printing credentials."""
+    if hook_path.is_symlink():
+        return ['[WARN] Active project hook file is a symlink; not inspected']
+    if not hook_path.is_file():
+        return []
+    try:
+        data = json.loads(hook_path.read_text(encoding='utf-8'))
+    except _CONFIG_READ_ERRORS:
+        return ['[WARN] Active project Codex hook manifest malformed']
+    groups = data.get('hooks') if isinstance(data, dict) else None
+    if not isinstance(groups, dict):
+        return ['[WARN] Active project Codex hook manifest malformed']
+    if groups:
+        return [
+            '[WARN] Active project and global Codex hooks coexist; '
+            'event precedence, trust and duplicate delivery unverified'
+        ]
+    return []
+
+
 def check_other_repo_overlap(root: Path, cwd: Path) -> list[str]:
     """Flag declarations in the active unrelated Git checkout, not host enforcement."""
     if cwd.is_relative_to(root):
@@ -118,40 +158,10 @@ def check_other_repo_overlap(root: Path, cwd: Path) -> list[str]:
     )
     if project is None:
         return []
-    reports: list[str] = []
-    config_path = project / '.codex/config.toml'
-    if config_path.is_symlink():
-        reports.append('[WARN] Project Codex config is a symlink; scope not inspected')
-    elif config_path.is_file():
-        try:
-            config = tomllib.loads(config_path.read_text(encoding='utf-8'))
-        except _CONFIG_READ_ERRORS:
-            reports.append('[WARN] Active project Codex config malformed or unreadable')
-        else:
-            servers = config.get('mcp_servers')
-            if isinstance(servers, dict) and 'mighty_mcp' in servers:
-                reports.append(
-                    '[WARN] Active project and global scopes both declare mighty_mcp; '
-                    'trust, precedence and duplicate startup unverified'
-                )
-
-    hook_path = project / '.codex/hooks.json'
-    if hook_path.is_symlink():
-        reports.append('[WARN] Active project hook file is a symlink; not inspected')
-    elif hook_path.is_file():
-        try:
-            data = json.loads(hook_path.read_text(encoding='utf-8'))
-            groups = data.get('hooks') if isinstance(data, dict) else None
-        except _CONFIG_READ_ERRORS:
-            groups = None
-        if not isinstance(groups, dict):
-            reports.append('[WARN] Active project Codex hook manifest malformed')
-        elif groups:
-            reports.append(
-                '[WARN] Active project and global Codex hooks coexist; '
-                'event precedence, trust and duplicate delivery unverified'
-            )
-    return reports
+    return [
+        *check_project_mcp_overlap(project / '.codex/config.toml'),
+        *check_project_hook_overlap(project / '.codex/hooks.json'),
+    ]
 
 
 def diagnose(home: Path, root: Path, cwd: Path) -> tuple[list[str], bool]:
