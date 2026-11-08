@@ -27,7 +27,11 @@ from mightymodels_core.edge import (
     open_state,
 )
 from mightymodels_core.primitives import StateError
-from mightymodels_core.session_pointers import POINTER_RETENTION, SqliteSessionPointerRepository
+from mightymodels_core.session_pointers import (
+    POINTER_RETENTION,
+    SessionPointer,
+    SqliteSessionPointerRepository,
+)
 from mightymodels_core.units_of_work import UnknownRepositoryError, read_entry, write_entry
 from mightymodels_core.workspace import find_root
 
@@ -137,6 +141,22 @@ class SessionPruneHandler:
         return None
 
 
+def resume_pointer_hint(pointer: SessionPointer | None, clock: Clock) -> str | None:
+    """Render only bounded ticket/investigation identifiers, never stored answers."""
+    if pointer is None or clock.now() - pointer.written_at > POINTER_RETENTION:
+        return None
+    if pointer.kind not in ('ticket', 'investigation'):
+        return None
+    if re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}', pointer.key) is None:
+        return None
+    return (
+        f'MightyModels persisted active {pointer.kind}: {pointer.key}. '
+        'This is a session pointer only. Read its current state with the '
+        'registered mighty_mcp tools before proceeding; pending choices '
+        'still require an explicit answer, never auto-consent.'
+    )
+
+
 @dataclass(slots=True, kw_only=True, frozen=True)
 class SessionResumeHandler:
     """Return a bounded persisted pointer hint without restoring imagined answers."""
@@ -167,15 +187,4 @@ class SessionResumeHandler:
             self.stderr.write(f'mightymodels-hooks: session-resume: {error}\n')
             return None
 
-        if pointer is None or self.clock.now() - pointer.written_at > POINTER_RETENTION:
-            return None
-        if pointer.kind not in ('ticket', 'investigation'):
-            return None
-        if re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}', pointer.key) is None:
-            return None
-        return (
-            f'MightyModels persisted active {pointer.kind}: {pointer.key}. '
-            'This is a session pointer only. Read its current state with the '
-            'registered mighty_mcp tools before proceeding; pending choices '
-            'still require an explicit answer, never auto-consent.'
-        )
+        return resume_pointer_hint(pointer, self.clock)
