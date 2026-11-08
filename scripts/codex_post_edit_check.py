@@ -104,7 +104,6 @@ def _ruff_failures(binary: Path, files: tuple[Path, ...], root: Path) -> list[st
     return failed
 
 
-
 def _ty_failures(binary: Path, files: tuple[Path, ...], root: Path) -> list[str]:
     """Run the checkout's installed ty binary without modifying files."""
     try:
