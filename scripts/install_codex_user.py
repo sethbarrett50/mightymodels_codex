@@ -44,13 +44,17 @@ def safe_write(path: Path, content: str) -> None:
     if tmp.exists() or tmp.is_symlink():
         msg = f'Refusing existing temporary file: {tmp}'
         raise FileExistsError(msg)
+    created = False
     try:
-        tmp.write_text(content, encoding='utf-8')
+        # Exclusive creation prevents overwriting a file planted after preflight.
+        with tmp.open('x', encoding='utf-8') as stream:
+            created = True
+            stream.write(content)
         tmp.chmod(0o600)
         tmp.replace(path)
     finally:
-        # A failed write/replace must not poison the next installer attempt.
-        if tmp.exists() or tmp.is_symlink():
+        # Only remove the temp file if this operation successfully created it.
+        if created and (tmp.exists() or tmp.is_symlink()):
             tmp.unlink()
 
 
