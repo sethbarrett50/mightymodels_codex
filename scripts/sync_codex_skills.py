@@ -87,6 +87,28 @@ def generate(root: Path) -> dict[str, str]:
     return result
 
 
+def sync_open_ticket_companions(root: Path, *, check: bool) -> list[str]:
+    """Keep generated skill companion links pointed at canonical Claude assets."""
+    stale = []
+    for name in ('assets', 'references', 'scripts'):
+        source = root / 'skills/open-ticket' / name
+        destination = root / '.codex/skills/open-ticket' / name
+        if not source.is_dir():
+            msg = f'Missing source skill companion: {source}'
+            raise ValueError(msg)
+        if destination.is_symlink() and destination.resolve() == source.resolve():
+            continue
+        if check:
+            stale.append(destination.relative_to(root).as_posix())
+        elif destination.exists() or destination.is_symlink():
+            msg = f'Refusing unmanaged Codex companion: {destination}'
+            raise ValueError(msg)
+        else:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.symlink_to(source, target_is_directory=True)
+    return stale
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
@@ -102,6 +124,7 @@ def main() -> int:
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content, encoding='utf-8')
+    stale.extend(sync_open_ticket_companions(root, check=args.check))
     if stale:
         parser.error('Stale generated Codex skills: ' + ', '.join(stale))
     print(f'Codex skills {"checked" if args.check else "updated"}: 19')
