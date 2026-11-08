@@ -311,6 +311,39 @@ def native_assembly_roles(body: str) -> str:
     return body
 
 
+def native_landing_decisions(body: str) -> str:
+    """Wait for a real review-or-handoff choice after green CI."""
+    before = (
+        'ask once through `Codex user decision gate` '
+        '(up to four questions a call, two to four options each):'
+    )
+    after = (
+        'ask in ordinary chat whether to review now or hand off, then end '
+        'the turn until the user explicitly chooses. Neither a timeout '
+        'nor an automatic response is consent:'
+    )
+    if body.count(before) != 1:
+        msg = 'Expected exactly one landing decision instruction'
+        raise ValueError(msg)
+    return body.replace(before, after)
+
+
+def native_landing_frontmatter(front: str) -> str:
+    """Describe the same blocking user choice in the generated skill summary."""
+    old = (
+        'On green, ask through Codex user decision gate whether to review now '
+        '(review-circus) or hand off (baton-pass).'
+    )
+    new = (
+        'On green, ask in ordinary chat whether to review now (review-circus) '
+        'or hand off (baton-pass), then wait for an explicit answer.'
+    )
+    if front.count(old) != 1:
+        msg = 'Expected exactly one landing frontmatter decision instruction'
+        raise ValueError(msg)
+    return front.replace(old, new)
+
+
 def translated(source: Path) -> str:
     """Preserve skill semantics while rewriting host-specific transport syntax."""
     raw = source.read_text(encoding='utf-8')
@@ -350,6 +383,7 @@ def translated(source: Path) -> str:
     for previous, replacement in changes.items():
         front = front.replace(previous, replacement)
         body = body.replace(previous, replacement)
+    front = native_landing_frontmatter(front) if name == 'stick-the-landing' else front
     transformers = {
         'prompting-subagents': native_dispatch_steps,
         'open-ticket': native_open_ticket_decisions,
@@ -357,6 +391,7 @@ def translated(source: Path) -> str:
         'game-plan': native_game_plan_decisions,
         'review-circus': native_review_circus_decisions,
         'agents-assemble': native_assembly_roles,
+        'stick-the-landing': native_landing_decisions,
     }
     transformer = transformers.get(name)
     if transformer is not None:
