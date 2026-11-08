@@ -51,6 +51,23 @@ def _count_usage(usage: object, counts: Counter[str], tokens: Counter[str]) -> N
         tokens[name] += _positive_count(usage.get(name))
 
 
+
+def _count_completed_item(item: object, counts: Counter[str]) -> None:
+    """Record only terminal operation classes and known outcomes."""
+    if not isinstance(item, dict):
+        return
+    item_type = item.get('type')
+    if item_type == 'command_execution':
+        counts['commands_completed'] += 1
+        exit_code = item.get('exit_code')
+        if isinstance(exit_code, int) and not isinstance(exit_code, bool) and exit_code != 0:
+            counts['commands_exited_nonzero'] += 1
+    elif item_type == 'mcp_tool_call':
+        counts['mcp_calls_completed'] += 1
+        if item.get('status') == 'failed':
+            counts['mcp_calls_failed'] += 1
+
+
 def _count_event(event: dict, counts: Counter[str], tokens: Counter[str]) -> None:
     kind = event.get('type')
     if kind in ('turn.started', 'turn.completed', 'turn.failed'):
@@ -66,18 +83,7 @@ def _count_event(event: dict, counts: Counter[str], tokens: Counter[str]) -> Non
         )
         counts[mapped] += 1
     elif kind == 'item.completed':
-        item = event.get('item')
-        if isinstance(item, dict):
-            item_type = item.get('type')
-            if item_type == 'command_execution':
-                counts['commands_completed'] += 1
-                exit_code = item.get('exit_code')
-                if isinstance(exit_code, int) and not isinstance(exit_code, bool) and exit_code != 0:
-                    counts['commands_exited_nonzero'] += 1
-            elif item_type == 'mcp_tool_call':
-                counts['mcp_calls_completed'] += 1
-                if item.get('status') == 'failed':
-                    counts['mcp_calls_failed'] += 1
+        _count_completed_item(event.get('item'), counts)
     elif kind == 'error':
         counts['errors'] += 1
     elif kind not in ('thread.started', 'item.updated'):
