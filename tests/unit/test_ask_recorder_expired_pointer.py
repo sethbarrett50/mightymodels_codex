@@ -1,6 +1,7 @@
 """An expired unpruned session pointer cannot receive newly recorded user decisions."""
 
 from datetime import UTC, datetime, timedelta
+
 import pytest
 from mightymodels_core.session_pointers import POINTER_RETENTION, SessionPointer
 from mightymodels_hooks.ask_recorder import current_pointer
