@@ -496,7 +496,6 @@ def native_task_split_decisions(body: str) -> str:
     return body
 
 
-
 SOURCE_COMPANION_SKILLS = frozenset(('prompting-subagents', 'baton-pass'))
 
 
