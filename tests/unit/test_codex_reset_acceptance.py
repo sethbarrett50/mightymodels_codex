@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 with patch.object(sys, 'path', [str(ROOT / 'scripts'), *sys.path]):
     SCRIPT = run_path(str(ROOT / 'scripts/codex_reset_acceptance.py'))
 report = SCRIPT['report']
+InstallScope = SCRIPT['InstallScope']
 
 
 @pytest.mark.unit
@@ -20,7 +21,7 @@ def test_preflight_does_not_call_codex_smoke(tmp_path: Path) -> None:
         report.__globals__,
         {'diagnose': Mock(return_value=(['[OK] installed'], True)), 'run_probe': smoke},
     ):
-        result, code = report(home=tmp_path, root=tmp_path, live=False, timeout=90)
+        result, code = report(scope=InstallScope(home=tmp_path, root=tmp_path), live=False, timeout=90)
     assert code == 0
     assert result['status'] == 'preflight_passed_live_unverified'
     assert result['host_hook_delivery_verified'] is False
