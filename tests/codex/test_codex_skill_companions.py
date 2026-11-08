@@ -29,3 +29,14 @@ def test_original_claude_skill_is_not_rewritten() -> None:
     native = (ROOT / '.codex/skills/prompting-subagents/SKILL.md').read_text()
     assert 'Codex companion paths' not in source
     assert 'Codex companion paths' in native
+
+
+@pytest.mark.unit
+def test_open_ticket_metadata_requires_real_chat_instead_of_nonexistent_dialog() -> None:
+    source = ROOT / 'skills/open-ticket/SKILL.md'
+    rendered = GENERATE(source)
+    installed = (ROOT / '.codex/skills/open-ticket/SKILL.md').read_text()
+    assert rendered == installed
+    assert 'a blocking ordinary-chat interview' in rendered
+    assert 'one Codex user decision gate interview' not in rendered
+    assert 'no native dialog API is implied' in rendered
