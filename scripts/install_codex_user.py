@@ -228,42 +228,56 @@ def discard_legacy_spawn_groups(groups: list, wanted: list, *, event: str) -> No
             groups.remove(old)
 
 
+BRIDGE_COMMAND_PARTS = 2
+
+
+def relocated_bridge_command(old: object, new: object) -> bool:
+    """Compare native bridge launchers without accepting different hook scripts."""
+    if not isinstance(old, str) or not isinstance(new, str):
+        return False
+    try:
+        previous, current = shlex.split(old), shlex.split(new)
+    except ValueError:
+        return False
+    if len(previous) != BRIDGE_COMMAND_PARTS or len(current) != BRIDGE_COMMAND_PARTS:
+        return False
+    old_path, new_path = Path(previous[1]), Path(current[1])
+    return (
+        previous[0] == current[0] == 'python3'
+        and old_path.is_absolute()
+        and new_path.is_absolute()
+        and old_path.parts[-3:] == new_path.parts[-3:]
+        and old_path.name == 'codex_bridge.py'
+        and old_path != new_path
+    )
+
+
+def relocated_hook_matches(old: object, new: object) -> bool:
+    """Keep non-command properties identical across path migrations."""
+    return (
+        isinstance(old, dict)
+        and isinstance(new, dict)
+        and {key: value for key, value in old.items() if key != 'command'}
+        == {key: value for key, value in new.items() if key != 'command'}
+        and relocated_bridge_command(old.get('command'), new.get('command'))
+    )
+
+
 def is_relocated_bridge_group(observed: object, desired: dict) -> bool:
     """Recognize exact owned hook metadata with only the checkout path changed."""
     if not isinstance(observed, dict):
         return False
-    if {k: v for k, v in observed.items() if k != 'hooks'} != {
-        k: v for k, v in desired.items() if k != 'hooks'
+    if {key: value for key, value in observed.items() if key != 'hooks'} != {
+        key: value for key, value in desired.items() if key != 'hooks'
     }:
         return False
-    older = observed.get('hooks')
-    current = desired.get('hooks')
+    older, current = observed.get('hooks'), desired.get('hooks')
     if not isinstance(older, list) or not isinstance(current, list):
         return False
-    if len(older) != len(current):
-        return False
-    for old_hook, new_hook in zip(older, current, strict=True):
-        if not isinstance(old_hook, dict) or not isinstance(new_hook, dict):
-            return False
-        if {k: v for k, v in old_hook.items() if k != 'command'} != {
-            k: v for k, v in new_hook.items() if k != 'command'
-        }:
-            return False
-        try:
-            old_words = shlex.split(old_hook.get('command', ''))
-            new_words = shlex.split(new_hook.get('command', ''))
-        except (ValueError, TypeError):
-            return False
-        if len(old_words) != 2 or len(new_words) != 2:
-            return False
-        if old_words[0] != 'python3' or new_words[0] != 'python3':
-            return False
-        old_path, new_path = Path(old_words[1]), Path(new_words[1])
-        if not old_path.is_absolute() or not new_path.is_absolute():
-            return False
-        if old_path.parts[-3:] != new_path.parts[-3:] or old_path.name != 'codex_bridge.py':
-            return False
-    return True
+    return len(older) == len(current) and bool(older) and all(
+        relocated_hook_matches(old_hook, new_hook)
+        for old_hook, new_hook in zip(older, current, strict=True)
+    )
 
 
 def migrate_relocated_bridge_groups(groups: list, wanted: list) -> bool:
@@ -294,6 +308,13 @@ def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: s
     return groups != before
 
 
+def reconcile_migrating_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:
+    """Apply a relocation before the ordinary owned-group reconciliation."""
+    relocated = migrate_relocated_bridge_groups(groups, wanted)
+    updated = reconcile_event_groups(groups, wanted, remove=remove, event=event)
+    return relocated or updated
+
+
 def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str | None:  # noqa: C901, PLR0912
     """Reconcile exact owned groups, preserving unrelated hook definitions."""
     if existing is None or hooks_are_owned(existing, expected):
@@ -314,9 +335,8 @@ def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str
         if not isinstance(groups, list):
             msg = f'Global hook groups for {event} must be a list'
             raise TypeError(msg)
-        relocated = migrate_relocated_bridge_groups(groups, wanted)
-        event_changed = reconcile_event_groups(groups, wanted, remove=remove, event=event)
-        changed = changed or relocated or event_changed
+        event_changed = reconcile_migrating_groups(groups, wanted, remove=remove, event=event)
+        changed = changed or event_changed
         if groups:
             held['hooks'][event] = groups
         elif event in held['hooks'] and event_changed:
