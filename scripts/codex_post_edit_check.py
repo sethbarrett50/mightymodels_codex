@@ -18,9 +18,11 @@ ERRORS = (OSError, subprocess.TimeoutExpired, ValueError)
 
 def _event_patch(event: object, root: Path) -> tuple[Path, str] | None:
     """Require a local, bounded, successful Codex apply_patch result."""
-    if not isinstance(event, dict) or event.get('hook_event_name') != 'PostToolUse':
-        return None
-    if event.get('tool_name') != 'apply_patch':
+    if (
+        not isinstance(event, dict)
+        or event.get('hook_event_name') != 'PostToolUse'
+        or event.get('tool_name') != 'apply_patch'
+    ):
         return None
     response = event.get('tool_response')
     if isinstance(response, dict) and (
