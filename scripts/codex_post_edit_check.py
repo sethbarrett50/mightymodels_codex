@@ -1,10 +1,12 @@
 """Checkout-only, read-only post-edit Python checks for Codex.
 
-Never rewrites files, installs packages, emits source text, or checks another
-repository. A configured hook is not proof that the Codex host delivered it.
+Never rewrites checkout files, installs packages, emits source text, or checks
+another repository. An explicit opt-in external canary can prove host delivery;
+normal operation writes no probe file.
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
@@ -170,12 +172,34 @@ def feedback(event: object, root: Path) -> dict | None:
     }
 
 
+def probe_delivery(event: object, root: Path, environ: dict[str, str]) -> None:
+    """Opt-in external canary: no arguments, paths or source contents retained."""
+    if not isinstance(event, dict):
+        return
+    if event.get('hook_event_name') != 'PostToolUse' or event.get('tool_name') != 'apply_patch':
+        return
+    supplied = environ.get('MIGHTYMODELS_CODEX_POST_EDIT_PROBE_FILE')
+    if not supplied:
+        return
+    target = Path(supplied)
+    if not target.is_absolute() or target.resolve(strict=False).is_relative_to(root.resolve()):
+        return
+    try:
+        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except OSError:
+        return
+    with os.fdopen(fd, 'w', encoding='utf-8') as stream:
+        stream.write('PostToolUse apply_patch observed\n')
+
+
 def main() -> int:
     try:
         event = json.load(sys.stdin)
     except ValueError:
         return 0
-    result = feedback(event, Path(__file__).resolve().parents[1])
+    root = Path(__file__).resolve().parents[1]
+    probe_delivery(event, root, dict(os.environ))
+    result = feedback(event, root)
     if result is not None:
         print(json.dumps(result))
     return 0
