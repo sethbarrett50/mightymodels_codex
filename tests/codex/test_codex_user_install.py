@@ -466,10 +466,17 @@ def test_safe_write_does_not_delete_racing_foreign_temp(
     temporary = tmp_path / 'config.toml.mightymodels-tmp'
     original_open = Path.open
 
-    def raced_open(self: Path, *args: object, **kwargs: object):
-        if self == temporary and args and args[0] == 'x':
+    def raced_open(
+        self: Path,
+        mode: str = 'r',
+        buffering: int = -1,
+        encoding: str | None = None,
+        errors: str | None = None,
+        newline: str | None = None,
+    ) -> object:
+        if self == temporary and mode == 'x':
             temporary.write_bytes(b'foreign content')
-        return original_open(self, *args, **kwargs)
+        return original_open(self, mode, buffering, encoding, errors, newline)
 
     monkeypatch.setattr(Path, 'open', raced_open)
     with pytest.raises(FileExistsError):
