@@ -19,9 +19,7 @@ def test_review_decision_prompts_and_disabled_override_are_native() -> None:
     assert 'Codex disables the Fable review override.' in generated
     assert 'Never call `review_override`' in generated
     assert 'moving it to fable' not in generated
-    assert generated == (ROOT / '.codex/skills/review-circus/SKILL.md').read_text(
-        encoding='utf-8'
-    )
+    assert generated == (ROOT / '.codex/skills/review-circus/SKILL.md').read_text(encoding='utf-8')
 
 
 @pytest.mark.unit
