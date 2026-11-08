@@ -55,7 +55,6 @@ def test_oversize_output_is_never_echoed_or_called_complete() -> None:
     assert result['status'].startswith('unverified:')
     assert 'SECRET' not in str(result)
 
-
 @pytest.mark.unit
 def test_disposable_fixture_snapshot_detects_modification_and_extra_files(tmp_path: Path) -> None:
     (tmp_path / 'README.md').write_text('baseline', encoding='utf-8')
@@ -71,7 +70,8 @@ def test_disposable_fixture_snapshot_detects_modification_and_extra_files(tmp_pa
 @pytest.mark.unit
 def test_fixture_mutation_cannot_be_reported_as_read_only_success() -> None:
     completed = subprocess.CompletedProcess(
-        args=[], returncode=0,
+        args=[],
+        returncode=0,
         stdout='{"type":"turn.completed","usage":{"input_tokens":8}}\n',
         stderr='',
     )
