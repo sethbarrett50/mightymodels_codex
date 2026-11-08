@@ -79,16 +79,25 @@ def summarize_result(
         data['status'] = 'unverified: output size exceeded safe processing limit'
         return data
     metrics = summarize(io.StringIO(result.stdout))
+    events = metrics['events']
+    # A streamed violation invalidates this bounded smoke test. Missing native
+    # events still cannot prove absence of actual dispatch or file writes.
+    observed_violation = (
+        events.get('collaboration_calls', 0) > 0
+        or events.get('file_changes', 0) > 0
+    )
+    data['observed_scope_violation'] = observed_violation
     data['status'] = (
         'read_only_smoke_completed'
         if (
             result.returncode == 0
             and fixture_unchanged is True
-            and metrics['events'].get('turn_completed', 0) > 0
+            and events.get('turn_completed', 0) > 0
+            and not observed_violation
         )
         else 'read_only_smoke_unverified'
     )
-    data['events'] = metrics['events']
+    data['events'] = events
     data['usage'] = metrics['usage']
     return data
 
