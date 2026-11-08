@@ -110,6 +110,20 @@ def restore_on_failure(paths: list[Path]) -> Iterator[None]:
         raise
 
 
+def is_relocated_owned_link(destination: Path, source: Path, root: Path) -> bool:
+    """Accept only dangling links shaped like this checkout's managed links."""
+    if not destination.is_symlink():
+        return False
+    target = destination.readlink()
+    if not target.is_absolute() or target.exists():
+        return False
+    relative = source.relative_to(root).parts
+    if len(target.parts) <= len(relative) or target.parts[-len(relative) :] != relative:
+        return False
+    old_root = target.parents[len(relative) - 1]
+    return old_root.name == root.name
+
+
 def reconcile_link(destination: Path, source: Path, *, remove: bool) -> None:
     if destination.is_symlink():
         if destination.resolve(strict=False) != source.resolve():
@@ -214,9 +228,77 @@ def discard_legacy_spawn_groups(groups: list, wanted: list, *, event: str) -> No
             groups.remove(old)
 
 
+BRIDGE_COMMAND_PARTS = 2
+
+
+def relocated_bridge_command(old: object, new: object) -> bool:
+    """Compare native bridge launchers without accepting different hook scripts."""
+    if not isinstance(old, str) or not isinstance(new, str):
+        return False
+    try:
+        previous, current = shlex.split(old), shlex.split(new)
+    except ValueError:
+        return False
+    if len(previous) != BRIDGE_COMMAND_PARTS or len(current) != BRIDGE_COMMAND_PARTS:
+        return False
+    old_path, new_path = Path(previous[1]), Path(current[1])
+    return (
+        previous[0] == current[0] == 'python3'
+        and old_path.is_absolute()
+        and new_path.is_absolute()
+        and old_path.parts[-3:] == new_path.parts[-3:]
+        and old_path.name == 'codex_bridge.py'
+        and old_path != new_path
+    )
+
+
+def relocated_hook_matches(old: object, new: object) -> bool:
+    """Keep non-command properties identical across path migrations."""
+    return (
+        isinstance(old, dict)
+        and isinstance(new, dict)
+        and {key: value for key, value in old.items() if key != 'command'}
+        == {key: value for key, value in new.items() if key != 'command'}
+        and relocated_bridge_command(old.get('command'), new.get('command'))
+    )
+
+
+def is_relocated_bridge_group(observed: object, desired: dict) -> bool:
+    """Recognize exact owned hook metadata with only the checkout path changed."""
+    if not isinstance(observed, dict):
+        return False
+    if {key: value for key, value in observed.items() if key != 'hooks'} != {
+        key: value for key, value in desired.items() if key != 'hooks'
+    }:
+        return False
+    older, current = observed.get('hooks'), desired.get('hooks')
+    if not isinstance(older, list) or not isinstance(current, list):
+        return False
+    return (
+        len(older) == len(current)
+        and bool(older)
+        and all(
+            relocated_hook_matches(old_hook, new_hook)
+            for old_hook, new_hook in zip(older, current, strict=True)
+        )
+    )
+
+
+def migrate_relocated_bridge_groups(groups: list, wanted: list) -> bool:
+    """Upgrade old absolute bridge paths without changing foreign hook groups."""
+    changed = False
+    for current in wanted:
+        for index, observed in enumerate(groups):
+            if observed != current and is_relocated_bridge_group(observed, current):
+                groups[index] = current
+                changed = True
+    return changed
+
+
 def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:  # noqa: PLR0913
     """Apply exact owned groups while migrating old dispatch matchers safely."""
     before = list(groups)
+    migrate_relocated_bridge_groups(groups, wanted)
     discard_legacy_spawn_groups(groups, wanted, event=event)
     validate_hook_groups(groups, wanted)
     for group in wanted:
@@ -346,6 +428,13 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
     if len(agents) != AGENT_COUNT or len(skills) != SKILL_COUNT:
         parser.error('Incomplete source checkout (expected 11 enabled agents and 19 skills)')
     codex = home / '.codex'
+    prior_config = codex / 'config.toml'
+    prior_owned = (
+        not prior_config.is_symlink()
+        and prior_config.is_file()
+        and START in prior_config.read_text(encoding='utf-8')
+        and END in prior_config.read_text(encoding='utf-8')
+    )
     # Validate all potential collisions BEFORE changing anything.
     destinations = [(codex / 'agents' / x.name, x) for x in agents]
     destinations += [(home / '.agents/skills' / x.parent.name, x.parent) for x in skills]
@@ -359,7 +448,9 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
             accepted = {src.resolve()}
             if previous is not None:
                 accepted.add(previous.resolve())
-            if dest.resolve(strict=False) not in accepted:
+            if dest.resolve(strict=False) not in accepted and not (
+                prior_owned and is_relocated_owned_link(dest, src, root)
+            ):
                 parser.error(f'Unmanaged symlink exists: {dest}')
         elif dest.exists():
             parser.error(f'Unmanaged path exists: {dest}')
@@ -409,6 +500,8 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
         affected.extend((retired, global_conf, hooks, instructions))
         with restore_on_failure(affected):
             for dest, src in destinations:
+                if prior_owned and is_relocated_owned_link(dest, src, root):
+                    dest.unlink()
                 previous = old_skill_links.get(dest)
                 if (
                     previous is not None
