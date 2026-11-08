@@ -33,8 +33,8 @@ Run from the repository root. Codex resolves MightyModels helpers through instal
 - `task_ready`, `task_start`, `task_verify`, `task_mark` and `task_show` for task state.
 - `python3 "$HOME/.agents/skills/open-ticket/scripts/humanize_tracker_body.py"` for the PR body.
 
-Dispatch workers through prompting-subagents. Models are the fixed aliases `subagent-models`
-lists, never memory.
+Dispatch through prompting-subagents using the registered native Codex roles and each role TOML model/effort settings. The ticket
+`subagent-models` aliases are Claude-only historical values, not dispatch arguments or proof of the effective host model.
 
 **Argument:** the ticket's slug, given when the skill was started: "USER_REQUEST_ARGS". Empty quotes mean
 none was given, and the ticket is the session's active one.
