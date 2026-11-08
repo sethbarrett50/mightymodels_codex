@@ -5,6 +5,42 @@ local **35-tool MCP server**. Claude support is retained. It is **experimental**
 static tests and one live read-only subagent test do not establish complete
 dispatch authorization or end-to-end workflow equivalence.
 
+## Verified installation and bounded CLI smoke — November 8, 2026
+
+A user-supplied, unprivileged Debian Codex CLI 0.167.0 run after updating to
+`main` at `ddbd9f4` established the following:
+
+- `install_codex_user.py` completed without an installation error.
+- `codex_doctor.py` reported 11/11 owned native agent registrations, 19/19
+  installed skill links, enabled global `mighty_mcp`, an available `uv` launcher,
+  and structurally recognized global hooks.
+- `sync_codex_agents.py --check` and `sync_codex_skills.py --check` passed.
+- `codex mcp list` reported the `mighty_mcp` launcher enabled. This is not proof
+  that a particular MCP request or lifecycle callback was executed.
+- `codex_live_acceptance.py --live --timeout 90` returned
+  `read_only_smoke_completed` in an unrelated disposable Git repository, with
+  `fixture_unchanged: true`, one completed turn, and no retained secret transcript.
+  The probe reported 39,961 input tokens and 65 output tokens for this run; those
+  figures are not a model-to-model quota comparison.
+
+The doctor also emitted `Project-scoped MCP config has unexpected shape`.
+That warning was caused by the repository intentionally omitting the optional
+`mcp_servers` table in its project config, not by a demonstrated duplicate
+server. This case is addressed by PR #85; the observed host output itself is
+retained as historical evidence.
+
+**Not verified:** actual hook delivery or trust, MCP tool execution in that
+particular run, user-decision persistence, scout handback, resume/compaction,
+host-level dispatch admission, child-agent identity or sandbox isolation.
+The smoke requests read-only access and compares its disposable fixture; it
+is not a proof of global filesystem isolation or host enforcement.
+
+Codex documents `SessionStart`, `PreToolUse`, `PostToolUse`,
+`SubagentStop` and `PreCompact` hook events, including local MCP tool
+coverage. Configuration support is not evidence that this installation
+delivered those events; test that separately in unrelated repositories.
+See https://learn.chatgpt.com/docs/hooks for the current host contract.
+
 ## Observed live results — Debian 13, Codex CLI 0.167.0 (November 2026)
 
 **Historical observations, not current end-to-end acceptance.** Static checks and CLI discovery do not demonstrate host-enforced dispatch denial, read-only scout isolation, actual spawned-agent model identity, decision persistence, or complete lifecycle behavior. Track these separately under issues [#9](https://github.com/sethbarrett50/mightymodels_codex/issues/9), [#8](https://github.com/sethbarrett50/mightymodels_codex/issues/8), [#14](https://github.com/sethbarrett50/mightymodels_codex/issues/14) and [#16](https://github.com/sethbarrett50/mightymodels_codex/issues/16).
