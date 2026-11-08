@@ -154,3 +154,21 @@ def test_completed_turn_with_nested_error_item_is_unverified() -> None:
     assert report['events']['error_items'] == 1
     assert report['failure_category'] == 'unclassified'
     assert 'SECRET_ERROR' not in str(report)
+
+
+@pytest.mark.unit
+def test_read_only_smoke_rejects_mcp_tool_call_despite_completed_turn() -> None:
+    completed = subprocess.CompletedProcess(
+        args=[],
+        returncode=0,
+        stdout=(
+            '{"type":"item.started","item":{"type":"mcp_tool_call","arguments":"PRIVATE"}}\n'
+            '{"type":"turn.completed","usage":{"input_tokens":4}}\n'
+        ),
+        stderr='',
+    )
+    report = SCRIPT.summarize_result(completed, version='codex-cli 0.167.0', fixture_unchanged=True)
+    assert report['events']['mcp_calls'] == 1
+    assert report['observed_scope_violation'] is True
+    assert report['status'] == 'read_only_smoke_unverified'
+    assert 'PRIVATE' not in str(report)
