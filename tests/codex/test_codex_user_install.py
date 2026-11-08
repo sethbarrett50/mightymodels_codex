@@ -407,3 +407,50 @@ def test_upgrade_rejects_legacy_and_new_spawn_groups_together(tmp_path: Path) ->
     assert result.returncode != 0
     assert 'Duplicate or conflicting' in result.stderr
     assert json.loads(hooks_path.read_text()) == original
+
+
+@pytest.mark.unit
+def test_restore_on_type_error_recovers_files_and_new_links(tmp_path: Path) -> None:
+    restore_on_failure = run_path(str(INSTALLER))['restore_on_failure']
+    config = tmp_path / '.codex/config.toml'
+    config.parent.mkdir()
+    config.write_text('sandbox_mode = "read-only"\n')
+    new_link = tmp_path / '.agents/skills/new'
+
+    def mutate_then_fail() -> None:
+        config.write_text('sandbox_mode = "changed"\n')
+        new_link.parent.mkdir(parents=True)
+        new_link.symlink_to('somewhere')
+        msg = 'simulated malformed hook'
+        raise TypeError(msg)
+
+    with (
+        pytest.raises(TypeError, match='simulated malformed hook'),
+        restore_on_failure([config, new_link]),
+    ):
+        mutate_then_fail()
+    assert config.read_text() == 'sandbox_mode = "read-only"\n'
+    assert not new_link.is_symlink()
+    assert not new_link.parent.exists()
+
+
+@pytest.mark.unit
+def test_safe_write_cleans_temp_after_failed_replace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    safe_write = run_path(str(INSTALLER))['safe_write']
+    destination = tmp_path / 'config.toml'
+    destination.write_text('original\n')
+    original_replace = Path.replace
+
+    def failed_replace(self: Path, target: Path) -> Path:
+        if self.name.endswith('.mightymodels-tmp'):
+            msg = 'simulated atomic replacement failure'
+            raise OSError(msg)
+        return original_replace(self, target)
+
+    monkeypatch.setattr(Path, 'replace', failed_replace)
+    with pytest.raises(OSError, match='simulated atomic replacement failure'):
+        safe_write(destination, 'new content\n')
+    assert destination.read_text() == 'original\n'
+    assert not (tmp_path / 'config.toml.mightymodels-tmp').exists()
