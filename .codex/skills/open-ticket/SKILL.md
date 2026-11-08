@@ -38,9 +38,9 @@ reports, or the database, which may carry raw command output.
 
 ## The interview
 
-One `Codex user decision gate` dialog containing only the questions the conversation has not already
-answered. Each
-question carries two to four options, and the user can always type an answer of their own.
+In Codex Default mode, ask only unanswered interview questions in ordinary chat and end the
+turn until the user explicitly responds. Offer two to four choices per question and accept
+free-text answers; no timeout, empty response or auto-resolution counts as a decision.
 Answers already given are confirmed in the summary, not re-asked.
 
 **Argument:** a slug for the new ticket, given when the skill was started: "USER_REQUEST_ARGS". Empty
@@ -130,8 +130,9 @@ checkout the sprint can run on; the tool refuses it, so ask the user for a branc
 **D. ticket.yml.** Call `ticket_write` with the rollup and tracker answers as arguments, and no
 `scope`, `compaction` or `branch`; the tool asks the user for those three.
 
-An answer starting `needs input` means no one could be asked through the tool: put each question
-it names to the user in one `Codex user decision gate` dialog, then call again with those arguments
+An answer starting `needs input` means the MCP tool could not collect required inputs.
+Ask each named question in ordinary chat and end the turn until the user explicitly
+answers; then call `ticket_write` again using those actual answers
 (`scope`, `compaction`, and `branch` as the current branch name or the new branch name).
 
 The tool refuses to overwrite an existing ticket.yml. Tell the user the file exists
@@ -147,7 +148,7 @@ around it. The ticket is not staged until this passes.
 
 ## What next
 
-Ask once, through `Codex user decision gate`:
+Ask once in ordinary chat, then end the turn until the user explicitly chooses:
 
 - **Plan now**: invoke game-plan in this session. Recommended when `plan-first` is true and the
   context has room for it.
