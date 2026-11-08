@@ -496,6 +496,26 @@ def native_task_split_decisions(body: str) -> str:
     return body
 
 
+SOURCE_COMPANION_SKILLS = frozenset(('prompting-subagents', 'baton-pass'))
+
+
+def native_companion_guidance(name: str) -> str:
+    """Resolve Claude-source reference files from the installed Codex skill link."""
+    if name not in SOURCE_COMPANION_SKILLS:
+        return ''
+    return (
+        '> **Codex companion paths:** This generated SKILL.md lives under '
+        '`.codex/skills/` but the original `references/`, `scripts/`, and '
+        '`assets/` may live only under the source `skills/` tree. '
+        'For a relative companion path in this skill, resolve the MightyModels '
+        'source checkout with '
+        '`git -C "$(realpath "$HOME/.agents/skills/' + name + '")" rev-parse --show-toplevel`, '
+        'then read `skills/' + name + '/<relative companion path>` from that root. '
+        'Do not look for those files in the unrelated target repository, and '
+        'never proceed by inventing a missing template.\n\n'
+    )
+
+
 def translated(source: Path) -> str:
     """Preserve skill semantics while rewriting host-specific transport syntax."""
     raw = source.read_text(encoding='utf-8')
@@ -553,7 +573,7 @@ def translated(source: Path) -> str:
     transformer = transformers.get(name)
     if transformer is not None:
         body = transformer(body)
-    return f'---\n{front}\n---\n\n{BANNER}\n\n{body}'
+    return f'---\n{front}\n---\n\n{BANNER}\n\n{native_companion_guidance(name)}{body}'
 
 
 def generate(root: Path) -> dict[str, str]:
