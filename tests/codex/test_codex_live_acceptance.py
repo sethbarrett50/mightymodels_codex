@@ -105,3 +105,12 @@ def test_fixture_snapshot_does_not_follow_external_symlinks(tmp_path: Path) -> N
     link.symlink_to('../outside.txt')
     before = SCRIPT.fixture_snapshot(tmp_path)
     assert SCRIPT.fixture_snapshot(tmp_path) == before
+
+
+@pytest.mark.unit
+def test_multibyte_output_exceeding_byte_limit_is_rejected() -> None:
+    # Fewer than one million Unicode code points, but more than one million bytes.
+    completed = subprocess.CompletedProcess(args=[], returncode=0, stdout='界' * 400000, stderr='')
+    report = SCRIPT.summarize_result(completed, version='codex-cli 0.167.0', fixture_unchanged=True)
+    assert report['status'].startswith('unverified:')
+    assert '界' not in str(report)
