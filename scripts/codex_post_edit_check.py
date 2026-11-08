@@ -16,50 +16,90 @@ HEADERS = ('*** Update File: ', '*** Add File: ', '*** Move to: ')
 ERRORS = (OSError, subprocess.TimeoutExpired, ValueError)
 
 
-def python_paths(event: object, root: Path) -> tuple[Path, ...]:
-    """Extract existing Python files from a bounded successful project patch."""
+def _event_patch(event: object, root: Path) -> tuple[Path, str] | None:
+    """Require a local, bounded, successful Codex apply_patch result."""
     if not isinstance(event, dict) or event.get('hook_event_name') != 'PostToolUse':
-        return ()
+        return None
     if event.get('tool_name') != 'apply_patch':
-        return ()
+        return None
     response = event.get('tool_response')
     if isinstance(response, dict) and (
         response.get('isError') is True or response.get('status') in ('failed', 'error')
     ):
-        return ()
+        return None
     supplied = event.get('tool_input')
     cwd = event.get('cwd')
     if not isinstance(supplied, dict) or not isinstance(cwd, str):
-        return ()
+        return None
     directory = Path(cwd).resolve()
-    if not directory.is_relative_to(root.resolve()):
-        return ()
     patch = supplied.get('command')
+    if not directory.is_relative_to(root.resolve()):
+        return None
     if not isinstance(patch, str) or len(patch) > MAX_PATCH_SIZE:
+        return None
+    return directory, patch
+
+
+def _candidate(line: str, directory: Path, root: Path) -> Path | bool | None:
+    """False marks an unsafe path, None marks an unrelated or missing file."""
+    if not line.startswith(HEADERS):
+        return None
+    filename = line.split(': ', 1)[1].strip()
+    relative = PurePosixPath(filename)
+    if not filename or relative.is_absolute() or '..' in relative.parts:
+        return False
+    if relative.suffix not in ('.py', '.pyi'):
+        return None
+    candidate = directory.joinpath(*relative.parts)
+    if candidate.is_symlink() or not candidate.is_file():
+        return None
+    if not candidate.resolve().is_relative_to(root.resolve()):
+        return False
+    return candidate
+
+
+def python_paths(event: object, root: Path) -> tuple[Path, ...]:
+    """Select bounded existing Python paths without reading file contents."""
+    context = _event_patch(event, root)
+    if context is None:
         return ()
+    directory, patch = context
     lines = patch.splitlines()
     if not lines or lines[0] != '*** Begin Patch' or lines[-1] != '*** End Patch':
         return ()
     files: list[Path] = []
     for line in lines[1:-1]:
-        if not line.startswith(HEADERS):
-            continue
-        filename = line.split(': ', 1)[1].strip()
-        part = PurePosixPath(filename)
-        if not filename or part.is_absolute() or '..' in part.parts:
+        candidate = _candidate(line, directory, root)
+        if candidate is False:
             return ()
-        if part.suffix not in ('.py', '.pyi'):
-            continue
-        candidate = directory.joinpath(*part.parts)
-        if candidate.is_symlink() or not candidate.is_file():
-            continue
-        if not candidate.resolve().is_relative_to(root.resolve()):
-            return ()
-        if candidate not in files:
+        if isinstance(candidate, Path) and candidate not in files:
             files.append(candidate)
         if len(files) > MAX_CHANGED_FILES:
             return ()
     return tuple(files)
+
+
+def _ruff_failures(binary: Path, files: tuple[Path, ...], root: Path) -> list[str]:
+    failed: list[str] = []
+    for label, args in (
+        ('format', ('format', '--check')),
+        ('lint', ('check', '--no-fix')),
+    ):
+        try:
+            result = subprocess.run(  # noqa: S603
+                [str(binary), *args, '--', *(str(path) for path in files)],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                timeout=CHECK_TIMEOUT,
+                check=False,
+            )
+        except ERRORS:
+            failed.append(f'{label} unavailable')
+        else:
+            if result.returncode:
+                failed.append(f'{label} did not pass')
+    return failed
 
 
 def feedback(event: object, root: Path) -> dict | None:
@@ -69,31 +109,16 @@ def feedback(event: object, root: Path) -> dict | None:
         return None
     binary = root / '.venv/bin/ruff'
     if not binary.is_file():
-        message = 'MightyModels post-edit Ruff check not run (local Ruff unavailable); run make check.'
+        message = (
+            'MightyModels post-edit Ruff check not run (local Ruff unavailable); run make check.'
+        )
     else:
-        failed: list[str] = []
-        for label, args in (
-            ('format', ('format', '--check')),
-            ('lint', ('check', '--no-fix')),
-        ):
-            try:
-                result = subprocess.run(  # noqa: S603
-                    [str(binary), *args, '--', *(str(path) for path in files)],
-                    cwd=root,
-                    capture_output=True,
-                    text=True,
-                    timeout=CHECK_TIMEOUT,
-                    check=False,
-                )
-            except ERRORS:
-                failed.append(f'{label} unavailable')
-            else:
-                if result.returncode:
-                    failed.append(f'{label} did not pass')
+        failed = _ruff_failures(binary, files, root)
         if not failed:
             return None
         message = (
-            'MightyModels post-edit checks: ' + ', '.join(failed)
+            'MightyModels post-edit checks: '
+            + ', '.join(failed)
             + '; run make check to inspect and correct issues.'
         )
     return {
@@ -107,7 +132,7 @@ def feedback(event: object, root: Path) -> dict | None:
 def main() -> int:
     try:
         event = json.load(sys.stdin)
-    except (ValueError, UnicodeError):
+    except ValueError, UnicodeError:
         return 0
     result = feedback(event, Path(__file__).resolve().parents[1])
     if result is not None:
