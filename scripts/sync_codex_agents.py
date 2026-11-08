@@ -91,12 +91,106 @@ def native_web_scout_tools(body: str) -> str:
     return guidance + body
 
 
+def native_terry_toolchain(body: str) -> str:
+    """Translate read-only environment survey to actual Codex host discovery."""
+    segments = (
+        (
+            'Three limits of a sandboxed session',
+            '</context>',
+            (
+                'Codex host configuration is only declared evidence; never claim '
+                'MCP connections, hook delivery, permission enforcement, or '
+                'automatic skill loading without observing them. A git commit may '
+                'execute repository hooks; inspect their declarations without '
+                'running them.\n'
+            ),
+        ),
+        (
+            '2. Survey the harness',
+            '3. Survey',
+            (
+                '2. Inspect the tools actually exposed by the Codex host. If '
+                'installed and permitted, run `codex mcp list` once. Read '
+                '`$HOME/.codex/config.toml`, project `.codex/config.toml`, and '
+                '`.codex/hooks.json` to identify declared servers and hooks. '
+                'Treat declarations as different from connected or triggered '
+                'facilities. Record unavailable CLI, MCP connections, or hook '
+                'evidence under Not seen.\n'
+            ),
+        ),
+        (
+            '3. Survey the installed skills',
+            '4. Survey',
+            (
+                '3. Inspect `$HOME/.agents/skills/`, `$HOME/.codex/config.toml`, '
+                'and native `.codex/agents/` role files. Read relevant SKILL.md '
+                'files explicitly instead of assuming preloaded skill '
+                'descriptions or doctrine. Report whether files exist separately '
+                'from whether the host registered their roles.\n'
+            ),
+        ),
+        (
+            '5. Survey the sandbox',
+            '6. Compose',
+            (
+                '5. Inspect native `approval_policy`, `sandbox_mode`, hook '
+                'settings and actual denials read-only. Never treat a '
+                'writable-directory probe or configuration entry as proof that '
+                'hooks fired or permissions were enforced. Record missing host '
+                'evidence under Not seen.\n'
+            ),
+        ),
+        (
+            '- Run only these through `exec_command`:',
+            '- You hold no',
+            (
+                '- Run only allowed read-only commands: `codex mcp list`, `codex '
+                '--version` (at most once each if available), `git config --get`, '
+                '`git rev-parse`, `git ls-files`, `ls`, `test`, and `rg`. Do not '
+                'run any hook, commit, test suite, build, or formatter. '
+                'Unsupported inspection belongs under Not seen.\n'
+            ),
+        ),
+        (
+            '- The `head` line carries',
+            '- When the survey would',
+            (
+                '- The `head` line carries `git rev-parse --short HEAD` and '
+                'observed `codex --version`, or records that the version was Not '
+                'seen.\n'
+            ),
+        ),
+    )
+    for beginning, ending, native in segments:
+        start = body.find(beginning)
+        if start < 0 or body.count(beginning) != 1:
+            msg = 'Expected exactly one native toolchain survey start'
+            raise ValueError(msg)
+        stop = body.find(ending, start + len(beginning))
+        if stop < 0:
+            msg = 'Missing native toolchain survey boundary'
+            raise ValueError(msg)
+        body = body[:start] + native + body[stop:]
+    examples = (
+        ('claude mcp list', 'codex mcp list'),
+        ('claude plugin list --json', 'Codex plugin registry (not exposed)'),
+        ('claude --version', 'codex --version'),
+        ('claude: 2.1.296', 'codex: observed version'),
+        ('~/.claude/plugins/data', '$HOME/.codex'),
+    )
+    for original, replacement in examples:
+        body = body.replace(original, replacement)
+    return body
+
+
 def native_body(source: str, *, role: str | None = None) -> str:
     """Translate supported Claude tool references; never infer host enforcement."""
     for original, native in ROLE_TRANSLATIONS:
         source = source.replace(original, native)
     if role == 'mm-triage-web-scout':
         source = native_web_scout_tools(source)
+    if role == 'mm-triage-terry-toolchain':
+        source = native_terry_toolchain(source)
     return source
 
 
