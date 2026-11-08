@@ -7,7 +7,7 @@ path is intercepted. It intentionally fails closed on unknown patch schemas.
 import json
 import re
 import sys
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 _SUPPRESSION = re.compile(
     r'#\s*(?:ruff\s*:\s*)?noqa\b|#\s*(?:type|ty)\s*:\s*ignore\b',
@@ -32,7 +32,7 @@ def deny(reason: str) -> dict:
     }
 
 
-def inspect(event: object) -> str | None:  # noqa: C901, PLR0911, PLR0912
+def inspect(event: object, root: Path | None = None) -> str | None:  # noqa: C901, PLR0911, PLR0912
     """Return a sanitized reason only when an edit should not proceed."""
     if not isinstance(event, dict) or event.get('hook_event_name') != 'PreToolUse':
         return 'Unrecognized project edit hook event'
@@ -47,6 +47,9 @@ def inspect(event: object) -> str | None:  # noqa: C901, PLR0911, PLR0912
     lines = patch.splitlines()
     if not lines or lines[0] != '*** Begin Patch' or lines[-1] != '*** End Patch':
         return 'Malformed project patch boundaries'
+    # Native Codex patches may use absolute paths inside the active checkout.
+    # Keep the boundary anchored to this script's repository, not the event cwd.
+    checkout = (root or Path(__file__).resolve().parents[1]).resolve()
     python_file = False
     file_header_seen = False
     for line in lines[1:-1]:
@@ -55,7 +58,12 @@ def inspect(event: object) -> str | None:  # noqa: C901, PLR0911, PLR0912
             if not path:
                 return 'Edit patch has an empty file path'
             parts = PurePosixPath(path)
-            if parts.is_absolute() or '..' in parts.parts:
+            if '..' in parts.parts:
+                return 'Patch path outside the project scope'
+            if parts.is_absolute():
+                if not Path(path).resolve(strict=False).is_relative_to(checkout):
+                    return 'Patch path outside the project scope'
+            elif not (checkout / path).resolve(strict=False).is_relative_to(checkout):
                 return 'Patch path outside the project scope'
             if parts.name == 'uv.lock':
                 return 'Direct uv.lock edits are blocked; use the dependency lock workflow'
