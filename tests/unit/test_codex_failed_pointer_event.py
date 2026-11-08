@@ -31,6 +31,12 @@ def event(response: object) -> dict[str, object]:
         {'status': 'error'},
         '{"isError": true, "content": "private"}',
         json.dumps({'status': 'failed', 'text': 'private'}),
+        'upstream failed: PRIVATE TOOL OUTPUT',
+        '{broken-json',
+        '"private unstructured message"',
+        'x' * 8193,
+        ['unstructured response'],
+        True,
     ],
 )
 def test_explicit_failed_mcp_calls_do_not_update_session_pointer(response: object) -> None:
@@ -38,7 +44,10 @@ def test_explicit_failed_mcp_calls_do_not_update_session_pointer(response: objec
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('response', [None, {'isError': False}, {'status': 'success'}])
+@pytest.mark.parametrize(
+    'response',
+    [None, {'isError': False}, {'status': 'success'}, '{"isError": false}'],
+)
 def test_success_or_legacy_unspecified_outcome_keeps_pointer_compatibility(
     response: object,
 ) -> None:
