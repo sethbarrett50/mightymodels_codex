@@ -1,5 +1,5 @@
 {
-  "description": "MightyModels checkout-only guard against new Python lint suppressions and direct lockfile edits; user/global lifecycle hooks are separate",
+  "description": "MightyModels checkout-only patch guard and read-only Python post-edit checks; user/global lifecycle hooks remain separate",
   "hooks": {
     "PreToolUse": [
       {
@@ -10,6 +10,19 @@
             "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/codex_edit_guard.py\"",
             "timeout": 12,
             "statusMessage": "Reviewing MightyModels project patch"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/codex_post_edit_check.py\"",
+            "timeout": 20,
+            "statusMessage": "Checking edited MightyModels Python files (read only)"
           }
         ]
       }
