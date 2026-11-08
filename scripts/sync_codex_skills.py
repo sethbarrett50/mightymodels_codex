@@ -145,7 +145,7 @@ def native_baton_pass_decisions(body: str) -> str:
             ),
             (
                 'Do not assume a Codex user-input recorder hook executed. Preserve '
-                'only the user\'s actual\nconfirmed focus and uncommitted-work choice '
+                "only the user's actual\nconfirmed focus and uncommitted-work choice "
                 'in BATON.md, not a predicted or default answer.\nIf an active '
                 'ticket exists, also update its durable context through available '
                 'MightyModels\nstate tools before the final snapshot, and verify the '
