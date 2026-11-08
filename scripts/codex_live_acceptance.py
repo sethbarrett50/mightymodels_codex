@@ -29,6 +29,15 @@ VERSION = re.compile(r'\Acodex(?:-cli)? [0-9A-Za-z.+-]+\Z')
 
 
 
+
+def file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(65536), b''):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def fixture_snapshot(root: Path) -> tuple[tuple[str, str, str], ...]:
     """Summarize only names/types and content digests within the disposable repo."""
     records: list[tuple[str, str, str]] = []
@@ -41,16 +50,11 @@ def fixture_snapshot(root: Path) -> tuple[tuple[str, str, str], ...]:
         elif path.is_dir():
             kind, fingerprint = 'directory', ''
         elif path.is_file():
-            digest = hashlib.sha256()
-            with path.open('rb') as stream:
-                for block in iter(lambda: stream.read(65536), b''):
-                    digest.update(block)
-            kind, fingerprint = 'file', digest.hexdigest()
+            kind, fingerprint = 'file', file_digest(path)
         else:
             kind, fingerprint = 'other', ''
         records.append((relative.as_posix(), kind, fingerprint))
     return tuple(sorted(records))
-
 
 
 def summarize_result(
