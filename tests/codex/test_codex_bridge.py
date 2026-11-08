@@ -528,6 +528,7 @@ def test_failing_subprocess_exception_is_not_disclosed(tmp_path: Path) -> None:
     assert result['hookSpecificOutput']['permissionDecision'] == 'deny'
     assert canary not in json.dumps(result)
 
+
 @pytest.mark.unit
 @pytest.mark.parametrize(
     'tool',
@@ -546,9 +547,7 @@ def test_namespaced_spawn_dispatch_receives_same_legacy_admission(tool: str) -> 
 def test_namespaced_dispatch_adapter_denial_is_not_host_proof(tmp_path: Path) -> None:
     incoming = event('mm-workers-engineer')
     incoming['tool_name'] = 'collaborationspawn_agent'
-    failed = subprocess.CompletedProcess(
-        args=[], returncode=2, stdout='', stderr='not admitted'
-    )
+    failed = subprocess.CompletedProcess(args=[], returncode=2, stdout='', stderr='not admitted')
     with patch.object(module.subprocess, 'run', return_value=failed):
         denied = module.run_admission(
             incoming, project_root=tmp_path, environ={'HOME': str(tmp_path)}
