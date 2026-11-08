@@ -436,8 +436,10 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
         and END in prior_config.read_text(encoding='utf-8')
     )
     # Validate all potential collisions BEFORE changing anything.
-    destinations = [(codex / 'agents' / x.name, x) for x in agents]
-    destinations += [(home / '.agents/skills' / x.parent.name, x.parent) for x in skills]
+    # Explicit global config_file registrations are authoritative. The same
+    # roles must not also be discovered as ~/.codex/agents/ files.
+    destinations = [(home / '.agents/skills' / x.parent.name, x.parent) for x in skills]
+    retired_agent_links = [(codex / 'agents' / x.name, x) for x in agents]
     old_skill_links = {
         home / '.agents/skills' / skill.parent.name: root / 'skills' / skill.parent.name
         for skill in skills
@@ -454,6 +456,16 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
                 parser.error(f'Unmanaged symlink exists: {dest}')
         elif dest.exists():
             parser.error(f'Unmanaged path exists: {dest}')
+    # Migrate former installer-owned agent symlinks; never remove a foreign file
+    # or another user's role definition.
+    for dest, src in retired_agent_links:
+        if dest.is_symlink():
+            if dest.resolve(strict=False) != src.resolve() and not (
+                prior_owned and is_relocated_owned_link(dest, src, root)
+            ):
+                parser.error(f'Unmanaged agent symlink exists: {dest}')
+        elif dest.exists():
+            parser.error(f'Unmanaged agent path exists: {dest}')
     # Remove an obsolete wingman symlink left by installations before model routing.
     retired = codex / 'agents/mm-triage-wingman.toml'
     retired_source = root / '.codex/agents/mm-triage-wingman.toml'
@@ -496,7 +508,7 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
             tmp = target.with_name(target.name + '.mightymodels-tmp')
             if tmp.exists() or tmp.is_symlink():
                 parser.error(f'Refusing existing temporary file: {tmp}')
-        affected = [dest for dest, _ in destinations]
+        affected = [dest for dest, _ in (*destinations, *retired_agent_links)]
         affected.extend((retired, global_conf, hooks, instructions))
         with restore_on_failure(affected):
             for dest, src in destinations:
@@ -510,6 +522,10 @@ def main() -> int:  # noqa: C901, PLR0912, PLR0914, PLR0915
                 ):
                     dest.unlink()
                 reconcile_link(dest, src, remove=args.uninstall)
+            for dest, src in retired_agent_links:
+                if prior_owned and is_relocated_owned_link(dest, src, root):
+                    dest.unlink()
+                reconcile_link(dest, src, remove=True)
             reconcile_link(retired, retired_source, remove=True)
             update_config(global_conf, root, remove=args.uninstall)
             update_hooks(hooks, root, remove=args.uninstall)
