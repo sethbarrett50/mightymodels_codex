@@ -8,6 +8,7 @@ No raw Codex output, prompts, paths, or credentials are retained.
 
 import argparse
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 from codex_doctor import diagnose
@@ -17,9 +18,15 @@ LIVE_SUCCESS = 'read_only_smoke_completed'
 LIMIT_CATEGORY = 'possible_usage_or_rate_limit'
 
 
-def report(*, home: Path, root: Path, live: bool, timeout: int) -> tuple[dict, int]:
+@dataclass(frozen=True, slots=True)
+class InstallScope:
+    home: Path
+    root: Path
+
+
+def report(*, scope: InstallScope, live: bool, timeout: int) -> tuple[dict, int]:
     """Require a healthy static install before consuming any live Codex quota."""
-    findings, healthy = diagnose(home, root, root)
+    findings, healthy = diagnose(scope.home, scope.root, scope.root)
     state: dict[str, object] = {
         'probe': 'codex-reset-acceptance-gate',
         'mode': 'live' if live else 'preflight',
@@ -67,8 +74,10 @@ def main() -> int:
     if not MIN_TIMEOUT <= args.timeout <= MAX_TIMEOUT:
         parser.error(f'Timeout must be between {MIN_TIMEOUT} and {MAX_TIMEOUT} seconds')
     result, code = report(
-        home=args.home.expanduser().resolve(),
-        root=args.root.expanduser().resolve(),
+        scope=InstallScope(
+            home=args.home.expanduser().resolve(),
+            root=args.root.expanduser().resolve(),
+        ),
         live=args.live,
         timeout=args.timeout,
     )
