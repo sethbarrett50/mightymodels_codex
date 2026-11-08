@@ -83,8 +83,22 @@ def check(base: str, root: Path) -> int:
         print('Could not enumerate tracked changes; no hygiene check performed.')
         return 2
 
+    untracked = subprocess.run(  # noqa: S603
+        [GIT_BINARY, '-C', str(root), 'ls-files', '--others', '--exclude-standard', '-z'],
+        capture_output=True,
+        check=False,
+    )
+    if untracked.returncode:
+        print('Could not enumerate untracked files; no complete hygiene check performed.')
+        return 2
+
+    # Include new, untracked Python files as well as staged and unstaged edits.
+    # Git's NUL-delimited output avoids misparsing whitespace in filenames.
+    paths = set(filter(None, changed.stdout.split(b'\0')))
+    paths.update(filter(None, untracked.stdout.split(b'\0')))
+
     found = False
-    for raw in filter(None, changed.stdout.split(b'\0')):
+    for raw in sorted(paths):
         relative = Path(raw.decode('utf-8', errors='surrogateescape'))
         count = audit_file(base, root, relative)
         if count < 0:
@@ -95,7 +109,7 @@ def check(base: str, root: Path) -> int:
     if found:
         print('No automatic approval: review new suppressions before proceeding.')
         return 1
-    print('No newly introduced Python lint/type suppressions found in tracked changes.')
+    print('No newly introduced Python lint/type suppressions found in tracked or untracked files.')
     return 0
 
 
