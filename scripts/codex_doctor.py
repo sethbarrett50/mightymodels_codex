@@ -51,7 +51,8 @@ def check_agents(config: dict, home: Path, root: Path) -> str:
         bool(
             (codex / 'agents' / f'{name}.toml').is_symlink()
             and (codex / 'agents' / f'{name}.toml').resolve(strict=False) == source.resolve()
-            and agents.get(name, {}).get('config_file') == str(source)
+            and isinstance(agents.get(name), dict)
+            and agents[name].get('config_file') == str(source)
         )
         for source in (root / '.codex/agents').glob('mm-*.toml')
         for name in (source.stem,)
