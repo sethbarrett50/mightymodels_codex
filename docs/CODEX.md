@@ -463,7 +463,13 @@ python3 scripts/codex_live_acceptance.py --live --timeout 90
 
 The opt-in runner creates and removes a disposable Git fixture, calls
 `codex exec --json --sandbox read-only`, and reports only a sanitized Codex
-CLI version, event/tool counts and numeric token usage. It intentionally
+CLI version, event/tool counts and numeric token usage. It also compares the
+names, file types and SHA-256 digests of every path outside the temporary
+`.git` directory before and after the run. A changed fixture makes the
+result unverified rather than successful; no filenames or content hashes are
+included in the printed report. This establishes only that this disposable
+fixture's final filesystem state is unchanged, not that an agent could never
+write or that writes outside the fixture are blocked. It intentionally
 does **not** save or print the raw transcript, event IDs, prompt, stderr or
 tool arguments. The host may still access its normal Codex credentials and
 caches; no credentials are exported or printed by the runner. A timed-out,
