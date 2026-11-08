@@ -114,3 +114,16 @@ def test_doctor_rejects_explicitly_disabled_mcp_registration(tmp_path: Path) -> 
     result = run_script(DOCTOR, tmp_path)
     assert result.returncode == 1
     assert 'MCP registration missing or unexpected' in result.stdout
+
+
+@pytest.mark.unit
+def test_doctor_rejects_wrong_toml_table_types_without_traceback(tmp_path: Path) -> None:
+    installed = run_script(INSTALLER, tmp_path)
+    assert installed.returncode == 0, installed.stderr
+    config = tmp_path / '.codex/config.toml'
+    config.write_text('mcp_servers = "invalid"\nagents = "invalid"\n')
+    result = run_script(DOCTOR, tmp_path)
+    assert result.returncode == 1
+    assert 'MCP registration missing or unexpected' in result.stdout
+    assert '0/11' in result.stdout
+    assert 'Traceback' not in result.stderr

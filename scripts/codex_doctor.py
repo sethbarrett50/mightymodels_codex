@@ -15,7 +15,9 @@ def note(message: str, *, ok: bool) -> str:
 
 
 def check_mcp(config: dict, root: Path) -> str:
-    server = config.get('mcp_servers', {}).get('mighty_mcp', {})
+    servers = config.get('mcp_servers')
+    server = servers.get('mighty_mcp') if isinstance(servers, dict) else None
+    server = server if isinstance(server, dict) else {}
     valid = (
         server.get('command') == 'sh'
         and server.get('args') == [str(root / 'bin/mightymodels-mcp-codex')]
@@ -41,7 +43,8 @@ def check_runtime() -> str:
 
 
 def check_agents(config: dict, home: Path, root: Path) -> str:
-    agents = config.get('agents', {})
+    agents = config.get('agents')
+    agents = agents if isinstance(agents, dict) else {}
     codex = home / '.codex'
     valid = sum(
         bool(
@@ -93,7 +96,10 @@ def check_project_overlap(root: Path, cwd: Path) -> str | None:
         project = tomllib.loads(config.read_text(encoding='utf-8'))
     except _CONFIG_READ_ERRORS:
         return '[WARN] Project-scoped Codex config missing or malformed'
-    if 'mighty_mcp' not in project.get('mcp_servers', {}):
+    servers = project.get('mcp_servers')
+    if not isinstance(servers, dict):
+        return '[WARN] Project-scoped MCP config has unexpected shape'
+    if 'mighty_mcp' not in servers:
         return None
     return (
         '[WARN] MightyModels checkout declares project-scoped mighty_mcp; '
