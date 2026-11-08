@@ -20,9 +20,7 @@ def test_open_ticket_decisions_are_blocking_and_generated_output_is_current() ->
     assert 'Ask once in ordinary chat, then end the turn' in generated
     assert 'One `Codex user decision gate` dialog' not in generated
     assert 'one `Codex user decision gate` dialog' not in generated
-    assert generated == (ROOT / '.codex/skills/open-ticket/SKILL.md').read_text(
-        encoding='utf-8'
-    )
+    assert generated == (ROOT / '.codex/skills/open-ticket/SKILL.md').read_text(encoding='utf-8')
 
 
 @pytest.mark.unit
