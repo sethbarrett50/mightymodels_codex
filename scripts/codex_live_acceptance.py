@@ -129,6 +129,8 @@ def summarize_result(
             result.returncode == 0
             and fixture_unchanged is True
             and events.get('turn_completed', 0) > 0
+            and events.get('turn_failed', 0) == 0
+            and events.get('errors', 0) == 0
             and not observed_violation
         )
         else 'read_only_smoke_unverified'
