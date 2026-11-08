@@ -190,7 +190,7 @@ def probe_delivery(event: object, root: Path, environ: dict[str, str]) -> None:
     except OSError:
         return
     with os.fdopen(fd, 'w', encoding='utf-8') as stream:
-        stream.write('PostToolUse apply_patch observed\\n')
+        stream.write('PostToolUse apply_patch observed\n')
 
 
 def main() -> int:
