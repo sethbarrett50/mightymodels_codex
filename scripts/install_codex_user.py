@@ -19,7 +19,7 @@ END = '# <<< mightymodels-codex managed <<<'
 SKILL_COUNT = 19
 AGENT_COUNT = 11
 _INSTALL_ERRORS = (OSError, ValueError, TypeError)
-_ROLLBACK_ERRORS = (OSError, ValueError)
+_ROLLBACK_ERRORS = (OSError, ValueError, TypeError)
 
 
 def managed_text(text: str, replacement: str) -> str:
@@ -44,9 +44,14 @@ def safe_write(path: Path, content: str) -> None:
     if tmp.exists() or tmp.is_symlink():
         msg = f'Refusing existing temporary file: {tmp}'
         raise FileExistsError(msg)
-    tmp.write_text(content, encoding='utf-8')
-    Path(tmp).chmod(0o600)
-    tmp.replace(path)
+    try:
+        tmp.write_text(content, encoding='utf-8')
+        tmp.chmod(0o600)
+        tmp.replace(path)
+    finally:
+        # A failed write/replace must not poison the next installer attempt.
+        if tmp.exists() or tmp.is_symlink():
+            tmp.unlink()
 
 
 Snapshot = tuple[Path, str, bytes | Path | None, int]
