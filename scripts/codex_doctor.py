@@ -16,9 +16,11 @@ def note(message: str, *, ok: bool) -> str:
 
 def check_mcp(config: dict, root: Path) -> str:
     server = config.get('mcp_servers', {}).get('mighty_mcp', {})
-    valid = server.get('command') == 'sh' and server.get('args') == [
-        str(root / 'bin/mightymodels-mcp-codex')
-    ]
+    valid = (
+        server.get('command') == 'sh'
+        and server.get('args') == [str(root / 'bin/mightymodels-mcp-codex')]
+        and server.get('enabled') is not False
+    )
     message = (
         'Global MightyModels MCP launcher registered'
         if valid
