@@ -2,8 +2,8 @@
 
 import argparse
 import tomllib
-from shutil import which
 from pathlib import Path
+from shutil import which
 
 from install_codex_user import AGENT_COUNT, SKILL_COUNT, hook_config, managed_hooks_present
 
