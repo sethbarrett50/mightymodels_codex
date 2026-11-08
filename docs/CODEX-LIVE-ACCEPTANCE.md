@@ -71,6 +71,7 @@ explicit, bounded fixture:
 
 ```bash
 # Preserve the existing $fixture/repo disposable MightyModels clone.
+git -C ~/code/mightymodels_codex pull --ff-only origin main
 git -C "$fixture/repo" pull --ff-only
 probe_dir="$(mktemp -d)"
 (
