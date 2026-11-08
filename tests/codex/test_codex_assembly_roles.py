@@ -23,6 +23,9 @@ def test_assembly_uses_registered_roles_and_actual_user_input() -> None:
     assert 'mightymodels:workers:intern' not in generated
     assert 'mightymodels:review:fact-checker' not in generated
     assert 'stop until explicitly answered' in generated
+    assert 'Use the registered `mm-workers-engineer` native role model' in generated
+    assert "The engineer's model is `sonnet`" not in generated
+    assert 'Request an explicit user decision before changing native routing' in generated
     assert generated == (ROOT / '.codex/skills/agents-assemble/SKILL.md').read_text(
         encoding='utf-8'
     )
