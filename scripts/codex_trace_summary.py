@@ -51,7 +51,6 @@ def _count_usage(usage: object, counts: Counter[str], tokens: Counter[str]) -> N
         tokens[name] += _positive_count(usage.get(name))
 
 
-
 def _count_completed_item(item: object, counts: Counter[str]) -> None:
     """Record only terminal operation classes and known outcomes."""
     if not isinstance(item, dict):
