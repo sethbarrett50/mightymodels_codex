@@ -29,11 +29,12 @@ def check_mcp(config: dict, root: Path) -> str:
 
 def check_runtime() -> str:
     """Diagnose the launcher dependency without invoking it or exposing paths."""
+    available = which('uv') is not None
     return note(
         'uv executable available for MightyModels MCP launcher'
-        if which('uv') is not None
+        if available
         else 'uv executable unavailable for MightyModels MCP launcher',
-        ok=which('uv') is not None,
+        ok=available,
     )
 
 
