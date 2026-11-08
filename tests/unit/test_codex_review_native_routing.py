@@ -14,9 +14,7 @@ native_review_routing = SYNC['native_review_routing']
 @pytest.mark.unit
 def test_generated_review_uses_native_models_and_explicit_doctrine() -> None:
     generated = translate(ROOT / 'skills/review-circus/SKILL.md')
-    assert generated == (ROOT / '.codex/skills/review-circus/SKILL.md').read_text(
-        encoding='utf-8'
-    )
+    assert generated == (ROOT / '.codex/skills/review-circus/SKILL.md').read_text(encoding='utf-8')
     assert 'without changing native reviewer model pins' in generated
     assert 'native Codex reviewers use their registered Sol' in generated
     assert 'must explicitly read its installed doctrine skill' in generated
