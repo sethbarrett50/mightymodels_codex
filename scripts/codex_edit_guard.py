@@ -9,7 +9,10 @@ import re
 import sys
 from pathlib import PurePosixPath
 
-_SUPPRESSION = re.compile(r'#\s*(?:(?:ruff)\s*:\s*)?noqa\b|#\s*(?:type|ty)\s*:\s*ignore\b', re.IGNORECASE)
+_SUPPRESSION = re.compile(
+    r'#\s*(?:ruff\s*:\s*)?noqa\b|#\s*(?:type|ty)\s*:\s*ignore\b',
+    re.IGNORECASE,
+)
 _BAD_INPUT = (ValueError, UnicodeError)
 _PATCH_HEADERS = (
     '*** Update File: ',
