@@ -2,7 +2,7 @@
 name: review-circus
 description: >-
   Review a diff, branch, ticket, or whole codebase with the mightymodels persona reviewers. One
-  Codex user decision gate gate sets depth (quick runs its reviewers on sonnet, standard and deep on opus), persona
+  An ordinary-chat decision sets review depth (quick, standard, deep) without changing native reviewer model pins, persona
   emphasis, and scope; the `review_*` tools record the run, `review_metrics` and qualitylens's signals tools
   measure, merge-vader and uncle-bob report, and the tool reads their reports
   and merges overlapping findings, presented by id through Codex user decision gate. Only the findings
@@ -49,7 +49,7 @@ skill was started: "USER_REQUEST_ARGS". Empty quotes mean none was given, and th
 below.
 
 The profile is the scope, the depth and the emphasis of the review. Say what each depth costs
-(profiles.md): quick is one persona on sonnet, standard and deep run their reviewers on opus.
+(profiles.md): quick runs one persona, while standard and deep change review coverage; all native Codex reviewers use their registered Sol model settings (Claude aliases in profiles.md are not Codex pins).
 Then record the profile with `review_start`,
 carrying only what the conversation has already settled. The tool puts each of `scope`, `depth`
 and `emphasis` that the call leaves out to the user and starts the run with the answers:
@@ -92,8 +92,8 @@ names a specific gap.
 ## 3. Dispatch the personas
 
 Dispatch each persona in the run, in parallel, with prompting-subagents' reviewer template
-and the model the run recorded. Each persona preloads its doctrine as a skill of its own
-(`becoming-merge-vader`, `becoming-uncle-bob`) and is passed no doctrine path. The packet carries
+and the model the run recorded. Each persona must explicitly read its installed doctrine skill
+(`becoming-merge-vader` or `becoming-uncle-bob`) through `$HOME/.agents/skills/` before reviewing; native Codex dispatch does not guarantee automatic preloads. The packet carries
 `$HOME/.agents/skills/review-circus/references/profiles.md`, `$HOME/.agents/skills/review-circus/references/idiom-evidence.md`,
 the run directory, the depth and the persona's role (the heavier weight leads), the metrics
 path `review_metrics` returned, the signals history window (which the persona hands qualitylens), and for a ticket,
