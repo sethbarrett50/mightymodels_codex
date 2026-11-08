@@ -1,6 +1,7 @@
 """Read-only Codex installation diagnostics without credential access or writes."""
 
 import argparse
+import json
 import tomllib
 from pathlib import Path
 from shutil import which
@@ -107,6 +108,52 @@ def check_project_overlap(root: Path, cwd: Path) -> str | None:
     )
 
 
+def check_other_repo_overlap(root: Path, cwd: Path) -> list[str]:
+    """Flag declarations in the active unrelated Git checkout, not host enforcement."""
+    if cwd.is_relative_to(root):
+        return []
+    project = next(
+        (path for path in (cwd, *cwd.parents) if (path / '.git').exists()),
+        None,
+    )
+    if project is None:
+        return []
+    reports: list[str] = []
+    config_path = project / '.codex/config.toml'
+    if config_path.is_symlink():
+        reports.append('[WARN] Project Codex config is a symlink; scope not inspected')
+    elif config_path.is_file():
+        try:
+            config = tomllib.loads(config_path.read_text(encoding='utf-8'))
+        except _CONFIG_READ_ERRORS:
+            reports.append('[WARN] Active project Codex config malformed or unreadable')
+        else:
+            servers = config.get('mcp_servers')
+            if isinstance(servers, dict) and 'mighty_mcp' in servers:
+                reports.append(
+                    '[WARN] Active project and global scopes both declare mighty_mcp; '
+                    'trust, precedence and duplicate startup unverified'
+                )
+
+    hook_path = project / '.codex/hooks.json'
+    if hook_path.is_symlink():
+        reports.append('[WARN] Active project hook file is a symlink; not inspected')
+    elif hook_path.is_file():
+        try:
+            data = json.loads(hook_path.read_text(encoding='utf-8'))
+            groups = data.get('hooks') if isinstance(data, dict) else None
+        except _CONFIG_READ_ERRORS:
+            groups = None
+        if not isinstance(groups, dict):
+            reports.append('[WARN] Active project Codex hook manifest malformed')
+        elif groups:
+            reports.append(
+                '[WARN] Active project and global Codex hooks coexist; '
+                'event precedence, trust and duplicate delivery unverified'
+            )
+    return reports
+
+
 def diagnose(home: Path, root: Path, cwd: Path) -> tuple[list[str], bool]:
     """Return nonsecret status messages and whether required checks passed."""
     if not (root / 'bin/mightymodels-mcp-codex').is_file():
@@ -126,6 +173,7 @@ def diagnose(home: Path, root: Path, cwd: Path) -> tuple[list[str], bool]:
     warning = check_project_overlap(root, cwd)
     if warning is not None:
         reports.append(warning)
+    reports.extend(check_other_repo_overlap(root, cwd))
     reports.append('[WARN] Live hook delivery, scout isolation and model identity unverified')
     return reports, all(not item.startswith('[FAIL]') for item in reports)
 
