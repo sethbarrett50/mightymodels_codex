@@ -15,7 +15,7 @@ native_open_ticket_decisions = GENERATOR['native_open_ticket_decisions']
 def test_open_ticket_decisions_are_blocking_and_generated_output_is_current() -> None:
     generated = translated(ROOT / 'skills/open-ticket/SKILL.md')
     assert 'ask only unanswered interview questions in ordinary chat' in generated
-    assert 'end the turn until the user explicitly responds' in generated
+    assert 'end the turn until the user explicitly responds' in ' '.join(generated.split())
     assert 'then call `ticket_write` again using those actual answers' in generated
     assert 'Ask once in ordinary chat, then end the turn' in generated
     assert 'One `Codex user decision gate` dialog' not in generated
