@@ -66,8 +66,6 @@ def failure_category(stdout: str, stderr: str) -> str:
     return 'unclassified'
 
 
-
-
 def file_digest(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open('rb') as stream:
