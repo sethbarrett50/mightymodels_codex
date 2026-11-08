@@ -192,6 +192,23 @@ def native_game_plan_decisions(body: str) -> str:
     return body
 
 
+def native_landing_decisions(body: str) -> str:
+    """Wait for a real review-or-handoff choice after green CI."""
+    before = (
+        'ask once through `Codex user decision gate` '
+        '(up to four questions a call, two to four options each):'
+    )
+    after = (
+        'ask in ordinary chat whether to review now or hand off, then end '
+        'the turn until the user explicitly chooses. Neither a timeout '
+        'nor an automatic response is consent:'
+    )
+    if body.count(before) != 1:
+        msg = 'Expected exactly one landing decision instruction'
+        raise ValueError(msg)
+    return body.replace(before, after)
+
+
 def translated(source: Path) -> str:
     """Preserve skill semantics while rewriting host-specific transport syntax."""
     raw = source.read_text(encoding='utf-8')
@@ -231,6 +248,8 @@ def translated(source: Path) -> str:
     for previous, replacement in changes.items():
         front = front.replace(previous, replacement)
         body = body.replace(previous, replacement)
+    if name == 'stick-the-landing':
+        front = front.replace("On green, ask through Codex user decision gate whether to review now (review-circus) or hand off (baton-pass).", "On green, ask in ordinary chat whether to review now (review-circus) or hand off (baton-pass), then wait for an explicit answer.")
     if name == 'prompting-subagents':
         body = native_dispatch_steps(body)
     if name == 'open-ticket':
@@ -239,6 +258,8 @@ def translated(source: Path) -> str:
         body = native_baton_pass_decisions(body)
     if name == 'game-plan':
         body = native_game_plan_decisions(body)
+    if name == 'stick-the-landing':
+        body = native_landing_decisions(body)
     return f'---\n{front}\n---\n\n{BANNER}\n\n{body}'
 
 
