@@ -339,7 +339,21 @@ def native_landing_decisions(body: str) -> str:
     if body.count(before) != 1:
         msg = 'Expected exactly one landing decision instruction'
         raise ValueError(msg)
-    return body.replace(before, after)
+    body = body.replace(before, after)
+    alias_step = (
+        'Dispatch workers through prompting-subagents. Models are the fixed '
+        'aliases `subagent-models`\\nlists, never memory.'
+    )
+    native_step = (
+        'Dispatch through prompting-subagents using the registered native Codex '
+        'roles and each role TOML model/effort settings. The ticket\\n'
+        '`subagent-models` aliases are Claude-only historical values, not '
+        'dispatch arguments or proof of the effective host model.'
+    )
+    if body.count(alias_step) != 1:
+        msg = 'Expected exactly one landing model routing instruction'
+        raise ValueError(msg)
+    return body.replace(alias_step, native_step)
 
 
 def native_landing_frontmatter(front: str) -> str:
