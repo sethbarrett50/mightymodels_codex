@@ -61,6 +61,43 @@ not conversation content, auth tokens or private repository paths.
 | #16 | Capture sanitized trace counters and independently observed spawned model/effort identifiers, if the host exposes these | Identity is **unverified** unless effective runtime values are observed; no quota savings claim without comparable baseline |
 | #17 | Verify project PreToolUse edit guard and PostToolUse read-only Ruff check actually fire in the MightyModels checkout; compare with an unrelated repository | Warn/deny where supported, no modifications to unrelated code; missing events must not silently count as pass |
 
+
+## Targeted PostToolUse delivery canary (opt-in, one live turn)
+
+A direct `scripts/codex_post_edit_check.py` subprocess test verifies only the
+handler, not Codex host delivery. To prove that the host actually invokes the
+project hook after a native patch, first review and trust the project's
+`PostToolUse` hook with `/hooks` in the **disposable clone**. Then use one
+explicit, bounded fixture:
+
+```bash
+# Preserve the existing $fixture/repo disposable MightyModels clone.
+git -C "$fixture/repo" pull --ff-only
+probe_dir="$(mktemp -d)"
+(
+  cd "$fixture/repo"
+  MIGHTYMODELS_CODEX_POST_EDIT_PROBE_FILE="$probe_dir/delivered" \
+    codex exec --json --sandbox workspace-write \
+      'Use native apply_patch once to add acceptance_post_hook_delivery.py containing value = 1. Do not retry, dispatch agents, use MCP tools, or modify other files.' \
+      > "$probe_dir/events.jsonl" 2> "$probe_dir/stderr.log"
+)
+if test -f "$probe_dir/delivered"; then
+  echo 'Observed: Codex delivered PostToolUse apply_patch to the hook'
+else
+  echo 'Unverified: no PostToolUse delivery receipt'
+fi
+```
+
+The receipt is created **only** when the environment variable is explicitly
+set and points outside the MightyModels checkout. It contains a fixed
+nonsecret marker, is mode 0600, and never copies prompts, paths, patches or
+source text. Existing receipts are not overwritten. Receipt presence proves
+callback entry, **not** that Ruff/ty were available or that format checks
+passed. A missing receipt is unverified, not proof that the host disabled
+hooks. Do not share the raw JSONL or stderr; report only presence/absence
+and the current Codex CLI version. Remove the disposable probe directory
+after recording its sanitized result.
+
 ### Explicitly deferred: #9
 
 Do **not** launch an unauthorized `mm-workers-engineer` dispatch or
