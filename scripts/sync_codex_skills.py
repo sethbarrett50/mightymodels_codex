@@ -266,7 +266,7 @@ def native_assembly_roles(body: str) -> str:
             ),
             (
                 'Use the registered `mm-workers-engineer` native role model '
-                'and reasoning effort. The ticket\'s Claude alias is historical; '
+                "and reasoning effort. The ticket's Claude alias is historical; "
                 'it must not override the Codex model. Request an explicit '
                 'user decision before changing native routing, and do not '
                 'claim the configured model proves effective runtime identity.'
