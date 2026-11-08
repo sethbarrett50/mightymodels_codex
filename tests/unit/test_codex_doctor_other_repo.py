@@ -1,12 +1,15 @@
 """Test read-only doctor diagnostics for other Codex project scopes."""
 
+import sys
 from pathlib import Path
 from runpy import run_path
+from unittest.mock import patch
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-DOCTOR = run_path(str(ROOT / 'scripts/codex_doctor.py'))
+with patch.object(sys, 'path', [str(ROOT / 'scripts'), *sys.path]):
+    DOCTOR = run_path(str(ROOT / 'scripts/codex_doctor.py'))
 check_other_repo_overlap = DOCTOR['check_other_repo_overlap']
 
 
