@@ -29,9 +29,7 @@ def test_project_mcp_duplicates_still_warn(tmp_path: Path) -> None:
     checkout = tmp_path / 'mightymodels'
     project = checkout / '.codex'
     project.mkdir(parents=True)
-    (project / 'config.toml').write_text(
-        '[mcp_servers.mighty_mcp]\ncommand = "sh"\n'
-    )
+    (project / 'config.toml').write_text('[mcp_servers.mighty_mcp]\ncommand = "sh"\n')
     assert 'declares project-scoped mighty_mcp' in check_project_overlap(checkout, checkout)
 
 
@@ -51,7 +49,5 @@ def test_project_mcp_non_mighty_server_does_not_warn(tmp_path: Path) -> None:
     checkout = tmp_path / 'mightymodels'
     project = checkout / '.codex'
     project.mkdir(parents=True)
-    (project / 'config.toml').write_text(
-        '[mcp_servers.other]\ncommand = "safe"\n'
-    )
+    (project / 'config.toml').write_text('[mcp_servers.other]\ncommand = "safe"\n')
     assert check_project_overlap(checkout, checkout) is None
