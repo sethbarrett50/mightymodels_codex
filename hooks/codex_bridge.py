@@ -218,12 +218,28 @@ def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901, PLR0911, 
     }
 
 
+def failed_mcp_result(response: object) -> bool:
+    """Reject explicit MCP error responses without inspecting their content."""
+    if isinstance(response, str):
+        if len(response) > 8192:
+            return False
+        try:
+            response = json.loads(response)
+        except ValueError:
+            return False
+    if not isinstance(response, dict):
+        return False
+    return response.get('isError') is True or response.get('status') in ('error', 'failed')
+
+
 def translate_pointer_event(event: dict) -> dict | None:
     """Pass only target keys to the session-pointer handler, never tool results."""
     session_id = event.get('session_id')
     cwd = event.get('cwd')
     name = event.get('tool_name')
     supplied = event.get('tool_input')
+    if failed_mcp_result(event.get('tool_response')):
+        return None
     if not isinstance(session_id, str) or not session_id.strip():
         return None
     if not isinstance(cwd, str) or not cwd.strip():
