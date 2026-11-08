@@ -114,3 +114,24 @@ def test_multibyte_output_exceeding_byte_limit_is_rejected() -> None:
     report = SCRIPT.summarize_result(completed, version='codex-cli 0.167.0', fixture_unchanged=True)
     assert report['status'].startswith('unverified:')
     assert '界' not in str(report)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('problem', ['error', 'turn.failed'])
+def test_completed_turn_with_streamed_error_is_not_clean_acceptance(problem: str) -> None:
+    completed = subprocess.CompletedProcess(
+        args=[],
+        returncode=0,
+        stdout=(
+            '{"type":"turn.completed","usage":{"input_tokens":15}}\\n'
+            + '{"type":"' + problem + '","message":"SECRET_DO_NOT_ECHO"}\\n'
+        ),
+        stderr='',
+    )
+    report = SCRIPT.summarize_result(
+        completed, version='codex-cli 0.167.0', fixture_unchanged=True
+    )
+    assert report['status'] == 'read_only_smoke_unverified'
+    assert report['fixture_unchanged'] is True
+    assert report['failure_category'] == 'unclassified'
+    assert 'SECRET_' not in str(report)
