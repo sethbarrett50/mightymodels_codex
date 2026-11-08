@@ -261,7 +261,7 @@ def native_assembly_roles(body: str) -> str:
         (
             (
                 'Then dispatch `mightymodels:workers:engineer` through the '
-                '`spawn_agent` tool, using the engineer\'s configured native Codex '
+                "`spawn_agent` tool, using the engineer's configured native Codex "
                 'role and model; do not pass Claude aliases.'
             ),
             (
@@ -273,7 +273,7 @@ def native_assembly_roles(body: str) -> str:
         (
             (
                 'and dispatched as `mightymodels:workers:intern` on `haiku`, with '
-                'prompting-subagents\' intern template.'
+                "prompting-subagents' intern template."
             ),
             (
                 'and dispatched with native `spawn_agent` role `mm-workers-intern`, '
@@ -283,7 +283,7 @@ def native_assembly_roles(body: str) -> str:
         (
             (
                 'Dispatch `mightymodels:review:fact-checker` on `haiku`, with '
-                'prompting-subagents\' fact-checker template:'
+                "prompting-subagents' fact-checker template:"
             ),
             (
                 'Dispatch native `spawn_agent` role `mm-review-fact-checker` using '
