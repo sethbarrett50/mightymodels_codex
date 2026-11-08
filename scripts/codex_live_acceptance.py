@@ -83,8 +83,7 @@ def summarize_result(
     # A streamed violation invalidates this bounded smoke test. Missing native
     # events still cannot prove absence of actual dispatch or file writes.
     observed_violation = (
-        events.get('collaboration_calls', 0) > 0
-        or events.get('file_changes', 0) > 0
+        events.get('collaboration_calls', 0) > 0 or events.get('file_changes', 0) > 0
     )
     data['observed_scope_violation'] = observed_violation
     data['status'] = (
