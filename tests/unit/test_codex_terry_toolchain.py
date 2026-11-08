@@ -25,6 +25,8 @@ def test_terry_native_survey_does_not_invoke_claude_cli() -> None:
     assert 'codex mcp list' in body
     assert 'Codex plugin inventory has no assumed CLI' in body
     assert '$HOME/.agents/skills/*/SKILL.md' in body
+    assert 'Codex plugin inventory has no assumed CLI' in body
+    assert 'configured role proves effective runtime identity' not in body
     assert 'unverified rules under `Not seen`' in body
 
 
