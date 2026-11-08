@@ -416,15 +416,18 @@ def test_restore_on_type_error_recovers_files_and_new_links(tmp_path: Path) -> N
     config.parent.mkdir()
     config.write_text('sandbox_mode = "read-only"\n')
     new_link = tmp_path / '.agents/skills/new'
-    with (
-        pytest.raises(TypeError, match='simulated malformed hook'),
-        restore_on_failure([config, new_link]),
-    ):
+    def mutate_then_fail() -> None:
         config.write_text('sandbox_mode = "changed"\n')
         new_link.parent.mkdir(parents=True)
         new_link.symlink_to('somewhere')
         msg = 'simulated malformed hook'
         raise TypeError(msg)
+
+    with (
+        pytest.raises(TypeError, match='simulated malformed hook'),
+        restore_on_failure([config, new_link]),
+    ):
+        mutate_then_fail()
     assert config.read_text() == 'sandbox_mode = "read-only"\n'
     assert not new_link.is_symlink()
     assert not new_link.parent.exists()
