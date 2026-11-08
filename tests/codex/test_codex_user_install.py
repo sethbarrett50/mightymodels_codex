@@ -33,7 +33,7 @@ def test_user_install_round_trip_preserves_existing_config(tmp_path: Path) -> No
     instructions.write_text('# Existing policies\n')
     first = invoke(tmp_path)
     assert first.returncode == 0, first.stderr
-    assert len(list((codex / 'agents').glob('mm-*.toml'))) == 11
+    assert not list((codex / 'agents').glob('mm-*.toml'))
     assert len(list((tmp_path / '.agents/skills').iterdir())) == 19
     for skill in (tmp_path / '.agents/skills').iterdir():
         assert skill.resolve() == (ROOT / '.codex/skills' / skill.name).resolve()
@@ -138,7 +138,7 @@ def test_upgrade_removes_obsolete_wingman_link(tmp_path: Path) -> None:
     installed = invoke(tmp_path)
     assert installed.returncode == 0, installed.stderr
     assert not retired.is_symlink()
-    assert len(list(retired.parent.glob('mm-*.toml'))) == 11
+    assert not list(retired.parent.glob('mm-*.toml'))
 
 
 @pytest.mark.unit
@@ -513,12 +513,11 @@ def test_reinstall_repairs_dangling_links_and_bridge_hooks_after_checkout_move(
     old_root = tmp_path / 'old/mightymodels_codex'
     agent = tmp_path / '.codex/agents/mm-workers-engineer.toml'
     skill = tmp_path / '.agents/skills/open-ticket'
-    for link, relative in (
-        (agent, '.codex/agents/mm-workers-engineer.toml'),
-        (skill, '.codex/skills/open-ticket'),
-    ):
-        link.unlink()
-        link.symlink_to(old_root / relative, target_is_directory=link == skill)
+    # Simulate an older installer-owned agent link and a relocated skill.
+    agent.parent.mkdir(parents=True, exist_ok=True)
+    agent.symlink_to(old_root / '.codex/agents/mm-workers-engineer.toml')
+    skill.unlink()
+    skill.symlink_to(old_root / '.codex/skills/open-ticket', target_is_directory=True)
 
     hooks_path = tmp_path / '.codex/hooks.json'
     hooks = json.loads(hooks_path.read_text())
@@ -529,7 +528,8 @@ def test_reinstall_repairs_dangling_links_and_bridge_hooks_after_checkout_move(
 
     upgraded = invoke(tmp_path)
     assert upgraded.returncode == 0, upgraded.stderr
-    assert agent.resolve() == (ROOT / '.codex/agents/mm-workers-engineer.toml').resolve()
+    assert not agent.exists()
+    assert not agent.is_symlink()
     assert skill.resolve() == (ROOT / '.codex/skills/open-ticket').resolve()
     installed = json.loads(hooks_path.read_text())
     assert foreign in installed['hooks']['PreToolUse']
