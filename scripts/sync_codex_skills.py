@@ -255,6 +255,62 @@ def native_review_circus_decisions(body: str) -> str:
     return body
 
 
+def native_assembly_roles(body: str) -> str:
+    """Generate registered Codex role and explicit escalation instructions."""
+    changes = (
+        (
+            (
+                'Then dispatch `mightymodels:workers:engineer` through the '
+                "`spawn_agent` tool, using the engineer's configured native Codex "
+                'role and model; do not pass Claude aliases.'
+            ),
+            (
+                'Then use `spawn_agent` with `agent_type=mm-workers-engineer` and '
+                'the engineer packet, using its native role model without a Claude '
+                'alias override.'
+            ),
+        ),
+        (
+            (
+                'and dispatched as `mightymodels:workers:intern` on `haiku`, with '
+                "prompting-subagents' intern template."
+            ),
+            (
+                'and dispatched with native `spawn_agent` role `mm-workers-intern`, '
+                'using its native model and prompting-subagents intern template.'
+            ),
+        ),
+        (
+            (
+                'Dispatch `mightymodels:review:fact-checker` on `haiku`, with '
+                "prompting-subagents' fact-checker template:"
+            ),
+            (
+                'Dispatch native `spawn_agent` role `mm-review-fact-checker` using '
+                'its configured model and the prompting-subagents fact-checker '
+                'template:'
+            ),
+        ),
+        (
+            (
+                'Off → one `Codex user decision gate` dialog giving the task, its '
+                'status and the reasons verbatim, with two answers:'
+            ),
+            (
+                'Off → ask the user in ordinary chat, then stop until explicitly '
+                'answered. Give the task, status, reasons verbatim, and these two '
+                'choices:'
+            ),
+        ),
+    )
+    for old, new in changes:
+        if body.count(old) != 1:
+            msg = 'Expected exactly one assembly dispatch or decision instruction'
+            raise ValueError(msg)
+        body = body.replace(old, new)
+    return body
+
+
 def translated(source: Path) -> str:
     """Preserve skill semantics while rewriting host-specific transport syntax."""
     raw = source.read_text(encoding='utf-8')
@@ -294,16 +350,17 @@ def translated(source: Path) -> str:
     for previous, replacement in changes.items():
         front = front.replace(previous, replacement)
         body = body.replace(previous, replacement)
-    if name == 'prompting-subagents':
-        body = native_dispatch_steps(body)
-    if name == 'open-ticket':
-        body = native_open_ticket_decisions(body)
-    if name == 'baton-pass':
-        body = native_baton_pass_decisions(body)
-    if name == 'game-plan':
-        body = native_game_plan_decisions(body)
-    if name == 'review-circus':
-        body = native_review_circus_decisions(body)
+    transformers = {
+        'prompting-subagents': native_dispatch_steps,
+        'open-ticket': native_open_ticket_decisions,
+        'baton-pass': native_baton_pass_decisions,
+        'game-plan': native_game_plan_decisions,
+        'review-circus': native_review_circus_decisions,
+        'agents-assemble': native_assembly_roles,
+    }
+    transformer = transformers.get(name)
+    if transformer is not None:
+        body = transformer(body)
     return f'---\n{front}\n---\n\n{BANNER}\n\n{body}'
 
 
