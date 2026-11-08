@@ -122,6 +122,21 @@ def _ty_failures(binary: Path, files: tuple[Path, ...], root: Path) -> list[str]
 
 def feedback(event: object, root: Path) -> dict | None:
     """Report only checker outcomes; never expose source, paths or stderr."""
+    if (
+        isinstance(event, dict)
+        and event.get('hook_event_name') == 'PostToolUse'
+        and event.get('tool_name') == 'apply_patch'
+        and (not isinstance(event.get('cwd'), str) or not event['cwd'].strip())
+    ):
+        return {
+            'hookSpecificOutput': {
+                'hookEventName': 'PostToolUse',
+                'additionalContext': (
+                    'MightyModels post-edit checks not run: '
+                    'host hook event omitted its checkout directory.'
+                ),
+            }
+        }
     files = python_paths(event, root)
     if not files:
         return None
