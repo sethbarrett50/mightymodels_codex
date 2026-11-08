@@ -95,8 +95,10 @@ def test_fixture_snapshot_detects_symlink_retargeting(tmp_path: Path) -> None:
     link.symlink_to('second.txt')
     assert SCRIPT.fixture_snapshot(tmp_path) != baseline
     # The fingerprint is a digest, never the raw destination.
-    snapshot = str(SCRIPT.fixture_snapshot(tmp_path))
-    assert 'second.txt' not in snapshot
+    link_record = next(
+        row for row in SCRIPT.fixture_snapshot(tmp_path) if row[0] == 'shortcut.txt'
+    )
+    assert link_record[2] != 'second.txt'
 
 
 @pytest.mark.unit
