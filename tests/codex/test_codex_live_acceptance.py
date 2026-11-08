@@ -148,9 +148,7 @@ def test_completed_turn_with_nested_error_item_is_unverified() -> None:
         ),
         stderr='',
     )
-    report = SCRIPT.summarize_result(
-        completed, version='codex-cli 0.167.0', fixture_unchanged=True
-    )
+    report = SCRIPT.summarize_result(completed, version='codex-cli 0.167.0', fixture_unchanged=True)
     assert report['status'] == 'read_only_smoke_unverified'
     assert report['events']['errors'] == 1
     assert report['events']['error_items'] == 1
