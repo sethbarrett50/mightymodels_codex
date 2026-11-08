@@ -16,7 +16,6 @@ check_agents = DOCTOR['check_agents']
 @pytest.mark.unit
 @pytest.mark.parametrize('malformed', ['invalid', [], False, 123, None])
 def test_doctor_rejects_malformed_individual_role_entry(tmp_path: Path, malformed: object) -> None:
-    source = ROOT / '.codex/agents/mm-workers-engineer.toml'
     status = check_agents({'agents': {'mm-workers-engineer': malformed}}, tmp_path, ROOT)
     assert status.startswith('[FAIL]')
     assert '0/11' in status
