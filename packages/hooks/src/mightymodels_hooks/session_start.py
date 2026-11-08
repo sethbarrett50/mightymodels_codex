@@ -29,7 +29,6 @@ from mightymodels_core.edge import (
 from mightymodels_core.primitives import StateError
 from mightymodels_core.session_pointers import (
     POINTER_RETENTION,
-    SessionPointer,
     SqliteSessionPointerRepository,
 )
 from mightymodels_core.units_of_work import UnknownRepositoryError, read_entry, write_entry
@@ -41,6 +40,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from mightymodels_core.primitives import Clock
+    from mightymodels_core.session_pointers import SessionPointer
 
     from mightymodels_hooks.payloads import SessionStartPayload
 
