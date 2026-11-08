@@ -274,9 +274,13 @@ def is_relocated_bridge_group(observed: object, desired: dict) -> bool:
     older, current = observed.get('hooks'), desired.get('hooks')
     if not isinstance(older, list) or not isinstance(current, list):
         return False
-    return len(older) == len(current) and bool(older) and all(
-        relocated_hook_matches(old_hook, new_hook)
-        for old_hook, new_hook in zip(older, current, strict=True)
+    return (
+        len(older) == len(current)
+        and bool(older)
+        and all(
+            relocated_hook_matches(old_hook, new_hook)
+            for old_hook, new_hook in zip(older, current, strict=True)
+        )
     )
 
 
@@ -294,6 +298,7 @@ def migrate_relocated_bridge_groups(groups: list, wanted: list) -> bool:
 def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:  # noqa: PLR0913
     """Apply exact owned groups while migrating old dispatch matchers safely."""
     before = list(groups)
+    migrate_relocated_bridge_groups(groups, wanted)
     discard_legacy_spawn_groups(groups, wanted, event=event)
     validate_hook_groups(groups, wanted)
     for group in wanted:
@@ -306,13 +311,6 @@ def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: s
         elif not remove and not count:
             groups.append(group)
     return groups != before
-
-
-def reconcile_migrating_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:
-    """Apply a relocation before the ordinary owned-group reconciliation."""
-    relocated = migrate_relocated_bridge_groups(groups, wanted)
-    updated = reconcile_event_groups(groups, wanted, remove=remove, event=event)
-    return relocated or updated
 
 
 def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str | None:  # noqa: C901, PLR0912
@@ -335,7 +333,7 @@ def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str
         if not isinstance(groups, list):
             msg = f'Global hook groups for {event} must be a list'
             raise TypeError(msg)
-        event_changed = reconcile_migrating_groups(groups, wanted, remove=remove, event=event)
+        event_changed = reconcile_event_groups(groups, wanted, remove=remove, event=event)
         changed = changed or event_changed
         if groups:
             held['hooks'][event] = groups
