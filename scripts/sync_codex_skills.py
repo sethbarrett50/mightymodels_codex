@@ -377,13 +377,13 @@ def native_task_split_decisions(body: str) -> str:
         ),
         (
             (
-                'A dialog that timed out, was\\ndismissed or came back empty is not '
-                'an answer: open it again. Do not decide for the user, do not\\nask '
+                'A dialog that timed out, was\ndismissed or came back empty is not '
+                'an answer: open it again. Do not decide for the user, do not\nask '
                 'in prose instead, and do not start on a piece while you wait.'
             ),
             (
                 'A timeout, cancellation, dismissal or empty reply is not an answer: '
-                'ask again in\\nordinary chat. Do not decide for the user or start '
+                'ask again in\nordinary chat. Do not decide for the user or start '
                 'a piece while awaiting approval.'
             ),
         ),
