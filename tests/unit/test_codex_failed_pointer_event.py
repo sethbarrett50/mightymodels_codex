@@ -16,7 +16,7 @@ def event(response: object) -> dict[str, object]:
         'hook_event_name': 'PostToolUse',
         'tool_name': 'mcp__mighty_mcp__ticket_show',
         'session_id': 'session-one',
-        'cwd': '/tmp/other-project',
+        'cwd': str(ROOT),
         'tool_input': {'slug': 'ticket-one'},
         'tool_response': response,
     }
