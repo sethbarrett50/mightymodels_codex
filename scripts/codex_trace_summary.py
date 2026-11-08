@@ -1,5 +1,8 @@
 """Summarize Codex exec JSONL into nonsecret counts without retaining transcripts.
 
+Collaboration metrics count only streamed calls; omitted native spawn events
+cannot be reconstructed or treated as evidence that no agent was dispatched.
+
 Usage: codex exec --json --sandbox read-only "..." |
        python3 scripts/codex_trace_summary.py
 """
@@ -23,6 +26,13 @@ ITEM_TYPES = {
     'file_change': 'file_changes',
     'web_search': 'web_searches',
     'plan_update': 'plan_updates',
+    'collab_tool_call': 'collaboration_calls',
+}
+COLLAB_TOOL_METRICS = {
+    'spawn_agent': 'agent_spawn_calls_streamed',
+    'wait': 'agent_wait_calls_streamed',
+    'send_input': 'agent_followup_calls_streamed',
+    'close_agent': 'agent_close_calls_streamed',
 }
 MAX_LINE_LENGTH = 1_000_000
 
@@ -67,6 +77,18 @@ def _count_completed_item(item: object, counts: Counter[str]) -> None:
             counts['mcp_calls_failed'] += 1
 
 
+def _count_collaboration_item(item: object, counts: Counter[str]) -> None:
+    """Count recognized streamed collaboration calls without identifiers or prompts."""
+    if not isinstance(item, dict) or item.get('type') != 'collab_tool_call':
+        return
+    action = item.get('tool')
+    metric = COLLAB_TOOL_METRICS.get(action) if isinstance(action, str) else None
+    if metric is None:
+        counts['other_collaboration_calls_streamed'] += 1
+    else:
+        counts[metric] += 1
+
+
 def _count_event(event: dict, counts: Counter[str], tokens: Counter[str]) -> None:
     kind = event.get('type')
     if kind in ('turn.started', 'turn.completed', 'turn.failed'):
@@ -74,6 +96,7 @@ def _count_event(event: dict, counts: Counter[str], tokens: Counter[str]) -> Non
     elif kind == 'item.started':
         counts['items_started'] += 1
         item = event.get('item')
+        _count_collaboration_item(item, counts)
         item_type = item.get('type') if isinstance(item, dict) else None
         mapped = (
             ITEM_TYPES.get(item_type, 'other_items')
@@ -105,6 +128,7 @@ def summarize(lines: TextIO) -> dict[str, object]:
         'source': 'codex-exec-jsonl',
         'effective_model_identity': 'unverified',
         'quota_savings': 'not_measured',
+        'agent_dispatch_observability': 'partial: stream may omit spawn_agent calls',
         'events': dict(sorted(counts.items())),
         'usage': {name: tokens[name] for name in USAGE_FIELDS},
         'privacy': 'Only event classes and numeric counters; raw prompts never retained',
