@@ -61,11 +61,14 @@ def test_only_resume_and_compaction_request_pointer_context(source: str, expecte
 @pytest.mark.unit
 def test_bridge_delivers_host_session_start_context_on_resume(tmp_path: Path) -> None:
     event = {
-        'hook_event_name': 'SessionStart', 'session_id': 'session',
-        'cwd': str(tmp_path), 'source': 'resume',
+        'hook_event_name': 'SessionStart',
+        'session_id': 'session',
+        'cwd': str(tmp_path),
+        'source': 'resume',
     }
     fake_result = subprocess.CompletedProcess(
-        args=['uv'], returncode=0,
+        args=['uv'],
+        returncode=0,
         stdout='MightyModels persisted active ticket: task-1. Read current state.',
         stderr='',
     )
