@@ -13,6 +13,8 @@ from pathlib import Path
 
 SOURCE = re.compile(r'\A---\r?\n([\s\S]*?)\r?\n---\r?\n')
 EXPECTED_AGENTS = 12
+EXPECTED_WEB_SEARCH_REFS = 2
+EXPECTED_WEB_FETCH_REFS = 2
 
 # Codex equivalents of the original Claude economy tiers. Fable is intentionally disabled.
 MODEL_TIERS = {
@@ -70,7 +72,7 @@ ROLE_TRANSLATIONS = (
 
 def native_web_scout_tools(body: str) -> str:
     """Replace unsupported Claude web-tool names without inventing Codex APIs."""
-    if body.count('WebSearch') < 2 or body.count('WebFetch') < 2:
+    if body.count('WebSearch') < EXPECTED_WEB_SEARCH_REFS or body.count('WebFetch') < EXPECTED_WEB_FETCH_REFS:
         msg = 'Missing expected upstream web-scout tool references'
         raise ValueError(msg)
     body = body.replace('WebSearch', 'host-provided web search')
@@ -150,7 +152,8 @@ def generate(root: Path) -> dict[str, str]:  # noqa: PLR0914, PLR0915
         lines = [f'name = {encoded(role)}', f'description = {encoded(description)}']
         lines.append(f'model = {encoded(model)}')
         lines.append(f'model_reasoning_effort = {encoded(routed_effort)}')
-        lines.append(f'developer_instructions = {encoded(notes + native_body(raw[match.end() :], role=role))}')
+        instructions = notes + native_body(raw[match.end() :], role=role)
+        lines.append(f'developer_instructions = {encoded(instructions)}')
         target = (root / '.codex/agents' / f'{role}.toml').relative_to(root).as_posix()
         result[target] = '\n'.join(lines) + '\n'
         unmapped = [
