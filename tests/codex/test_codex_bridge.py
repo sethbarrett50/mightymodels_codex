@@ -553,3 +553,62 @@ def test_namespaced_dispatch_adapter_denial_is_not_host_proof(tmp_path: Path) ->
             incoming, project_root=tmp_path, environ={'HOME': str(tmp_path)}
         )
     assert denied['hookSpecificOutput']['permissionDecision'] == 'deny'
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ('event_name', 'tool_name'),
+    [
+        ('PostToolUse', 'mcp__mighty_mcp__ticket_show'),
+        ('PostToolUse', 'request_user_input'),
+        ('SubagentStop', ''),
+        ('PreCompact', ''),
+    ],
+)
+def test_zero_exit_persistence_stderr_is_not_silent(
+    tmp_path: Path, event_name: str, tool_name: str
+) -> None:
+    canary = 'SECRET_DATABASE_PATH_DO_NOT_ECHO'
+    supplied = {
+        'hook_event_name': event_name,
+        'cwd': str(tmp_path),
+        'session_id': 'session-1',
+        'tool_name': tool_name,
+        'tool_input': {'slug': 'example'},
+    }
+    if tool_name == 'request_user_input':
+        supplied.update({
+            'permission_mode': 'plan',
+            'tool_input': {'questions': [{'id': 'q', 'question': 'Proceed?'}]},
+            'tool_response': {'answers': {'q': {'answers': ['Yes']}}},
+        })
+    with patch.object(module.subprocess, 'run') as runner:
+        runner.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout='', stderr=canary
+        )
+        result = module.run_lifecycle(
+            supplied, project_root=tmp_path, environ={'HOME': str(tmp_path)}
+        )
+    assert runner.called
+    assert result is not None
+    assert 'persistence warning' in result['systemMessage']
+    assert canary not in json.dumps(result)
+
+
+@pytest.mark.unit
+def test_clean_session_pointer_success_has_no_false_warning(tmp_path: Path) -> None:
+    supplied = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'mcp__mighty_mcp__ticket_show',
+        'session_id': 'session-1',
+        'cwd': str(tmp_path),
+        'tool_input': {'slug': 'example'},
+    }
+    with patch.object(module.subprocess, 'run') as runner:
+        runner.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout='', stderr=''
+        )
+        result = module.run_lifecycle(
+            supplied, project_root=tmp_path, environ={'HOME': str(tmp_path)}
+        )
+    assert result is None
