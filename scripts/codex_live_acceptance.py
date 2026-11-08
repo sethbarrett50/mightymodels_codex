@@ -47,7 +47,7 @@ def failure_category(stdout: str, stderr: str) -> str:
         try:
             event = json.loads(line)
         except ValueError:
-            continue
+            event = None
         if not isinstance(event, dict) or event.get('type') not in ('error', 'turn.failed'):
             continue
         raw = event.get('message')
