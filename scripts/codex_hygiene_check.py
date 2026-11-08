@@ -56,6 +56,26 @@ def audit_file(base: str, root: Path, relative: Path) -> int:
     return added_suppression_count(previous_source, current_source)
 
 
+def changed_python_paths(base: str, root: Path) -> set[bytes] | None:
+    """Return NUL-safe tracked/untracked paths, or fail closed on Git errors."""
+    commands = (
+        ('diff', '-z', '--name-only', '--diff-filter=ACMRT', base, '--'),
+        ('ls-files', '--others', '--exclude-standard', '-z'),
+    )
+    paths: set[bytes] = set()
+    for args in commands:
+        output = subprocess.run(  # noqa: S603
+            [GIT_BINARY, '-C', str(root), *args],
+            capture_output=True,
+            check=False,
+        )
+        if output.returncode:
+            print('Could not enumerate changed files; no complete hygiene check performed.')
+            return None
+        paths.update(filter(None, output.stdout.split(b'\\0')))
+    return paths
+
+
 def check(base: str, root: Path) -> int:
     verified = git(root, 'rev-parse', '--verify', '--end-of-options', f'{base}^{{commit}}')
     if verified.returncode:
@@ -64,38 +84,9 @@ def check(base: str, root: Path) -> int:
     if GIT_BINARY is None:
         print('Git is unavailable; no hygiene check performed.')
         return 2
-    changed = subprocess.run(  # noqa: S603
-        [
-            GIT_BINARY,
-            '-C',
-            str(root),
-            'diff',
-            '-z',
-            '--name-only',
-            '--diff-filter=ACMRT',
-            base,
-            '--',
-        ],
-        capture_output=True,
-        check=False,
-    )
-    if changed.returncode:
-        print('Could not enumerate tracked changes; no hygiene check performed.')
+    paths = changed_python_paths(base, root)
+    if paths is None:
         return 2
-
-    untracked = subprocess.run(  # noqa: S603
-        [GIT_BINARY, '-C', str(root), 'ls-files', '--others', '--exclude-standard', '-z'],
-        capture_output=True,
-        check=False,
-    )
-    if untracked.returncode:
-        print('Could not enumerate untracked files; no complete hygiene check performed.')
-        return 2
-
-    # Include new, untracked Python files as well as staged and unstaged edits.
-    # Git's NUL-delimited output avoids misparsing whitespace in filenames.
-    paths = set(filter(None, changed.stdout.split(b'\0')))
-    paths.update(filter(None, untracked.stdout.split(b'\0')))
 
     found = False
     for raw in sorted(paths):
