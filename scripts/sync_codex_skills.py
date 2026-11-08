@@ -363,7 +363,8 @@ def native_task_split_frontmatter(front: str) -> str:
     old = 'Ends in one Codex user decision gate dialog showing every piece'
     new = 'Ends by asking in ordinary chat and awaiting explicit approval for every piece'
     if front.count(old) != 1:
-        raise ValueError('Expected exactly one task split frontmatter dialog')
+        msg = 'Expected exactly one task split frontmatter dialog'
+        raise ValueError(msg)
     return front.replace(old, new)
 
 
@@ -375,8 +376,16 @@ def native_task_split_decisions(body: str) -> str:
             'Until the user explicitly answers the blocking question in step 4 this skill',
         ),
         (
-            'A dialog that timed out, was\ndismissed or came back empty is not an answer: open it again. Do not decide for the user, do not\nask in prose instead, and do not start on a piece while you wait.',
-            'A timeout, cancellation, dismissal or empty reply is not an answer: ask again in\nordinary chat. Do not decide for the user or start a piece while awaiting approval.',
+            (
+                'A dialog that timed out, was\\ndismissed or came back empty is not '
+                'an answer: open it again. Do not decide for the user, do not\\nask '
+                'in prose instead, and do not start on a piece while you wait.'
+            ),
+            (
+                'A timeout, cancellation, dismissal or empty reply is not an answer: '
+                'ask again in\\nordinary chat. Do not decide for the user or start '
+                'a piece while awaiting approval.'
+            ),
         ),
         (
             'then open one\n`Codex user decision gate` dialog about them.',
