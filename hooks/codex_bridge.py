@@ -221,16 +221,18 @@ def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901, PLR0911, 
 
 
 def failed_mcp_result(response: object) -> bool:
-    """Reject explicit MCP error responses without inspecting their content."""
+    """Reject explicit failures or uninspectable responses without logging them."""
+    if response is None:
+        return False  # Older host versions may omit the result entirely.
     if isinstance(response, str):
         if len(response) > MAX_MCP_RESULT_LENGTH:
-            return False
+            return True
         try:
             response = json.loads(response)
         except ValueError:
-            return False
+            return True
     if not isinstance(response, dict):
-        return False
+        return True
     return response.get('isError') is True or response.get('status') in ('error', 'failed')
 
 
