@@ -5,9 +5,8 @@ description: >-
   from an active ticket (mid-sprint, or after stick-the-landing went green and review is
   next) or from a session with no ticket at all. Writes an objective snapshot from the
   recorded state first (the snapshot tool: tasks, ledger decisions, failed
-  attempts, review state), runs what-we-know in interactive mode, asks in one
-  Codex user decision gate call what the next session should focus on and what to do with uncommitted
-  work, then writes handoffs/BATON.md with the writer's judgment, which no
+  attempts, review state), runs what-we-know in interactive mode, asks in ordinary chat what the next session should focus on and what to do with uncommitted
+  work, awaits explicit user answers, then writes handoffs/BATON.md with the writer's judgment, which no
   file holds. With no ticket it runs open-ticket first. Ends by printing the next session's
   opening prompt in chat. Not a ticket for work not yet
   started from a clean triage (open-ticket directly).

@@ -114,6 +114,22 @@ def native_open_ticket_decisions(body: str) -> str:
     return body
 
 
+def native_baton_pass_frontmatter(front: str) -> str:
+    """Summarize blocking Codex chat choices without inventing a dialog UI."""
+    old = (
+        'asks in one\n  Codex user decision gate call what the next session should '
+        'focus on and what to do with uncommitted\n  work, then writes'
+    )
+    new = (
+        'asks in ordinary chat what the next session should focus on and what to '
+        'do with uncommitted\n  work, awaits explicit user answers, then writes'
+    )
+    if front.count(old) != 1:
+        msg = 'Expected exactly one baton-pass frontmatter decision clause'
+        raise ValueError(msg)
+    return front.replace(old, new)
+
+
 def native_baton_pass_decisions(body: str) -> str:
     """Do not claim unobserved Codex recorder delivery during handoff."""
     changes = (
@@ -196,11 +212,11 @@ def native_review_routing(front: str, body: str) -> tuple[str, str]:
     """Remove Claude reviewer model and preload claims from Codex output."""
     front_old = (
         'One\n  Codex user decision gate gate sets depth (quick runs its reviewers on '
-        'sonnet, standard and deep on opus)'
+        'sonnet, standard and deep on opus), persona\n  emphasis, and scope;'
     )
     front_new = (
-        'An ordinary-chat decision sets review depth (quick, standard, deep) '
-        'without changing native reviewer model pins'
+        'An ordinary-chat decision sets review depth (quick, standard, deep), persona\n'
+        '  emphasis, and scope without changing native reviewer model pins;'
     )
     front_gate = 'presented by id through Codex user decision gate'
     native_gate = 'presented by id for explicit ordinary-chat decisions'
@@ -519,6 +535,7 @@ def translated(source: Path) -> str:
     for previous, replacement in changes.items():
         front = front.replace(previous, replacement)
         body = body.replace(previous, replacement)
+    front = native_baton_pass_frontmatter(front) if name == 'baton-pass' else front
     front = native_landing_frontmatter(front) if name == 'stick-the-landing' else front
     front = native_task_split_frontmatter(front) if name == 'break-it-down' else front
     transformers = {
