@@ -14,6 +14,7 @@ untouched: no row, no `.git/info/exclude` entry), so a database that cannot be o
 standard error and the hook still exits 0.
 """
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, TextIO
@@ -26,7 +27,10 @@ from mightymodels_core.edge import (
     open_state,
 )
 from mightymodels_core.primitives import StateError
-from mightymodels_core.session_pointers import SqliteSessionPointerRepository
+from mightymodels_core.session_pointers import (
+    POINTER_RETENTION,
+    SqliteSessionPointerRepository,
+)
 from mightymodels_core.units_of_work import UnknownRepositoryError, read_entry, write_entry
 from mightymodels_core.workspace import find_root
 
@@ -36,6 +40,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from mightymodels_core.primitives import Clock
+    from mightymodels_core.session_pointers import SessionPointer
 
     from mightymodels_hooks.payloads import SessionStartPayload
 
@@ -134,3 +139,52 @@ class SessionPruneHandler:
         except STATE_UNREADABLE as error:
             self.stderr.write(f'mightymodels-hooks: session-prune: {error}\n')
         return None
+
+
+def resume_pointer_hint(pointer: SessionPointer | None, clock: Clock) -> str | None:
+    """Render only bounded ticket/investigation identifiers, never stored answers."""
+    if pointer is None or clock.now() - pointer.written_at > POINTER_RETENTION:
+        return None
+    if pointer.kind not in ('ticket', 'investigation'):
+        return None
+    if re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}', pointer.key) is None:
+        return None
+    return (
+        f'MightyModels persisted active {pointer.kind}: {pointer.key}. '
+        'This is a session pointer only. Read its current state with the '
+        'registered mighty_mcp tools before proceeding; pending choices '
+        'still require an explicit answer, never auto-consent.'
+    )
+
+
+@dataclass(slots=True, kw_only=True, frozen=True)
+class SessionResumeHandler:
+    """Return a bounded persisted pointer hint without restoring imagined answers."""
+
+    environ: Mapping[str, str]
+    stderr: TextIO
+    clock: Clock
+
+    async def handle(self, payload: SessionStartPayload) -> str | None:
+        session_id = payload.session_id
+        if not isinstance(session_id, str) or not session_id.strip():
+            return None
+        data = data_directory_from(self.environ, PLUGIN_DATA_VARIABLE)
+        if isinstance(data, DataDirectoryMissingError):
+            return None
+        start = find_root(self.environ, directory_of(payload.cwd))
+        try:
+            async with open_state(data, start, backends=LookupOnlyBackends()) as state:
+                with read_entry(state.database, state.checkout.repository_key()) as entry:
+                    pointer = SqliteSessionPointerRepository(
+                        unit=entry.unit,
+                        repository_id=entry.repository_id,
+                        clock=self.clock,
+                    ).lookup(session_id)
+        except UnknownRepositoryError:
+            return None
+        except STATE_UNREADABLE as error:
+            self.stderr.write(f'mightymodels-hooks: session-resume: {error}\n')
+            return None
+
+        return resume_pointer_hint(pointer, self.clock)

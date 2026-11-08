@@ -29,6 +29,7 @@ SPAWN_TOOL_NAMES = frozenset((
     'collaboration.spawn_agent',
 ))
 HOOK_TIMEOUT = 8
+MAX_RESUME_CONTEXT = 600
 HOOK_ERRORS = (OSError, subprocess.TimeoutExpired, ValueError)
 INPUT_ERRORS = (ValueError, UnicodeError)
 
@@ -259,11 +260,27 @@ def lifecycle_command(event: dict) -> str | None:
             if isinstance(tool, str) and tool.startswith('mcp__mighty_mcp__')
             else None
         )
+    if name == 'SessionStart':
+        return 'session-resume' if event.get('source') in ('resume', 'compact') else 'session-prune'
     return {
         'PreCompact': 'pre-compact',
         'SubagentStop': 'subagent-record',
-        'SessionStart': 'session-prune',
     }.get(name)
+
+
+def resume_hook_output(command: str, result: subprocess.CompletedProcess[str]) -> dict | None:
+    """Expose only the bounded successful resume hint as SessionStart context."""
+    if command != 'session-resume' or result.returncode:
+        return None
+    hint = result.stdout.strip()
+    if not hint or len(hint) > MAX_RESUME_CONTEXT:
+        return None
+    return {
+        'hookSpecificOutput': {
+            'hookEventName': 'SessionStart',
+            'additionalContext': hint,
+        }
+    }
 
 
 def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict | None:  # noqa: C901, PLR0912, PLR0915
@@ -304,6 +321,7 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     env['UV_PROJECT'] = str(project_root)
     env['UV_PROJECT_ENVIRONMENT'] = str(project_root / '.venv')
     warning = None
+    result = None
     try:
         Path(data_dir).mkdir(parents=True, exist_ok=True)
         result = subprocess.run(  # noqa: S603
@@ -332,7 +350,10 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
             warning = f'MightyModels {command} failed (exit {result.returncode})'
     if name == 'SubagentStop':
         return {'continue': True, **({'systemMessage': warning} if warning else {})}
-    return {'systemMessage': warning} if warning else None
+    restored = (
+        resume_hook_output(command, result) if warning is None and result is not None else None
+    )
+    return restored or ({'systemMessage': warning} if warning else None)
 
 
 def audit_probe(event: object, environ: dict[str, str]) -> None:

@@ -81,6 +81,21 @@ use native tool operations that are actually exposed in its current session;
 if unavailable, it must stop rather than silently fall back to a different
 tool or unregistered agent. Live workflow acceptance is still required.
 
+### Session resume pointer fallback (issue #8)
+
+The Codex `SessionStart` bridge uses a read-only persisted session pointer
+lookup for the host's `resume` and `compact` sources. When a valid, unexpired
+ticket or investigation pointer exists, it returns bounded `additionalContext`
+with the reference and directs Codex to reread the latest state using
+`mighty_mcp`. It never reconstructs missing decisions, treats auto-resolved
+questions as consent, or prints stored answers. Initial startup continues to
+prune stale pointers. A missing or expired pointer produces no invented state.
+
+This is implemented and fixture-tested, **not verified as delivered by a live
+Codex SessionStart callback**. The host must trust/execute the installed
+hooks, and an actual investigation/task/baton handoff still needs live
+resume and idempotence acceptance before issue #8 can close.
+
 ## Source, enabled and reported roles
 
 The source tree includes 12 original Claude roles. The native Codex generator emits 11 enabled roles and deliberately omits Fable/wingman. `.codex/compatibility-report.json` counts the **12 source roles**, including the disabled one: its `count` is not the enabled-install count. All 19 skills have Codex-specific generated equivalents. Run `python3 scripts/sync_codex_agents.py --check` and `python3 scripts/sync_codex_skills.py --check` for generation drift; these checks are not live host acceptance.

@@ -26,7 +26,11 @@ from mightymodels_hooks.scout_reports import (
     create_scouts,
 )
 from mightymodels_hooks.session_pointer import SessionPointerHandler, create_pointer_fields
-from mightymodels_hooks.session_start import SessionPruneHandler, SessionStartHandler
+from mightymodels_hooks.session_start import (
+    SessionPruneHandler,
+    SessionResumeHandler,
+    SessionStartHandler,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -87,6 +91,10 @@ def create_hook_router(environ: Mapping[str, str], stderr: TextIO) -> HookRouter
         'session-prune': PayloadRoute(
             payload_type=SessionStartPayload,
             handler=SessionPruneHandler(environ=environ, stderr=stderr, clock=create_clock()),
+        ),
+        'session-resume': PayloadRoute(
+            payload_type=SessionStartPayload,
+            handler=SessionResumeHandler(environ=environ, stderr=stderr, clock=create_clock()),
         ),
         'dispatch-hook': PayloadRoute(payload_type=PreToolUsePayload, handler=dispatch),
         'pre-compact': PayloadRoute(
