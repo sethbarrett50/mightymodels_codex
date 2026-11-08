@@ -169,8 +169,10 @@ def native_game_plan_decisions(body: str) -> str:
     """Use actual Codex chat rather than a nonexistent question dialog."""
     changes = (
         (
-            'One `Codex user decision gate` dialog, risks batched up to four a call, '
-            'each offering the same',
+            (
+                'One `Codex user decision gate` dialog, risks batched up to four a call, '
+                'each offering the same'
+            ),
             'Ask in ordinary chat, at most four risks per turn, each offering the same',
         ),
         (
