@@ -69,6 +69,19 @@ def native_dispatch_steps(body: str) -> str:
     return body
 
 
+def native_open_ticket_decisions(body: str) -> str:
+    """Make user decisions explicit chat gates, not fictitious host dialogs."""
+    steps = (
+        ("One `Codex user decision gate` dialog containing only the questions the conversation has not already\nanswered. Each\nquestion carries two to four options, and the user can always type an answer of their own.", "In Codex Default mode, ask only unanswered interview questions in ordinary chat and end the\nturn until the user explicitly responds. Offer two to four choices per question and accept\nfree-text answers; no timeout, empty response or auto-resolution counts as a decision."),
+        ("An answer starting `needs input` means no one could be asked through the tool: put each question\nit names to the user in one `Codex user decision gate` dialog, then call again with those arguments", "An answer starting `needs input` means the MCP tool could not collect required inputs.\nAsk each named question in ordinary chat and end the turn until the user explicitly\nanswers; then call `ticket_write` again using those actual answers"),
+        ("Ask once, through `Codex user decision gate`:", "Ask once in ordinary chat, then end the turn until the user explicitly chooses:"),
+    )
+    for old, new in steps:
+        if body.count(old) != 1:
+            raise ValueError('Expected exactly one open-ticket decision instruction')
+        body = body.replace(old, new)
+    return body
+
 def translated(source: Path) -> str:
     """Preserve skill semantics while rewriting host-specific transport syntax."""
     raw = source.read_text(encoding='utf-8')
@@ -110,6 +123,8 @@ def translated(source: Path) -> str:
         body = body.replace(previous, replacement)
     if name == 'prompting-subagents':
         body = native_dispatch_steps(body)
+    if name == 'open-ticket':
+        body = native_open_ticket_decisions(body)
     return f'---\n{front}\n---\n\n{BANNER}\n\n{body}'
 
 
