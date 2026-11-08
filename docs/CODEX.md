@@ -114,6 +114,8 @@ plugin requirement. The existing project PreToolUse suppression/lockfile
 guard remains separate. Until host delivery is confirmed, run
 `make format` (mutating) and `make check` (validation) explicitly.
 
+For quota-aware reset testing, see [Codex live acceptance after usage resets](CODEX-LIVE-ACCEPTANCE.md). The `--preflight` mode uses no Codex inference, and `--live` runs one bounded smoke without retries. The runbook separates host-dependent follow-up evidence from static CI and keeps issue #9 deferred.
+
 ## Source, enabled and reported roles
 
 The source tree includes 12 original Claude roles. The native Codex generator emits 11 enabled roles and deliberately omits Fable/wingman. `.codex/compatibility-report.json` counts the **12 source roles**, including the disabled one: its `count` is not the enabled-install count. All 19 skills have Codex-specific generated equivalents. Run `python3 scripts/sync_codex_agents.py --check` and `python3 scripts/sync_codex_skills.py --check` for generation drift; these checks are not live host acceptance.
