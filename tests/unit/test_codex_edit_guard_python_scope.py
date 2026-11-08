@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 inspect = run_path(str(ROOT / 'scripts/codex_edit_guard.py'))['inspect']
 
 
-def event(patch: str) -> dict:
+def event(patch: str) -> dict[str, object]:
     return {
         'hook_event_name': 'PreToolUse',
         'tool_name': 'apply_patch',
@@ -19,7 +19,9 @@ def event(patch: str) -> dict:
 
 @pytest.mark.unit
 def test_nonpython_noqa_examples_are_not_python_suppressions() -> None:
-    patch = '*** Begin Patch\n*** Update File: README.md\n@@\n+# noqa in a code sample\n*** End Patch'
+    patch = (
+        '*** Begin Patch\n*** Update File: README.md\n@@\n+# noqa in a code sample\n*** End Patch'
+    )
     assert inspect(event(patch)) is None
 
 
