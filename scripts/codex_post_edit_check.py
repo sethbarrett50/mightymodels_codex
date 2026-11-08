@@ -120,8 +120,27 @@ def _ty_failures(binary: Path, files: tuple[Path, ...], root: Path) -> list[str]
     return ['type check did not pass'] if result.returncode else []
 
 
+def _missing_checkout_context(event: object) -> bool:
+    if not isinstance(event, dict):
+        return False
+    if event.get('hook_event_name') != 'PostToolUse' or event.get('tool_name') != 'apply_patch':
+        return False
+    cwd = event.get('cwd')
+    return not isinstance(cwd, str) or not cwd.strip()
+
+
 def feedback(event: object, root: Path) -> dict | None:
     """Report only checker outcomes; never expose source, paths or stderr."""
+    if _missing_checkout_context(event):
+        return {
+            'hookSpecificOutput': {
+                'hookEventName': 'PostToolUse',
+                'additionalContext': (
+                    'MightyModels post-edit checks not run: '
+                    'host hook event omitted its checkout directory.'
+                ),
+            }
+        }
     files = python_paths(event, root)
     if not files:
         return None
