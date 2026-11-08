@@ -118,28 +118,43 @@ def native_baton_pass_decisions(body: str) -> str:
     """Do not claim unobserved Codex recorder delivery during handoff."""
     changes = (
         (
-            """One `Codex user decision gate` call, two questions, options drawn from the state rather than generic:""",
-            """Ask the user in ordinary chat for the next-session focus and, only if the tree is dirty,
-for the uncommitted-work action. Offer options supported by the current state and
-end the turn until the user explicitly answers each required question; do not assume
-a popup timeout or empty response is consent.""",
+            (
+                'One `Codex user decision gate` call, two questions, options drawn '
+                'from the state rather than generic:'
+            ),
+            (
+                'Ask the user in ordinary chat for the next-session focus and, only '
+                'if the tree is dirty,\nfor the uncommitted-work action. Offer '
+                'options supported by the current state and\nend the turn until the '
+                'user explicitly answers each required question; do not assume\na '
+                'popup timeout or empty response is consent.'
+            ),
         ),
         (
-            """Write no decision entry by hand. The recorder hook on `Codex user decision gate` already stored every
-answer the user gave in a dialog, including the two just given, but only if the session was
-pointed at a ledger or ticket when it was given; the snapshot carries those to the next session.
-In a session with no ticket and no pointer it stored nothing, so those decisions go in
-BATON.md. A choice
-the user made only in chat has no writer: if it matters to the next session, put it to them
-through `Codex user decision gate` now, so the recorder takes it. One only in the baton is one more line
-to drift.""",
-            """Do not assume a Codex user-input recorder hook executed. Preserve only the user's actual
-confirmed focus and uncommitted-work choice in BATON.md, not a predicted or default answer.
-If an active ticket exists, also update its durable context through available MightyModels
-state tools before the final snapshot, and verify the state write succeeded. If the state
-writer is unavailable or fails, say so explicitly and do not claim a persisted handoff.
-Do not store credentials or raw private responses in the baton. A missing user answer is
-still pending and must not be converted into approval.""",
+            (
+                'Write no decision entry by hand. The recorder hook on `Codex user '
+                'decision gate` already stored every\nanswer the user gave in a '
+                'dialog, including the two just given, but only if the session '
+                'was\npointed at a ledger or ticket when it was given; the snapshot '
+                'carries those to the next session.\nIn a session with no ticket and '
+                'no pointer it stored nothing, so those decisions go in\nBATON.md. A '
+                'choice\nthe user made only in chat has no writer: if it matters to '
+                'the next session, put it to them\nthrough `Codex user decision '
+                'gate` now, so the recorder takes it. One only in the baton is one '
+                'more line\nto drift.'
+            ),
+            (
+                'Do not assume a Codex user-input recorder hook executed. Preserve '
+                'only the user\'s actual\nconfirmed focus and uncommitted-work choice '
+                'in BATON.md, not a predicted or default answer.\nIf an active '
+                'ticket exists, also update its durable context through available '
+                'MightyModels\nstate tools before the final snapshot, and verify the '
+                'state write succeeded. If the state\nwriter is unavailable or '
+                'fails, say so explicitly and do not claim a persisted handoff.\nDo '
+                'not store credentials or raw private responses in the baton. A '
+                'missing user answer is\nstill pending and must not be converted '
+                'into approval.'
+            ),
         ),
     )
     for old, new in changes:
