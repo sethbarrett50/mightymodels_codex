@@ -75,8 +75,7 @@ and offer the task whole; the user decides, and a warning stops nothing.
 **3. Give the pieces ids.** The next free `T` ids of the task list, in dependency order. The
 original's id is never reused, because its history stays under it. Each task that named the original in `depends-on` will name the piece that carries what it waited for.
 
-**4. Ask the user once.** Write the pieces out in full in your message, then open one
-`Codex user decision gate` dialog about them. Each piece shows its id, its intent, its acceptance and its
+**4. Ask the user once.** Write the pieces out in full in your message, then ask in ordinary chat whether to split, keep, or revise. End the turn until the user explicitly responds. Each piece shows its id, its intent, its acceptance and its
 owned files:
 
 ```text
@@ -90,11 +89,11 @@ T7 (sm): <one-line intent: what and where>
 
 Below the pieces, list what the split changes outside them: each `depends-on` that moves, each
 criterion that was divided, and each file a worker already edited with the piece that takes it.
-The dialog has one question with these options:
+Ask one blocking question with these options:
 
 - **Split as shown.** The original is superseded and the pieces replace it.
 - **Keep it as one task.** Nothing is split; the task starts whole on the user's approval.
-- **Change the split.** The user says what to change, through the dialog's free text.
+- **Change the split.** The user says what to change, using an explicit free-text response in chat.
 
 ## After the answer
 
@@ -104,7 +103,7 @@ The dialog has one question with these options:
 2. Update the task list where it lives (`plan.md`, or the issue's task list as one-shot wrote
    it). Under the original's heading leave one line, `superseded: split into T7, T8, T9`, in place
    of its acceptance and verify. Add the pieces in dependency order, and repoint each `depends-on`
-   as the dialog listed.
+   as the user explicitly approved.
 3. Declare the pieces with `task_declare`, passing the `slug` and the new `T` ids, so each can be started.
 4. Report one line per piece (id, size, intent) and the original as superseded, then hand back
    to agents-assemble. Each piece runs through its loop as a task of its own, from what-we-know
