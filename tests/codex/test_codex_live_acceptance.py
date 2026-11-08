@@ -55,6 +55,7 @@ def test_oversize_output_is_never_echoed_or_called_complete() -> None:
     assert result['status'].startswith('unverified:')
     assert 'SECRET' not in str(result)
 
+
 @pytest.mark.unit
 def test_disposable_fixture_snapshot_detects_modification_and_extra_files(tmp_path: Path) -> None:
     (tmp_path / 'README.md').write_text('baseline', encoding='utf-8')
