@@ -182,6 +182,7 @@ def native_terry_toolchain(body: str) -> str:
         body = body.replace(original, replacement)
     return body
 
+
 def native_body(source: str, *, role: str | None = None) -> str:
     """Translate supported Claude tool references; never infer host enforcement."""
     for original, native in ROLE_TRANSLATIONS:
