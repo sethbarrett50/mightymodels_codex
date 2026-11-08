@@ -560,7 +560,8 @@ def translated(source: Path) -> str:
             'one Codex user decision gate interview', 'a blocking ordinary-chat interview'
         )
         body = body.replace(
-            'This is Codex-only; the Claude `Codex user decision gate` steps below remain unchanged.',
+            ('This is Codex-only; the Claude `Codex user decision gate` steps '
+             'below remain unchanged.'),
             'For Codex, the ordinary-chat requirements below are authoritative; '
             'no native dialog API is implied.',
         )
