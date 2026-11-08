@@ -172,7 +172,6 @@ def feedback(event: object, root: Path) -> dict | None:
     }
 
 
-
 def probe_delivery(event: object, root: Path, environ: dict[str, str]) -> None:
     """Opt-in external canary: no arguments, paths or source contents retained."""
     if not isinstance(event, dict):
