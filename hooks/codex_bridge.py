@@ -350,9 +350,8 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
             warning = f'MightyModels {command} failed (exit {result.returncode})'
     if name == 'SubagentStop':
         return {'continue': True, **({'systemMessage': warning} if warning else {})}
-    if warning is None and result is not None:
-        return resume_hook_output(command, result)
-    return {'systemMessage': warning} if warning else None
+    restored = resume_hook_output(command, result) if warning is None and result is not None else None
+    return restored or ({'systemMessage': warning} if warning else None)
 
 
 def audit_probe(event: object, environ: dict[str, str]) -> None:
