@@ -120,6 +120,19 @@ For quota-aware reset testing, see [Codex live acceptance after usage resets](CO
 
 The source tree includes 12 original Claude roles. The native Codex generator emits 11 enabled roles and deliberately omits Fable/wingman. `.codex/compatibility-report.json` counts the **12 source roles**, including the disabled one: its `count` is not the enabled-install count. All 19 skills have Codex-specific generated equivalents. Run `python3 scripts/sync_codex_agents.py --check` and `python3 scripts/sync_codex_skills.py --check` for generation drift; these checks are not live host acceptance.
 
+### Duplicate Codex role discovery — live host finding
+
+A November 8, 2026 Codex 0.167.0 live read-only MCP test successfully called
+`mcp__mighty_mcp__investigation_list` but emitted two duplicate-name warnings
+per each of the 11 `mm-*` roles. The user confirmed 11 explicit global role
+registrations, 11 corresponding user-global agent symlinks, and 11 source
+agent files in the project checkout. The installer now retains the explicit
+global `config_file` registrations and removes the redundant managed global
+symlinks on reinstall, preserving the per-agent model and effort settings.
+The doctor rejects a still-duplicated user-global role file. **Host startup
+without duplicate warnings is not yet verified** and must be retested after
+reinstall. Unmanaged agent files are never deleted by this migration.
+
 ## User-scoped installation across repositories
 
 Run this as the unprivileged Linux user that will launch Codex. Do not use sudo
@@ -132,8 +145,12 @@ python3 scripts/install_codex_user.py
 codex mcp list
 ```
 
-The installer symlinks the 11 enabled native roles into `~/.codex/agents/` and 19
-skills into `~/.agents/skills/`, adds a clearly marked `mighty_mcp` section
+The installer registers all 11 enabled roles explicitly in the managed global
+`~/.codex/config.toml` section (referencing their checkout TOML files), and
+symlinks 19 skills into `~/.agents/skills/`. It removes only obsolete
+installer-owned role symlinks in `~/.codex/agents/` to avoid duplicate global
+agent discovery. The project-local `.codex/agents/` definitions remain as
+source files. It adds a clearly marked `mighty_mcp` section
 to `~/.codex/config.toml`, installs absolute-path hooks at
 `~/.codex/hooks.json`, and adds a managed instruction stanza in
 `~/.codex/AGENTS.md`. It refuses to overwrite unrelated files and does not
