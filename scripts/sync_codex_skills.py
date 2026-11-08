@@ -342,11 +342,11 @@ def native_landing_decisions(body: str) -> str:
     body = body.replace(before, after)
     alias_step = (
         'Dispatch workers through prompting-subagents. Models are the fixed '
-        'aliases `subagent-models`\\nlists, never memory.'
+        'aliases `subagent-models`\nlists, never memory.'
     )
     native_step = (
         'Dispatch through prompting-subagents using the registered native Codex '
-        'roles and each role TOML model/effort settings. The ticket\\n'
+        'roles and each role TOML model/effort settings. The ticket\n'
         '`subagent-models` aliases are Claude-only historical values, not '
         'dispatch arguments or proof of the effective host model.'
     )
