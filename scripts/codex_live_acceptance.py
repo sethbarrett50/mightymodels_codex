@@ -75,7 +75,7 @@ def summarize_result(
         'child_model_verified': False,
         'secret_transcripts_retained': False,
     }
-    if len(result.stdout) > MAX_OUTPUT_BYTES:
+    if len(result.stdout.encode('utf-8', errors='replace')) > MAX_OUTPUT_BYTES:
         data['status'] = 'unverified: output size exceeded safe processing limit'
         return data
     metrics = summarize(io.StringIO(result.stdout))
