@@ -344,6 +344,35 @@ def native_landing_frontmatter(front: str) -> str:
     return front.replace(old, new)
 
 
+def native_task_split_decisions(body: str) -> str:
+    """Ask for split approval in ordinary chat and preserve actual choices."""
+    changes = (
+        (
+            'then open one\n`Codex user decision gate` dialog about them.',
+            'then ask in ordinary chat whether to split, keep, or revise. '
+            'End the turn until the user explicitly responds.',
+        ),
+        (
+            'The dialog has one question with these options:',
+            'Ask one blocking question with these options:',
+        ),
+        (
+            "through the dialog's free text.",
+            'using an explicit free-text response in chat.',
+        ),
+        (
+            'as the dialog listed.',
+            'as the user explicitly approved.',
+        ),
+    )
+    for old, new in changes:
+        if body.count(old) != 1:
+            msg = 'Expected exactly one task split approval instruction'
+            raise ValueError(msg)
+        body = body.replace(old, new)
+    return body
+
+
 def translated(source: Path) -> str:
     """Preserve skill semantics while rewriting host-specific transport syntax."""
     raw = source.read_text(encoding='utf-8')
@@ -392,6 +421,7 @@ def translated(source: Path) -> str:
         'review-circus': native_review_circus_decisions,
         'agents-assemble': native_assembly_roles,
         'stick-the-landing': native_landing_decisions,
+        'break-it-down': native_task_split_decisions,
     }
     transformer = transformers.get(name)
     if transformer is not None:
