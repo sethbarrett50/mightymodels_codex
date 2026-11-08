@@ -370,6 +370,11 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     else:
         if result.returncode:
             warning = f'MightyModels {command} failed (exit {result.returncode})'
+        elif command in ('session-pointer', 'ask-recorder', 'subagent-record', 'pre-compact'):
+            # Legacy persistence handlers can signal an unreadable state store on
+            # stderr while returning 0. Never echo private handler diagnostics.
+            if result.stderr.strip():
+                warning = f'MightyModels {command} reported a persistence warning'
     if name == 'SubagentStop':
         return {'continue': True, **({'systemMessage': warning} if warning else {})}
     restored = (
