@@ -82,3 +82,26 @@ def test_fixture_mutation_cannot_be_reported_as_read_only_success() -> None:
     assert report['status'] == 'read_only_smoke_unverified'
     assert report['fixture_unchanged'] is False
     assert report['host_denial_verified'] is False
+
+
+@pytest.mark.unit
+def test_fixture_snapshot_detects_symlink_retargeting(tmp_path: Path) -> None:
+    (tmp_path / 'first.txt').write_text('same', encoding='utf-8')
+    (tmp_path / 'second.txt').write_text('same', encoding='utf-8')
+    link = tmp_path / 'shortcut.txt'
+    link.symlink_to('first.txt')
+    baseline = SCRIPT.fixture_snapshot(tmp_path)
+    link.unlink()
+    link.symlink_to('second.txt')
+    assert SCRIPT.fixture_snapshot(tmp_path) != baseline
+    # The fingerprint is a digest, never the raw destination.
+    snapshot = str(SCRIPT.fixture_snapshot(tmp_path))
+    assert 'second.txt' not in snapshot
+
+
+@pytest.mark.unit
+def test_fixture_snapshot_does_not_follow_external_symlinks(tmp_path: Path) -> None:
+    link = tmp_path / 'external.txt'
+    link.symlink_to('../outside.txt')
+    before = SCRIPT.fixture_snapshot(tmp_path)
+    assert SCRIPT.fixture_snapshot(tmp_path) == before
