@@ -41,6 +41,7 @@ def test_doctor_verifies_installed_roles_skills_and_hooks(tmp_path: Path) -> Non
     assert '19/19' in check.stdout
     assert 'runtime trust not verified' in check.stdout
     assert 'project-scoped mighty_mcp' not in check.stdout
+    assert 'Active project and global Codex hooks coexist' in check.stdout
 
 
 @pytest.mark.unit
