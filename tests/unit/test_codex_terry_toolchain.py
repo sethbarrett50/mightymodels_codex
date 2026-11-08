@@ -20,6 +20,7 @@ def test_terry_native_survey_does_not_invoke_claude_cli() -> None:
     body = tomllib.loads(generated)['developer_instructions']
     assert 'claude mcp list' not in body
     assert 'claude plugin list' not in body
+    assert 'codex plugin list' not in body
     assert 'claude --version' not in body
     assert 'codex mcp list' in body
     assert 'Codex plugin inventory has no assumed CLI' in body
