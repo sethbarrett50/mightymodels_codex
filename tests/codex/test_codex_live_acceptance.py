@@ -22,8 +22,9 @@ def test_successful_read_only_smoke_emits_only_counters_and_unverified_flags() -
         '{"type":"item.completed","item":{"text":"SECRET_API_KEY_DO_NOT_LOG"}}\n',
         stderr='SECRET_AUTH_LOG_DO_NOT_LOG',
     )
-    result = SCRIPT.summarize_result(completed, version='codex-cli 0.167.0')
+    result = SCRIPT.summarize_result(completed, version='codex-cli 0.167.0', fixture_unchanged=True)
     assert result['status'] == 'read_only_smoke_completed'
+    assert result['fixture_unchanged'] is True
     assert result['usage']['input_tokens'] == 15
     assert result['host_denial_verified'] is False
     assert result['child_model_verified'] is False
@@ -53,3 +54,31 @@ def test_oversize_output_is_never_echoed_or_called_complete() -> None:
     result = SCRIPT.summarize_result(completed, version='codex-cli 0.167.0')
     assert result['status'].startswith('unverified:')
     assert 'SECRET' not in str(result)
+
+
+@pytest.mark.unit
+def test_disposable_fixture_snapshot_detects_modification_and_extra_files(tmp_path: Path) -> None:
+    (tmp_path / 'README.md').write_text('baseline', encoding='utf-8')
+    baseline = SCRIPT.fixture_snapshot(tmp_path)
+    (tmp_path / 'README.md').write_text('modified', encoding='utf-8')
+    assert SCRIPT.fixture_snapshot(tmp_path) != baseline
+    (tmp_path / 'README.md').write_text('baseline', encoding='utf-8')
+    assert SCRIPT.fixture_snapshot(tmp_path) == baseline
+    (tmp_path / 'unexpected.txt').write_text('marker', encoding='utf-8')
+    assert SCRIPT.fixture_snapshot(tmp_path) != baseline
+
+
+@pytest.mark.unit
+def test_fixture_mutation_cannot_be_reported_as_read_only_success() -> None:
+    completed = subprocess.CompletedProcess(
+        args=[],
+        returncode=0,
+        stdout='{"type":"turn.completed","usage":{"input_tokens":8}}\n',
+        stderr='',
+    )
+    report = SCRIPT.summarize_result(
+        completed, version='codex-cli 0.167.0', fixture_unchanged=False
+    )
+    assert report['status'] == 'read_only_smoke_unverified'
+    assert report['fixture_unchanged'] is False
+    assert report['host_denial_verified'] is False

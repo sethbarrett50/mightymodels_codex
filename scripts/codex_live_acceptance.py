@@ -6,6 +6,7 @@ additional external evidence; this smoke test cannot prove those properties.
 """
 
 import argparse
+import hashlib
 import io
 import json
 import re
@@ -27,10 +28,38 @@ PROMPT = (
 VERSION = re.compile(r'\Acodex(?:-cli)? [0-9A-Za-z.+-]+\Z')
 
 
+def file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(65536), b''):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def fixture_snapshot(root: Path) -> tuple[tuple[str, str, str], ...]:
+    """Summarize only names/types and content digests within the disposable repo."""
+    records: list[tuple[str, str, str]] = []
+    for path in root.rglob('*'):
+        relative = path.relative_to(root)
+        if relative.parts[0] == '.git':
+            continue
+        if path.is_symlink():
+            kind, fingerprint = 'symlink', ''
+        elif path.is_dir():
+            kind, fingerprint = 'directory', ''
+        elif path.is_file():
+            kind, fingerprint = 'file', file_digest(path)
+        else:
+            kind, fingerprint = 'other', ''
+        records.append((relative.as_posix(), kind, fingerprint))
+    return tuple(sorted(records))
+
+
 def summarize_result(
     result: subprocess.CompletedProcess[str],
     *,
     version: str,
+    fixture_unchanged: bool | None = None,
 ) -> dict[str, object]:
     """Exclude the host's raw responses, prompts, IDs and stderr."""
     safe_version = version.strip() if VERSION.fullmatch(version.strip()) else 'unverified'
@@ -38,6 +67,7 @@ def summarize_result(
         'probe': 'disposable-read-only-codex-exec',
         'codex_version': safe_version,
         'sandbox_requested': 'read-only',
+        'fixture_unchanged': fixture_unchanged,
         'host_denial_verified': False,
         'child_model_verified': False,
         'secret_transcripts_retained': False,
@@ -48,7 +78,11 @@ def summarize_result(
     metrics = summarize(io.StringIO(result.stdout))
     data['status'] = (
         'read_only_smoke_completed'
-        if result.returncode == 0 and metrics['events'].get('turn_completed', 0) > 0
+        if (
+            result.returncode == 0
+            and fixture_unchanged is True
+            and metrics['events'].get('turn_completed', 0) > 0
+        )
         else 'read_only_smoke_unverified'
     )
     data['events'] = metrics['events']
@@ -58,7 +92,7 @@ def summarize_result(
 
 def _invoke_codex(
     codex: str, git: str, timeout: int
-) -> tuple[str, subprocess.CompletedProcess[str]] | None:
+) -> tuple[str, subprocess.CompletedProcess[str], bool] | None:
     version = subprocess.run(  # noqa: S603
         [codex, '--version'],
         text=True,
@@ -82,6 +116,7 @@ def _invoke_codex(
         )
         if initialized.returncode:
             return None
+        before = fixture_snapshot(worktree)
         execution = subprocess.run(  # noqa: S603
             [codex, 'exec', '--json', '--sandbox', 'read-only', PROMPT],
             cwd=worktree,
@@ -90,7 +125,8 @@ def _invoke_codex(
             check=False,
             timeout=timeout,
         )
-    return version.stdout, execution
+        unchanged = before == fixture_snapshot(worktree)
+    return version.stdout, execution, unchanged
 
 
 def run_probe(timeout: int) -> dict[str, object]:
@@ -104,8 +140,8 @@ def run_probe(timeout: int) -> dict[str, object]:
         return {'status': 'unverified: process unavailable or timed out'}
     if outcome is None:
         return {'status': 'blocked: temporary Git initialization failed'}
-    version, execution = outcome
-    return summarize_result(execution, version=version)
+    version, execution, unchanged = outcome
+    return summarize_result(execution, version=version, fixture_unchanged=unchanged)
 
 
 def main() -> int:
