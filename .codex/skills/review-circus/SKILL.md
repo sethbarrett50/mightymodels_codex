@@ -1,11 +1,10 @@
 ---
 name: review-circus
 description: >-
-  Review a diff, branch, ticket, or whole codebase with the mightymodels persona reviewers. One
-  An ordinary-chat decision sets review depth (quick, standard, deep) without changing native reviewer model pins, persona
+  Review a diff, branch, ticket, or whole codebase with the mightymodels persona reviewers. An ordinary-chat decision sets review depth (quick, standard, deep) without changing native reviewer model pins, persona
   emphasis, and scope; the `review_*` tools record the run, `review_metrics` and qualitylens's signals tools
   measure, merge-vader and uncle-bob report, and the tool reads their reports
-  and merges overlapping findings, presented by id through Codex user decision gate. Only the findings
+  and merges overlapping findings, presented by id for explicit ordinary-chat decisions. Only the findings
   the user picks go to remediation, risk first, through the `task_*` tools; an abridged PR comment
   is always posted. Not for fixing CI (stick-the-landing) or mid-sprint work
   (agents-assemble).
