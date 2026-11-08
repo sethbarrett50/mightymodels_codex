@@ -15,9 +15,7 @@ check_agents = DOCTOR['check_agents']
 
 @pytest.mark.unit
 @pytest.mark.parametrize('malformed', ['invalid', [], False, 123, None])
-def test_doctor_rejects_malformed_individual_role_entry(
-    tmp_path: Path, malformed: object
-) -> None:
+def test_doctor_rejects_malformed_individual_role_entry(tmp_path: Path, malformed: object) -> None:
     source = ROOT / '.codex/agents/mm-workers-engineer.toml'
     installed = tmp_path / '.codex/agents/mm-workers-engineer.toml'
     installed.parent.mkdir(parents=True)
