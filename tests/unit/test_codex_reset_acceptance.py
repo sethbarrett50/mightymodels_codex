@@ -21,7 +21,9 @@ def test_preflight_does_not_call_codex_smoke(tmp_path: Path) -> None:
         report.__globals__,
         {'diagnose': Mock(return_value=(['[OK] installed'], True)), 'run_probe': smoke},
     ):
-        result, code = report(scope=InstallScope(home=tmp_path, root=tmp_path), live=False, timeout=90)
+        result, code = report(
+            scope=InstallScope(home=tmp_path, root=tmp_path), live=False, timeout=90
+        )
     assert code == 0
     assert result['status'] == 'preflight_passed_live_unverified'
     assert result['host_hook_delivery_verified'] is False
@@ -36,7 +38,7 @@ def test_broken_preflight_blocks_live_smoke_before_token_usage(tmp_path: Path) -
         report.__globals__,
         {'diagnose': Mock(return_value=(['[FAIL] missing MCP'], False)), 'run_probe': smoke},
     ):
-        result, code = report(home=tmp_path, root=tmp_path, live=True, timeout=90)
+        result, code = report(scope=InstallScope(home=tmp_path, root=tmp_path), live=True, timeout=90)
     assert code == 1
     assert result['status'] == 'blocked: static installation checks failed'
     assert 'smoke' not in result
@@ -50,7 +52,7 @@ def test_live_pass_only_validates_smoke_not_other_host_capabilities(tmp_path: Pa
         report.__globals__,
         {'diagnose': Mock(return_value=(['[OK] installed'], True)), 'run_probe': smoke},
     ):
-        result, code = report(home=tmp_path, root=tmp_path, live=True, timeout=72)
+        result, code = report(scope=InstallScope(home=tmp_path, root=tmp_path), live=True, timeout=72)
     assert code == 0
     smoke.assert_called_once_with(72)
     assert result['status'] == 'read_only_smoke_passed_host_acceptance_incomplete'
@@ -71,7 +73,7 @@ def test_rate_limited_smoke_stops_without_retry_or_raw_error(tmp_path: Path) -> 
         report.__globals__,
         {'diagnose': Mock(return_value=([], True)), 'run_probe': smoke},
     ):
-        result, code = report(home=tmp_path, root=tmp_path, live=True, timeout=90)
+        result, code = report(scope=InstallScope(home=tmp_path, root=tmp_path), live=True, timeout=90)
     assert code == 1
     smoke.assert_called_once_with(90)
     assert result['status'] == 'live_smoke_unverified_stop'
@@ -85,7 +87,7 @@ def test_unclassified_live_failure_is_not_reinterpreted_as_quota(tmp_path: Path)
         report.__globals__,
         {'diagnose': Mock(return_value=([], True)), 'run_probe': smoke},
     ):
-        result, code = report(home=tmp_path, root=tmp_path, live=True, timeout=90)
+        result, code = report(scope=InstallScope(home=tmp_path, root=tmp_path), live=True, timeout=90)
     assert code == 1
     smoke.assert_called_once_with(90)
     assert 'quota' not in result['next_action']
