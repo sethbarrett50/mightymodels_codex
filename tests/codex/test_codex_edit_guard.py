@@ -88,10 +88,7 @@ def test_denial_uses_codex_pretooluse_shape_without_patch_content() -> None:
 @pytest.mark.unit
 def test_absolute_path_inside_checkout_keeps_suppression_guard(tmp_path: Path) -> None:
     target = tmp_path / 'acceptance_hook_probe.py'
-    patch = (
-        f'*** Begin Patch\n*** Add File: {target}\n'
-        '+value = 1  # noqa: F841\n*** End Patch'
-    )
+    patch = f'*** Begin Patch\n*** Add File: {target}\n+value = 1  # noqa: F841\n*** End Patch'
     assert 'suppression' in GUARD.inspect(event(patch), root=tmp_path)
 
 
