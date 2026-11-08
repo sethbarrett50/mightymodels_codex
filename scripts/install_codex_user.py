@@ -185,23 +185,32 @@ def validate_hook_groups(groups: list, expected: list) -> None:
                 raise ValueError(msg)
 
 
-def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:  # noqa: PLR0913
-    """Replace only recognized legacy dispatch matchers; preserve foreign hooks."""
-    legacy = []
-    if event == 'PreToolUse':
-        for group in wanted:
-            if group.get('matcher') == '^(Agent|(?:.*[._:/])?spawn_agent)$':
-                legacy.append({**group, 'matcher': '^(spawn_agent|Agent)$'})
+def discard_legacy_spawn_groups(groups: list, wanted: list, *, event: str) -> bool:
+    """Remove only exact previous-version groups; refuse ambiguous duplicates."""
+    if event != 'PreToolUse':
+        return False
+    legacy = [
+        {**group, 'matcher': '^(spawn_agent|Agent)$'}
+        for group in wanted
+        if group.get('matcher') == '^(Agent|(?:.*[._:/])?spawn_agent)$'
+    ]
     validate_hook_groups(groups, [*wanted, *legacy])
-    changed = False
     for old in legacy:
         count = groups.count(old)
         if count > 1 or (count and any(group in groups for group in wanted)):
             msg = 'Duplicate or conflicting MightyModels spawn hook group'
             raise ValueError(msg)
-        if count:
+    for old in legacy:
+        if old in groups:
             groups.remove(old)
-            changed = True
+    return any(old not in groups for old in legacy) and bool(legacy)
+
+
+def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:  # noqa: PLR0913
+    """Apply exact owned groups while migrating old dispatch matchers safely."""
+    before = list(groups)
+    discard_legacy_spawn_groups(groups, wanted, event=event)
+    validate_hook_groups(groups, wanted)
     for group in wanted:
         count = groups.count(group)
         if count > 1:
@@ -209,11 +218,9 @@ def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: s
             raise ValueError(msg)
         if remove and count:
             groups.remove(group)
-            changed = True
         elif not remove and not count:
             groups.append(group)
-            changed = True
-    return changed
+    return groups != before
 
 
 def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str | None:  # noqa: C901, PLR0912
