@@ -248,6 +248,14 @@ https://learn.chatgpt.com/docs/models?surface=cli
 
 ## Codex live dispatch authorization probe — issue #9
 
+The managed `PreToolUse` matcher now covers `spawn_agent`, `Agent`, and
+namespaced forms such as `collaborationspawn_agent`. This addresses a
+reported multi-agent v2 hook-name mismatch (openai/codex#57539).
+Re-running the user installer replaces the exact previous MightyModels matcher
+while preserving unrelated user hooks. **Matcher coverage does not imply host
+invocation or enforcement**; some Codex versions have reported that native
+spawn bypasses `PreToolUse` entirely (openai/codex#49736).
+
 **Safety status: NOT host-verified.** A direct invocation of
 `hooks/codex_bridge.py` proves only that its Python logic runs, not that
 the Codex host invokes it before native `spawn_agent`. An upstream Codex
