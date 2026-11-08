@@ -72,7 +72,7 @@ def changed_python_paths(base: str, root: Path) -> set[bytes] | None:
         if output.returncode:
             print('Could not enumerate changed files; no complete hygiene check performed.')
             return None
-        paths.update(filter(None, output.stdout.split(b'\\0')))
+        paths.update(filter(None, output.stdout.split(b'\0')))
     return paths
 
 
