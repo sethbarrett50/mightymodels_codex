@@ -196,13 +196,14 @@ def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901, PLR0911, 
             return None
         selected = returned.get(identifier)
         if not isinstance(selected, dict) or not isinstance(selected.get('answers'), list):
-            continue
+            return None
         texts = selected['answers']
         if not all(isinstance(text, str) for text in texts):
             return None
         actual = [value.strip() for value in texts if value.strip()]
-        if actual:
-            answers[label] = '\n'.join(actual)
+        if not actual:
+            return None
+        answers[label] = '\n'.join(actual)
     if not answers:
         return None
     # The recorder needs only the session pointer and approved answers.
