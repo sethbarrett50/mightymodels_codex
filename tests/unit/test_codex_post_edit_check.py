@@ -186,3 +186,26 @@ def test_absolute_native_patch_file_outside_checkout_is_rejected(tmp_path: Path)
 def test_post_edit_checker_parses_with_python313_grammar() -> None:
     source = (ROOT / 'scripts/codex_post_edit_check.py').read_text()
     ast.parse(source, filename='scripts/codex_post_edit_check.py', feature_version=(3, 13))
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('cwd', [None, '', '   '])
+def test_post_edit_missing_checkout_context_emits_sanitized_warning(
+    tmp_path: Path, cwd: str | None
+) -> None:
+    event = edit_event(tmp_path, patch_for('demo.py'))
+    event['cwd'] = cwd
+    event['tool_response'] = {'status': 'completed', 'private': 'SECRET_DO_NOT_ECHO'}
+    report = feedback(event, tmp_path)
+    assert report is not None
+    message = report['hookSpecificOutput']['additionalContext']
+    assert 'not run' in message
+    assert 'checkout directory' in message
+    assert 'SECRET_' not in str(report)
+    assert str(tmp_path) not in str(report)
+
+
+@pytest.mark.unit
+def test_non_patch_tool_without_checkout_does_not_report_python_checks(tmp_path: Path) -> None:
+    event = {'hook_event_name': 'PostToolUse', 'tool_name': 'Read'}
+    assert feedback(event, tmp_path) is None
