@@ -27,6 +27,43 @@ PROMPT = (
     'Do not edit any files, install packages, dispatch child agents, or use secrets.'
 )
 VERSION = re.compile(r'\Acodex(?:-cli)? [0-9A-Za-z.+-]+\Z')
+LIMIT_HINT = re.compile(
+    r'(?i)\b(?:quota\s+(?:exceeded|exhausted)|rate[ -]limit(?:ed|ing)?|'
+    r'usage\s+limit|insufficient_quota|too\s+many\s+requests|'
+    r'credits?\s+exhausted|you(?:\s+have|\x27ve)?\s+hit\s+your\s+limit)\b'
+)
+AUTH_HINT = re.compile(
+    r'(?i)\b(?:unauthorized|authentication\s+(?:failed|required)|'
+    r'invalid\s+api\s+key|invalid_api_key|token\s+expired)\b'
+)
+
+
+def failure_category(stdout: str, stderr: str) -> str:
+    """Classify limited known phrases; never expose raw host error messages."""
+    # Restrict inspection to a bounded tail so unexpected output cannot
+    # cause excess memory use. These hints do not prove the provider's cause.
+    messages: list[str] = []
+    for line in stdout[-MAX_OUTPUT_BYTES:].splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            event = None
+        if not isinstance(event, dict) or event.get('type') not in ('error', 'turn.failed'):
+            continue
+        raw = event.get('message')
+        if isinstance(raw, str):
+            messages.append(raw[:2048])
+        error = event.get('error')
+        if isinstance(error, dict) and isinstance(error.get('message'), str):
+            messages.append(error['message'][:2048])
+    # stderr may contain tool context; scan but never print any of its text.
+    messages.append(stderr[-4096:])
+    failure_text = '\n'.join(messages)
+    if LIMIT_HINT.search(failure_text):
+        return 'possible_usage_or_rate_limit'
+    if AUTH_HINT.search(failure_text):
+        return 'possible_authentication_problem'
+    return 'unclassified'
 
 
 def file_digest(path: Path) -> str:
@@ -96,6 +133,10 @@ def summarize_result(
         )
         else 'read_only_smoke_unverified'
     )
+    if events.get('turn_failed', 0) > 0 or events.get('errors', 0) > 0:
+        data['failure_category'] = failure_category(result.stdout, result.stderr)
+    elif result.returncode != 0:
+        data['failure_category'] = 'nonzero_exit_without_streamed_failure'
     data['events'] = events
     data['usage'] = metrics['usage']
     return data
