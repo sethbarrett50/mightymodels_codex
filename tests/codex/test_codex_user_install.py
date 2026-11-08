@@ -369,3 +369,40 @@ def test_install_refuses_duplicate_owned_hook_groups_before_link_changes(tmp_pat
     assert result.returncode != 0
     assert 'Duplicate managed' in result.stderr
     assert not (tmp_path / '.codex/agents').exists()
+
+@pytest.mark.unit
+def test_upgrade_migrates_legacy_spawn_hook_and_preserves_foreign_hooks(tmp_path: Path) -> None:
+    assert invoke(tmp_path).returncode == 0
+    hooks_path = tmp_path / '.codex/hooks.json'
+    original = json.loads(hooks_path.read_text())
+    group = original['hooks']['PreToolUse'][0]
+    group['matcher'] = '^(spawn_agent|Agent)$'
+    foreign = {'matcher': '^Bash$', 'hooks': [{'type': 'command', 'command': 'true'}]}
+    original['hooks']['PreToolUse'].append(foreign)
+    hooks_path.write_text(json.dumps(original, indent=2) + '\n')
+    migrated = invoke(tmp_path)
+    assert migrated.returncode == 0, migrated.stderr
+    updated = json.loads(hooks_path.read_text())
+    groups = updated['hooks']['PreToolUse']
+    assert groups[0] == foreign
+    assert groups[1]['matcher'] == '^(Agent|(?:.*[._:/])?spawn_agent)$'
+    assert invoke(tmp_path).returncode == 0
+    assert len(json.loads(hooks_path.read_text())['hooks']['PreToolUse']) == 2
+    assert invoke(tmp_path, uninstall=True).returncode == 0
+    after = json.loads(hooks_path.read_text())
+    assert after['hooks']['PreToolUse'] == [foreign]
+
+
+@pytest.mark.unit
+def test_upgrade_rejects_legacy_and_new_spawn_groups_together(tmp_path: Path) -> None:
+    assert invoke(tmp_path).returncode == 0
+    hooks_path = tmp_path / '.codex/hooks.json'
+    original = json.loads(hooks_path.read_text())
+    old = dict(original['hooks']['PreToolUse'][0])
+    old['matcher'] = '^(spawn_agent|Agent)$'
+    original['hooks']['PreToolUse'].append(old)
+    hooks_path.write_text(json.dumps(original, indent=2) + '\n')
+    result = invoke(tmp_path)
+    assert result.returncode != 0
+    assert 'Duplicate or conflicting' in result.stderr
+    assert json.loads(hooks_path.read_text()) == original
