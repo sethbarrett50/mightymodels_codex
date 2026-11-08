@@ -4,7 +4,7 @@ description: >-
   Split one mightymodels task that is too large into tasks of one reviewable unit of work each,
   and put the split to the user before anything changes. Size is guidance. Use when
   `task_start` warns that a task is large, when an engineer or architect returns `too-large` with
-  its cuts, or when a plan task is plainly several changes. Ends in one Codex user decision gate dialog showing every piece (id, intent, acceptance, owned
+  its cuts, or when a plan task is plainly several changes. Ends by asking in ordinary chat and awaiting explicit approval for every piece (id, intent, acceptance, owned
   files); only after the user answers is the original superseded and the plan updated. Not for
   revising the ASKED stanza of one task (the architect's `replanned`).
 when_to_use: >-
@@ -28,11 +28,10 @@ warns above three owned files or four criteria, and an engineer or architect tha
 mid-task returns `too-large`. Those two, or a plan task that is plainly several changes, are the
 routes here, and the user decides whether to split.
 
-**Nothing changes before the user answers.** Until the dialog in step 4 is answered this skill
+**Nothing changes before the user answers.** Until the user explicitly answers the blocking question in step 4 this skill
 writes nothing: no task call that moves a task, no edit to the plan or to a
-brief. The pieces are a proposal, and the plan is the user's. A dialog that timed out, was
-dismissed or came back empty is not an answer: open it again. Do not decide for the user, do not
-ask in prose instead, and do not start on a piece while you wait.
+brief. The pieces are a proposal, and the plan is the user's. A timeout, cancellation, dismissal or empty reply is not an answer: ask again in
+ordinary chat. Do not decide for the user or start a piece while awaiting approval.
 
 **Argument:** the id of the task to split, given when the skill was started: "USER_REQUEST_ARGS". Empty
 quotes mean none was given, and the task is the one `task_start` just warned about or a worker just returned

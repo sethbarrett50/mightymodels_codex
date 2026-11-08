@@ -358,9 +358,35 @@ def native_landing_frontmatter(front: str) -> str:
     return front.replace(old, new)
 
 
+def native_task_split_frontmatter(front: str) -> str:
+    """Avoid describing an unavailable dialog in Codex skill metadata."""
+    old = 'Ends in one Codex user decision gate dialog showing every piece'
+    new = 'Ends by asking in ordinary chat and awaiting explicit approval for every piece'
+    if front.count(old) != 1:
+        msg = 'Expected exactly one task split frontmatter dialog'
+        raise ValueError(msg)
+    return front.replace(old, new)
+
+
 def native_task_split_decisions(body: str) -> str:
     """Ask for split approval in ordinary chat and preserve actual choices."""
     changes = (
+        (
+            'Until the dialog in step 4 is answered this skill',
+            'Until the user explicitly answers the blocking question in step 4 this skill',
+        ),
+        (
+            (
+                'A dialog that timed out, was\ndismissed or came back empty is not '
+                'an answer: open it again. Do not decide for the user, do not\nask '
+                'in prose instead, and do not start on a piece while you wait.'
+            ),
+            (
+                'A timeout, cancellation, dismissal or empty reply is not an answer: '
+                'ask again in\nordinary chat. Do not decide for the user or start '
+                'a piece while awaiting approval.'
+            ),
+        ),
         (
             'then open one\n`Codex user decision gate` dialog about them.',
             (
@@ -429,6 +455,7 @@ def translated(source: Path) -> str:
         front = front.replace(previous, replacement)
         body = body.replace(previous, replacement)
     front = native_landing_frontmatter(front) if name == 'stick-the-landing' else front
+    front = native_task_split_frontmatter(front) if name == 'break-it-down' else front
     transformers = {
         'prompting-subagents': native_dispatch_steps,
         'open-ticket': native_open_ticket_decisions,
