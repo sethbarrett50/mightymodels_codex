@@ -32,40 +32,39 @@ BANNER = (
 )
 
 
-
 def native_dispatch_steps(body: str) -> str:
     """Replace Claude-only dispatch steps with Codex role and model semantics."""
     model_step = (
         "2. **Resolve the native role and model.** Read the active ticket's "
         "`subagent-models` block, then consult the generated role's TOML under "
-        "`$HOME/.codex/agents/mm-<group>-<worker>.toml`. Use the exact registered "
-        "role name and its configured model and reasoning effort; do not pass a Claude "
-        "alias (haiku, sonnet, opus or fable) as a `spawn_agent` model argument. "
-        "The original ticket aliases and native model pins are not proof of effective "
-        "runtime identity. Wingman/Fable is disabled; ask the user rather than "
-        "substituting another model. Record any requested routing change as an "
-        "explicit decision before dispatch."
+        '`$HOME/.codex/agents/mm-<group>-<worker>.toml`. Use the exact registered '
+        'role name and its configured model and reasoning effort; do not pass a Claude '
+        'alias (haiku, sonnet, opus or fable) as a `spawn_agent` model argument. '
+        'The original ticket aliases and native model pins are not proof of effective '
+        'runtime identity. Wingman/Fable is disabled; ask the user rather than '
+        'substituting another model. Record any requested routing change as an '
+        'explicit decision before dispatch.'
     )
     dispatch_step = (
-        "5. **Dispatch with native Codex tools.** Use `spawn_agent` with "
-        "`agent_type` set to the full registered `mm-<group>-<worker>` role "
-        "(for example `mm-workers-engineer` or `mm-triage-code-scout`), "
+        '5. **Dispatch with native Codex tools.** Use `spawn_agent` with '
+        '`agent_type` set to the full registered `mm-<group>-<worker>` role '
+        '(for example `mm-workers-engineer` or `mm-triage-code-scout`), '
         "not Claude's `mightymodels:FOLDER:WORKER` identifier or "
-        "`subagent_type`. Supply the completed packet as the message. "
-        "Do not supply a Claude model alias as an override. For follow-ups, use "
-        "the native send-input operation with the returned agent ID when the "
-        "host exposes it; otherwise report that continuation is unavailable. "
-        "Never claim native permission checks fired merely because the agent "
-        "was registered or spawned."
+        '`subagent_type`. Supply the completed packet as the message. '
+        'Do not supply a Claude model alias as an override. For follow-ups, use '
+        'the native send-input operation with the returned agent ID when the '
+        'host exposes it; otherwise report that continuation is unavailable. '
+        'Never claim native permission checks fired merely because the agent '
+        'was registered or spawned.'
     )
     replacements = (
-        (r"(?ms)^2\. \*\*Resolve the model\.\*\*.*?(?=^3\. \*\*)", model_step + "\n\n"),
-        (r"(?ms)^5\. \*\*Dispatch\*\*.*?(?=^6\. \*\*)", dispatch_step + "\n\n"),
+        (r'(?ms)^2\. \*\*Resolve the model\.\*\*.*?(?=^3\. \*\*)', model_step + '\n\n'),
+        (r'(?ms)^5\. \*\*Dispatch\*\*.*?(?=^6\. \*\*)', dispatch_step + '\n\n'),
     )
     for pattern, replacement in replacements:
         body, count = re.subn(pattern, replacement, body)
         if count != 1:
-            msg = "Expected exactly one Claude dispatch step to translate"
+            msg = 'Expected exactly one Claude dispatch step to translate'
             raise ValueError(msg)
     return body
 
