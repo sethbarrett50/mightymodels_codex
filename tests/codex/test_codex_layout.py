@@ -96,8 +96,11 @@ def test_hook_configurations_parse() -> None:
     project = tomllib.loads((ROOT / '.codex/config.toml').read_text(encoding='utf-8'))
     assert 'mighty_mcp' not in project.get('mcp_servers', {})
     local_hooks = json.loads((ROOT / '.codex/hooks.json').read_text(encoding='utf-8'))
-    assert set(local_hooks['hooks']) == {'PreToolUse'}
+    assert set(local_hooks['hooks']) == {'PreToolUse', 'PostToolUse'}
     assert 'apply_patch' in local_hooks['hooks']['PreToolUse'][0]['matcher']
+    post_edit = local_hooks['hooks']['PostToolUse'][0]
+    assert post_edit['matcher'] == '^apply_patch$'
+    assert 'codex_post_edit_check.py' in post_edit['hooks'][0]['command']
     assert 'spawn_agent' not in json.dumps(local_hooks)
 
 

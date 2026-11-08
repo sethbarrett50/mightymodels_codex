@@ -96,6 +96,24 @@ Codex SessionStart callback**. The host must trust/execute the installed
 hooks, and an actual investigation/task/baton handoff still needs live
 resume and idempotence acceptance before issue #8 can close.
 
+### Project-only post-edit Python checks (issue #17)
+
+The MightyModels checkout's `.codex/hooks.json` also declares a
+`PostToolUse` hook for `apply_patch`. Its standard-library helper inspects
+only successfully applied patch targets inside this source checkout, selects
+existing nonsymlinked Python files, and invokes the already-installed local
+`.venv/bin/ruff` with `format --check` and `check --no-fix`.
+It does **not** install packages, contact a registry, run a formatter that
+writes files, touch another Git project, or reproduce source/error text in
+hook output. It reports a brief warning and directs the user to `make check`
+if either check fails or Ruff is unavailable.
+
+This is best-effort read-only feedback, not automatic formatting, `ty`
+coverage, proof that a Codex host delivered `PostToolUse`, or a global
+plugin requirement. The existing project PreToolUse suppression/lockfile
+guard remains separate. Until host delivery is confirmed, run
+`make format` (mutating) and `make check` (validation) explicitly.
+
 ## Source, enabled and reported roles
 
 The source tree includes 12 original Claude roles. The native Codex generator emits 11 enabled roles and deliberately omits Fable/wingman. `.codex/compatibility-report.json` counts the **12 source roles**, including the disabled one: its `count` is not the enabled-install count. All 19 skills have Codex-specific generated equivalents. Run `python3 scripts/sync_codex_agents.py --check` and `python3 scripts/sync_codex_skills.py --check` for generation drift; these checks are not live host acceptance.
