@@ -81,7 +81,7 @@ def native_web_scout_tools(body: str) -> str:
         'never treat the capability labels below as literal tool names. If '
         'search or fetch is unavailable, return UNKNOWN-BLOCKED and specify '
         'which capability is missing. Do not use a shell or alternate agent '
-        'to bypass the original read-only public-documentation scope.\\n\\n'
+        'to bypass the original read-only public-documentation scope.\n\n'
     )
     return guidance + body
 
