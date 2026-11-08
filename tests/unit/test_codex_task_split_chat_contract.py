@@ -1,4 +1,4 @@
-'''Regression checks for native Codex task-split approval instructions.'''
+"""Regression checks for native Codex task-split approval instructions."""
 
 from pathlib import Path
 from runpy import run_path
