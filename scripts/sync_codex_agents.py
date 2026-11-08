@@ -72,7 +72,10 @@ ROLE_TRANSLATIONS = (
 
 def native_web_scout_tools(body: str) -> str:
     """Replace unsupported Claude web-tool names without inventing Codex APIs."""
-    if body.count('WebSearch') < EXPECTED_WEB_SEARCH_REFS or body.count('WebFetch') < EXPECTED_WEB_FETCH_REFS:
+    if (
+        body.count('WebSearch') < EXPECTED_WEB_SEARCH_REFS
+        or body.count('WebFetch') < EXPECTED_WEB_FETCH_REFS
+    ):
         msg = 'Missing expected upstream web-scout tool references'
         raise ValueError(msg)
     body = body.replace('WebSearch', 'host-provided web search')
