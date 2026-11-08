@@ -87,7 +87,6 @@ def generate(root: Path) -> dict[str, str]:
     return result
 
 
-
 def sync_open_ticket_companions(root: Path, *, check: bool) -> list[str]:
     """Keep generated skill companion links pointed at canonical Claude assets."""
     stale = []
