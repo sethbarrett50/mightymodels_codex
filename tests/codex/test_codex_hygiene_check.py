@@ -12,6 +12,7 @@ GIT_BINARY = which('git') or '/usr/bin/git'
 _checker = run_path(str(Path(__file__).resolve().parents[2] / 'scripts/codex_hygiene_check.py'))
 added_suppression_count = _checker['added_suppression_count']
 check = _checker['check']
+audit_file = _checker['audit_file']
 
 
 @pytest.mark.unit
@@ -101,3 +102,27 @@ def test_untracked_symlink_python_file_fails_closed(tmp_path: Path) -> None:
     repo = setup_repo(tmp_path)
     (repo / 'new_file.py').symlink_to(repo / 'missing.py')
     assert check('HEAD', repo) == 2
+
+
+@pytest.mark.unit
+def test_unreadable_existing_baseline_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = setup_repo(tmp_path)
+    (repo / 'file.py').write_text('x = 1  # noqa: F401\n')
+    original = audit_file.__globals__['git']
+
+    def broken_git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+        if args[0] == 'show':
+            return subprocess.CompletedProcess(args, 128, '', 'simulated read failure')
+        return original(root, *args)
+
+    monkeypatch.setitem(audit_file.__globals__, 'git', broken_git)
+    assert audit_file('HEAD', repo, Path('file.py')) == -1
+
+
+@pytest.mark.unit
+def test_missing_baseline_is_allowed_for_new_file(tmp_path: Path) -> None:
+    repo = setup_repo(tmp_path)
+    (repo / 'new_file.py').write_text('x = 1  # noqa: F401\n')
+    assert audit_file('HEAD', repo, Path('new_file.py')) == 1
