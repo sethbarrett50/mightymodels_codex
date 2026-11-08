@@ -24,7 +24,7 @@ MAX_TIMEOUT = 300
 PROBE_ERRORS = (OSError, subprocess.TimeoutExpired, ValueError)
 PROMPT = (
     'Read-only acceptance probe: inspect README.md and report its one-line purpose. '
-    'Do not edit any files, install packages, dispatch child agents, or use secrets.'
+    'Do not edit files, install packages, dispatch child agents, call MCP tools, or use secrets.'
 )
 VERSION = re.compile(r'\Acodex(?:-cli)? [0-9A-Za-z.+-]+\Z')
 LIMIT_HINT = re.compile(
@@ -120,7 +120,9 @@ def summarize_result(
     # A streamed violation invalidates this bounded smoke test. Missing native
     # events still cannot prove absence of actual dispatch or file writes.
     observed_violation = (
-        events.get('collaboration_calls', 0) > 0 or events.get('file_changes', 0) > 0
+        events.get('collaboration_calls', 0) > 0
+        or events.get('file_changes', 0) > 0
+        or events.get('mcp_calls', 0) > 0
     )
     data['observed_scope_violation'] = observed_violation
     data['status'] = (
