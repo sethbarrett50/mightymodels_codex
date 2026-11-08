@@ -18,9 +18,7 @@ def test_task_split_needs_explicit_chat_reply() -> None:
     assert 'End the turn until the user explicitly responds.' in output
     assert 'as the user explicitly approved' in output
     assert 'open one\\n`Codex user decision gate`' not in output
-    assert output == (ROOT / '.codex/skills/break-it-down/SKILL.md').read_text(
-        encoding='utf-8'
-    )
+    assert output == (ROOT / '.codex/skills/break-it-down/SKILL.md').read_text(encoding='utf-8')
 
 
 @pytest.mark.unit
