@@ -9,7 +9,7 @@ import re
 import sys
 from pathlib import PurePosixPath
 
-_SUPPRESSION = re.compile(r'#\s*(?:noqa\b|(?:type|ty)\s*:\s*ignore\b)', re.IGNORECASE)
+_SUPPRESSION = re.compile(r'#\s*(?:(?:ruff)\s*:\s*)?noqa\b|#\s*(?:type|ty)\s*:\s*ignore\b', re.IGNORECASE)
 _BAD_INPUT = (ValueError, UnicodeError)
 _PATCH_HEADERS = (
     '*** Update File: ',
@@ -41,6 +41,7 @@ def inspect(event: object) -> str | None:  # noqa: C901, PLR0911, PLR0912
     patch = arguments.get('command')
     if not isinstance(patch, str) or not patch.lstrip().startswith('*** Begin Patch'):
         return 'Edit patch unavailable for project review'
+    python_file = False
     for line in patch.splitlines():
         if line.startswith(_PATCH_HEADERS):
             path = line.split(': ', 1)[1].strip()
@@ -49,7 +50,13 @@ def inspect(event: object) -> str | None:  # noqa: C901, PLR0911, PLR0912
                 return 'Patch path outside the project scope'
             if parts.name == 'uv.lock':
                 return 'Direct uv.lock edits are blocked; use the dependency lock workflow'
-        if line.startswith('+') and not line.startswith('+++') and _SUPPRESSION.search(line[1:]):
+            python_file = parts.suffix in ('.py', '.pyi')
+        if (
+            python_file
+            and line.startswith('+')
+            and not line.startswith('+++')
+            and _SUPPRESSION.search(line[1:])
+        ):
             return 'New lint/type suppression requires independent human review'
     return None
 
