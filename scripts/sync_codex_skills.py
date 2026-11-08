@@ -103,10 +103,7 @@ def native_open_ticket_decisions(body: str) -> str:
         ),
         (
             'Ask once, through `Codex user decision gate`:',
-            (
-                'Ask once in ordinary chat, then end the turn until the user '
-                'explicitly chooses:'
-            ),
+            ('Ask once in ordinary chat, then end the turn until the user explicitly chooses:'),
         ),
     )
     for old, new in steps:
