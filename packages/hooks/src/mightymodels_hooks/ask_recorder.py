@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, TextIO
 import msgspec
 from mightymodels_core.edge import open_state
 from mightymodels_core.primitives import Slug
-from mightymodels_core.session_pointers import SqliteSessionPointerRepository
+from mightymodels_core.session_pointers import POINTER_RETENTION, SqliteSessionPointerRepository
 from mightymodels_core.tickets import SqliteTicketRepository
 from mightymodels_core.units_of_work import (
     InvestigationWork,
@@ -44,6 +44,13 @@ if TYPE_CHECKING:
     from mightymodels_hooks.payloads import PostToolUsePayload
 
 NOTES_KEY = 'notes'
+
+
+def current_pointer(pointer: SessionPointer | None, clock: Clock) -> SessionPointer | None:
+    """Do not route fresh answers through an unpruned, expired session pointer."""
+    if pointer is None or clock.now() - pointer.written_at > POINTER_RETENTION:
+        return None
+    return pointer
 
 
 class AskResponse(msgspec.Struct, frozen=True, kw_only=True):
@@ -118,7 +125,7 @@ class AskRecorderHandler:
             pointers = SqliteSessionPointerRepository(
                 unit=entry.unit, repository_id=entry.repository_id, clock=self.clock
             )
-            return pointers.lookup(session_id)
+            return current_pointer(pointers.lookup(session_id), self.clock)
 
     def record_ticket(self, state: OpenState, slug: Slug, recorder: DecisionRecorder) -> None:
         with write_entry(state.database, state.checkout.repository_key()) as entry:
