@@ -56,6 +56,26 @@ def audit_file(base: str, root: Path, relative: Path) -> int:
     return added_suppression_count(previous_source, current_source)
 
 
+def changed_python_paths(base: str, root: Path) -> set[bytes] | None:
+    """Return NUL-safe tracked/untracked paths, or fail closed on Git errors."""
+    commands = (
+        ('diff', '-z', '--name-only', '--diff-filter=ACMRT', base, '--'),
+        ('ls-files', '--others', '--exclude-standard', '-z'),
+    )
+    paths: set[bytes] = set()
+    for args in commands:
+        output = subprocess.run(  # noqa: S603
+            [GIT_BINARY, '-C', str(root), *args],
+            capture_output=True,
+            check=False,
+        )
+        if output.returncode:
+            print('Could not enumerate changed files; no complete hygiene check performed.')
+            return None
+        paths.update(filter(None, output.stdout.split(b'\0')))
+    return paths
+
+
 def check(base: str, root: Path) -> int:
     verified = git(root, 'rev-parse', '--verify', '--end-of-options', f'{base}^{{commit}}')
     if verified.returncode:
@@ -64,27 +84,12 @@ def check(base: str, root: Path) -> int:
     if GIT_BINARY is None:
         print('Git is unavailable; no hygiene check performed.')
         return 2
-    changed = subprocess.run(  # noqa: S603
-        [
-            GIT_BINARY,
-            '-C',
-            str(root),
-            'diff',
-            '-z',
-            '--name-only',
-            '--diff-filter=ACMRT',
-            base,
-            '--',
-        ],
-        capture_output=True,
-        check=False,
-    )
-    if changed.returncode:
-        print('Could not enumerate tracked changes; no hygiene check performed.')
+    paths = changed_python_paths(base, root)
+    if paths is None:
         return 2
 
     found = False
-    for raw in filter(None, changed.stdout.split(b'\0')):
+    for raw in sorted(paths):
         relative = Path(raw.decode('utf-8', errors='surrogateescape'))
         count = audit_file(base, root, relative)
         if count < 0:
@@ -95,7 +100,7 @@ def check(base: str, root: Path) -> int:
     if found:
         print('No automatic approval: review new suppressions before proceeding.')
         return 1
-    print('No newly introduced Python lint/type suppressions found in tracked changes.')
+    print('No newly introduced Python lint/type suppressions found in tracked or untracked files.')
     return 0
 
 

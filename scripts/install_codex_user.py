@@ -203,6 +203,8 @@ def discard_legacy_spawn_groups(groups: list, wanted: list, *, event: str) -> No
     for old in legacy:
         if old in groups:
             groups.remove(old)
+
+
 def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:  # noqa: PLR0913
     """Apply exact owned groups while migrating old dispatch matchers safely."""
     before = list(groups)
