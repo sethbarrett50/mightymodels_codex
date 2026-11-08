@@ -54,12 +54,8 @@ def inspect(event: object) -> str | None:  # noqa: C901, PLR0911, PLR0912
             if parts.name == 'uv.lock':
                 return 'Direct uv.lock edits are blocked; use the dependency lock workflow'
             python_file = parts.suffix in ('.py', '.pyi')
-        if (
-            python_file
-            and line.startswith('+')
-            and not line.startswith('+++')
-            and _SUPPRESSION.search(line[1:])
-        ):
+        added_line = line.startswith('+') and not line.startswith('+++')
+        if python_file and added_line and _SUPPRESSION.search(line[1:]):
             return 'New lint/type suppression requires independent human review'
     return None
 
