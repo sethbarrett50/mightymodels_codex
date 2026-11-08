@@ -16,11 +16,22 @@ check_agents = DOCTOR['check_agents']
 @pytest.mark.unit
 @pytest.mark.parametrize('malformed', ['invalid', [], False, 123, None])
 def test_doctor_rejects_malformed_individual_role_entry(tmp_path: Path, malformed: object) -> None:
+    status = check_agents({'agents': {'mm-workers-engineer': malformed}}, tmp_path, ROOT)
+    assert status.startswith('[FAIL]')
+    assert '0/11' in status
+
+
+@pytest.mark.unit
+def test_doctor_detects_duplicate_global_agent_file(tmp_path: Path) -> None:
     source = ROOT / '.codex/agents/mm-workers-engineer.toml'
     installed = tmp_path / '.codex/agents/mm-workers-engineer.toml'
     installed.parent.mkdir(parents=True)
     installed.symlink_to(source)
-    status = check_agents({'agents': {'mm-workers-engineer': malformed}}, tmp_path, ROOT)
+    status = check_agents(
+        {'agents': {'mm-workers-engineer': {'config_file': str(source)}}},
+        tmp_path,
+        ROOT,
+    )
     assert status.startswith('[FAIL]')
     assert '0/11' in status
 
@@ -28,9 +39,6 @@ def test_doctor_rejects_malformed_individual_role_entry(tmp_path: Path, malforme
 @pytest.mark.unit
 def test_doctor_recognizes_valid_role_without_exposing_config_values(tmp_path: Path) -> None:
     source = ROOT / '.codex/agents/mm-workers-engineer.toml'
-    installed = tmp_path / '.codex/agents/mm-workers-engineer.toml'
-    installed.parent.mkdir(parents=True)
-    installed.symlink_to(source)
     status = check_agents(
         {'agents': {'mm-workers-engineer': {'config_file': str(source)}}},
         tmp_path,

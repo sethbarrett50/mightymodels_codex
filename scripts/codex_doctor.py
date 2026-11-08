@@ -49,8 +49,8 @@ def check_agents(config: dict, home: Path, root: Path) -> str:
     codex = home / '.codex'
     valid = sum(
         bool(
-            (codex / 'agents' / f'{name}.toml').is_symlink()
-            and (codex / 'agents' / f'{name}.toml').resolve(strict=False) == source.resolve()
+            not (codex / 'agents' / f'{name}.toml').exists()
+            and not (codex / 'agents' / f'{name}.toml').is_symlink()
             and isinstance(agents.get(name), dict)
             and agents[name].get('config_file') == str(source)
         )
