@@ -75,6 +75,11 @@ def _count_completed_item(item: object, counts: Counter[str]) -> None:
         counts['mcp_calls_completed'] += 1
         if item.get('status') == 'failed':
             counts['mcp_calls_failed'] += 1
+    elif item_type == 'error':
+        # Codex can stream an error as a completed item instead of a top-level
+        # error event. Count the terminal item once, never copy its message.
+        counts['errors'] += 1
+        counts['error_items'] += 1
 
 
 def _count_collaboration_item(item: object, counts: Counter[str]) -> None:

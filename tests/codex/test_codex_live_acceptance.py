@@ -135,3 +135,22 @@ def test_completed_turn_with_streamed_error_is_not_clean_acceptance(problem: str
     assert report['fixture_unchanged'] is True
     assert report['failure_category'] == 'unclassified'
     assert 'SECRET_' not in str(report)
+
+
+@pytest.mark.unit
+def test_completed_turn_with_nested_error_item_is_unverified() -> None:
+    completed = subprocess.CompletedProcess(
+        args=[],
+        returncode=0,
+        stdout=(
+            '{"type":"item.completed","item":{"type":"error","message":"SECRET_ERROR"}}\n'
+            '{"type":"turn.completed","usage":{"input_tokens":7}}\n'
+        ),
+        stderr='',
+    )
+    report = SCRIPT.summarize_result(completed, version='codex-cli 0.167.0', fixture_unchanged=True)
+    assert report['status'] == 'read_only_smoke_unverified'
+    assert report['events']['errors'] == 1
+    assert report['events']['error_items'] == 1
+    assert report['failure_category'] == 'unclassified'
+    assert 'SECRET_ERROR' not in str(report)

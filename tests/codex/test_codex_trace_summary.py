@@ -138,3 +138,17 @@ def test_oversize_utf8_line_is_dropped_without_parsing() -> None:
     assert report['events']['malformed_events'] == 1
     assert report['usage']['input_tokens'] == 0
     assert '界' not in json.dumps(report)
+
+
+@pytest.mark.unit
+def test_completed_error_item_is_counted_without_leaking_payload() -> None:
+    events = [
+        {'type': 'item.started', 'item': {'type': 'error', 'message': 'PRIVATE_A'}},
+        {'type': 'item.completed', 'item': {'type': 'error', 'message': 'PRIVATE_B'}},
+        {'type': 'turn.completed', 'usage': {'input_tokens': 3}},
+    ]
+    report = METRICS.summarize(io.StringIO(''.join(json.dumps(e) + '\n' for e in events)))
+    assert report['events']['errors'] == 1
+    assert report['events']['error_items'] == 1
+    assert report['events']['turn_completed'] == 1
+    assert 'PRIVATE_' not in json.dumps(report)
