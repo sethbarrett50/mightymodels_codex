@@ -79,14 +79,18 @@ def test_successful_checks_do_not_emit_fake_diagnostics(tmp_path: Path) -> None:
     binary = tmp_path / '.venv/bin/ruff'
     binary.parent.mkdir(parents=True)
     binary.touch()
+    (binary.parent / 'ty').touch()
     outcome = subprocess.CompletedProcess(args=['ruff'], returncode=0, stdout='', stderr='')
     with patch.object(subprocess, 'run', return_value=outcome) as execute:
         assert feedback(edit_event(tmp_path, patch_for('demo.py')), tmp_path) is None
-    assert execute.call_count == 2
+    assert execute.call_count == 3
     assert all(call.kwargs['cwd'] == tmp_path for call in execute.call_args_list)
     assert all(call.kwargs['timeout'] == 8 for call in execute.call_args_list)
     assert all(
-        '--no-fix' in call.args[0] or '--check' in call.args[0] for call in execute.call_args_list
+        '--no-fix' in call.args[0]
+        or '--check' in call.args[0]
+        or ('ty' in call.args[0][0] and 'check' in call.args[0])
+        for call in execute.call_args_list
     )
 
 
@@ -120,3 +124,42 @@ def test_failed_check_hides_tool_output_and_recommends_manual_check(tmp_path: Pa
 def test_untrusted_patch_structures_are_skipped(tmp_path: Path, patch_text: str) -> None:
     (tmp_path / 'demo.py').write_text('value = 1')
     assert python_paths(edit_event(tmp_path, patch_text), tmp_path) == ()
+
+
+@pytest.mark.unit
+def test_ty_failure_redacts_output_and_does_not_change_files(tmp_path: Path) -> None:
+    source = tmp_path / 'demo.py'
+    source.write_text('value = 1')
+    original = source.read_bytes()
+    binary = tmp_path / '.venv/bin/ty'
+    binary.parent.mkdir(parents=True)
+    binary.touch()
+    outcome = subprocess.CompletedProcess(
+        args=['ty'], returncode=1, stdout='PRIVATE SOURCE', stderr='SECRET TOKEN'
+    )
+    with patch.object(subprocess, 'run', return_value=outcome) as execute:
+        report = feedback(edit_event(tmp_path, patch_for('demo.py')), tmp_path)
+    assert report is not None
+    message = report['hookSpecificOutput']['additionalContext']
+    assert 'Ruff not run' in message
+    assert 'type check did not pass' in message
+    assert 'PRIVATE' not in message
+    assert 'SECRET' not in message
+    assert source.read_bytes() == original
+    assert execute.call_count == 1
+    args = execute.call_args.args[0]
+    assert args == [str(binary), 'check', str(source)]
+    assert execute.call_args.kwargs['cwd'] == tmp_path
+    assert execute.call_args.kwargs['timeout'] == 8
+
+
+@pytest.mark.unit
+def test_ty_runtime_timeout_reports_unavailable(tmp_path: Path) -> None:
+    (tmp_path / 'demo.py').write_text('value = 1')
+    binary = tmp_path / '.venv/bin/ty'
+    binary.parent.mkdir(parents=True)
+    binary.touch()
+    with patch.object(subprocess, 'run', side_effect=subprocess.TimeoutExpired('ty', 8)):
+        report = feedback(edit_event(tmp_path, patch_for('demo.py')), tmp_path)
+    assert report is not None
+    assert 'type check unavailable' in report['hookSpecificOutput']['additionalContext']
