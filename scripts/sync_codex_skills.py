@@ -204,20 +204,25 @@ def native_review_routing(front: str, body: str) -> tuple[str, str]:
     )
     body_changes = (
         (
-            'quick is one persona on sonnet, standard and deep run their '
-            'reviewers on opus.',
-            'quick runs one persona, while standard and deep change review '
-            'coverage; all native Codex reviewers use their registered Sol '
-            'model settings (Claude aliases in profiles.md are not Codex pins).',
+            ('quick is one persona on sonnet, standard and deep run their reviewers on opus.'),
+            (
+                'quick runs one persona, while standard and deep change review '
+                'coverage; all native Codex reviewers use their registered Sol '
+                'model settings (Claude aliases in profiles.md are not Codex pins).'
+            ),
         ),
         (
-            'Each persona preloads its doctrine as a skill of its own\n'
-            '(`becoming-merge-vader`, `becoming-uncle-bob`) and is passed '
-            'no doctrine path.',
-            'Each persona must explicitly read its installed doctrine skill\n'
-            '(`becoming-merge-vader` or `becoming-uncle-bob`) through '
-            '`$HOME/.agents/skills/` before reviewing; native Codex dispatch '
-            'does not guarantee automatic preloads.',
+            (
+                'Each persona preloads its doctrine as a skill of its own\n'
+                '(`becoming-merge-vader`, `becoming-uncle-bob`) and is passed '
+                'no doctrine path.'
+            ),
+            (
+                'Each persona must explicitly read its installed doctrine skill\n'
+                '(`becoming-merge-vader` or `becoming-uncle-bob`) through '
+                '`$HOME/.agents/skills/` before reviewing; native Codex dispatch '
+                'does not guarantee automatic preloads.'
+            ),
         ),
     )
     if front.count(front_old) != 1:
@@ -230,6 +235,7 @@ def native_review_routing(front: str, body: str) -> tuple[str, str]:
             raise ValueError(msg)
         body = body.replace(old, new)
     return front, body
+
 
 def native_review_circus_decisions(body: str) -> str:
     """Translate unsupported reviewer overrides and user dialogs for Codex."""
