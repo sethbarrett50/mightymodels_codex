@@ -1,5 +1,8 @@
 """Summarize Codex exec JSONL into nonsecret counts without retaining transcripts.
 
+Collaboration metrics count only streamed calls; omitted native spawn events
+cannot be reconstructed or treated as evidence that no agent was dispatched.
+
 Usage: codex exec --json --sandbox read-only "..." |
        python3 scripts/codex_trace_summary.py
 """
