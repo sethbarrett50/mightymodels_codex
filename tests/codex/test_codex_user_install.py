@@ -485,6 +485,25 @@ def test_safe_write_does_not_delete_racing_foreign_temp(
     assert temporary.read_bytes() == b'foreign content'
 
 
+def relocated_commands(manifest: dict, old_root: Path) -> None:
+    """Simulate a previous installation referencing a moved checkout."""
+    for groups in manifest['hooks'].values():
+        for group in groups:
+            for hook in group['hooks']:
+                hook['command'] = hook['command'].replace(str(ROOT), str(old_root))
+
+
+def bridge_commands(manifest: dict) -> list[str]:
+    """Collect only MightyModels launchers for upgrade assertions."""
+    return [
+        hook['command']
+        for groups in manifest['hooks'].values()
+        for group in groups
+        for hook in group['hooks']
+        if 'codex_bridge.py' in hook['command']
+    ]
+
+
 @pytest.mark.unit
 def test_reinstall_repairs_dangling_links_and_bridge_hooks_after_checkout_move(
     tmp_path: Path,
@@ -502,10 +521,7 @@ def test_reinstall_repairs_dangling_links_and_bridge_hooks_after_checkout_move(
 
     hooks_path = tmp_path / '.codex/hooks.json'
     hooks = json.loads(hooks_path.read_text())
-    for groups in hooks['hooks'].values():
-        for group in groups:
-            for hook in group['hooks']:
-                hook['command'] = hook['command'].replace(str(ROOT), str(old_root))
+    relocated_commands(hooks, old_root)
     foreign = {'matcher': '^Bash$', 'hooks': [{'type': 'command', 'command': 'true'}]}
     hooks['hooks']['PreToolUse'].append(foreign)
     hooks_path.write_text(json.dumps(hooks, indent=2) + '\n')
@@ -516,11 +532,9 @@ def test_reinstall_repairs_dangling_links_and_bridge_hooks_after_checkout_move(
     assert skill.resolve() == (ROOT / '.codex/skills/open-ticket').resolve()
     installed = json.loads(hooks_path.read_text())
     assert foreign in installed['hooks']['PreToolUse']
-    for groups in installed['hooks'].values():
-        for group in groups:
-            for hook in group['hooks']:
-                if 'codex_bridge.py' in hook['command']:
-                    assert str(ROOT / 'hooks/codex_bridge.py') in hook['command']
+    commands = bridge_commands(installed)
+    assert commands
+    assert all(str(ROOT / 'hooks/codex_bridge.py') in command for command in commands)
 
 
 @pytest.mark.unit
