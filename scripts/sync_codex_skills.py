@@ -211,10 +211,10 @@ def native_review_routing(front: str, body: str) -> tuple[str, str]:
             'model settings (Claude aliases in profiles.md are not Codex pins).',
         ),
         (
-            'Each persona preloads its doctrine as a skill of its own\\n'
+            'Each persona preloads its doctrine as a skill of its own\n'
             '(`becoming-merge-vader`, `becoming-uncle-bob`) and is passed '
             'no doctrine path.',
-            'Each persona must explicitly read its installed doctrine skill\\n'
+            'Each persona must explicitly read its installed doctrine skill\n'
             '(`becoming-merge-vader` or `becoming-uncle-bob`) through '
             '`$HOME/.agents/skills/` before reviewing; native Codex dispatch '
             'does not guarantee automatic preloads.',
