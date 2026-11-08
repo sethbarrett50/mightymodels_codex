@@ -232,8 +232,9 @@ def is_relocated_bridge_group(observed: object, desired: dict) -> bool:
     """Recognize exact owned hook metadata with only the checkout path changed."""
     if not isinstance(observed, dict):
         return False
-    without_hooks = lambda item: {k: v for k, v in item.items() if k != 'hooks'}  # noqa: E731
-    if without_hooks(observed) != without_hooks(desired):
+    if {k: v for k, v in observed.items() if k != 'hooks'} != {
+        k: v for k, v in desired.items() if k != 'hooks'
+    }:
         return False
     older = observed.get('hooks')
     current = desired.get('hooks')
@@ -244,9 +245,9 @@ def is_relocated_bridge_group(observed: object, desired: dict) -> bool:
     for old_hook, new_hook in zip(older, current, strict=True):
         if not isinstance(old_hook, dict) or not isinstance(new_hook, dict):
             return False
-        if without_hooks({k: v for k, v in old_hook.items() if k != 'command'}) != without_hooks(
-            {k: v for k, v in new_hook.items() if k != 'command'}
-        ):
+        if {k: v for k, v in old_hook.items() if k != 'command'} != {
+            k: v for k, v in new_hook.items() if k != 'command'
+        }:
             return False
         try:
             old_words = shlex.split(old_hook.get('command', ''))
