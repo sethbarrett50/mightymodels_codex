@@ -454,3 +454,25 @@ def test_safe_write_cleans_temp_after_failed_replace(
         safe_write(destination, 'new content\n')
     assert destination.read_text() == 'original\n'
     assert not (tmp_path / 'config.toml.mightymodels-tmp').exists()
+
+
+@pytest.mark.unit
+def test_safe_write_does_not_delete_racing_foreign_temp(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    safe_write = run_path(str(INSTALLER))['safe_write']
+    destination = tmp_path / 'config.toml'
+    destination.write_text('original\n')
+    temporary = tmp_path / 'config.toml.mightymodels-tmp'
+    original_open = Path.open
+
+    def raced_open(self: Path, *args: object, **kwargs: object):
+        if self == temporary and args and args[0] == 'x':
+            temporary.write_bytes(b'foreign content')
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'open', raced_open)
+    with pytest.raises(FileExistsError):
+        safe_write(destination, 'new content\n')
+    assert destination.read_text() == 'original\n'
+    assert temporary.read_bytes() == b'foreign content'
