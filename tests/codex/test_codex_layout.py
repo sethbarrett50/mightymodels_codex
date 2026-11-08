@@ -103,17 +103,6 @@ def test_hook_configurations_parse() -> None:
     assert 'codex_post_edit_check.py' in post_edit['hooks'][0]['command']
     assert 'spawn_agent' not in json.dumps(local_hooks)
 
-@pytest.mark.unit
-def test_shell_launcher_syntax() -> None:
-    subprocess.run(  # noqa: S603
-        [shutil.which('sh') or '/bin/sh', '-n', 'bin/mightymodels-mcp-codex'],
-        check=True,
-        cwd=ROOT,
-    )
-
-    assert 'codex_post_edit_check.py' in post_edit['hooks'][0]['command']
-    assert 'spawn_agent' not in json.dumps(local_hooks)
-
 
 @pytest.mark.unit
 def test_shell_launcher_syntax() -> None:
