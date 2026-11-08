@@ -32,6 +32,15 @@ def deny(reason: str) -> dict:
     }
 
 
+def _outside_checkout(path: str, checkout: Path) -> bool:
+    """Reject parent traversal and paths escaping this checkout via symlinks."""
+    parts = PurePosixPath(path)
+    if '..' in parts.parts:
+        return True
+    candidate = Path(path) if parts.is_absolute() else checkout / path
+    return not candidate.resolve(strict=False).is_relative_to(checkout)
+
+
 def inspect(event: object, root: Path | None = None) -> str | None:  # noqa: C901, PLR0911, PLR0912
     """Return a sanitized reason only when an edit should not proceed."""
     if not isinstance(event, dict) or event.get('hook_event_name') != 'PreToolUse':
@@ -58,12 +67,7 @@ def inspect(event: object, root: Path | None = None) -> str | None:  # noqa: C90
             if not path:
                 return 'Edit patch has an empty file path'
             parts = PurePosixPath(path)
-            if '..' in parts.parts:
-                return 'Patch path outside the project scope'
-            if parts.is_absolute():
-                if not Path(path).resolve(strict=False).is_relative_to(checkout):
-                    return 'Patch path outside the project scope'
-            elif not (checkout / path).resolve(strict=False).is_relative_to(checkout):
+            if _outside_checkout(path, checkout):
                 return 'Patch path outside the project scope'
             if parts.name == 'uv.lock':
                 return 'Direct uv.lock edits are blocked; use the dependency lock workflow'
