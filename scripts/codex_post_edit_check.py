@@ -104,25 +104,46 @@ def _ruff_failures(binary: Path, files: tuple[Path, ...], root: Path) -> list[st
     return failed
 
 
+
+def _ty_failures(binary: Path, files: tuple[Path, ...], root: Path) -> list[str]:
+    """Run the checkout's installed ty binary without modifying files."""
+    try:
+        result = subprocess.run(  # noqa: S603
+            [str(binary), 'check', *(str(path) for path in files)],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=CHECK_TIMEOUT,
+            check=False,
+        )
+    except ERRORS:
+        return ['type check unavailable']
+    return ['type check did not pass'] if result.returncode else []
+
+
 def feedback(event: object, root: Path) -> dict | None:
     """Report only checker outcomes; never expose source, paths or stderr."""
     files = python_paths(event, root)
     if not files:
         return None
-    binary = root / '.venv/bin/ruff'
-    if not binary.is_file():
-        message = (
-            'MightyModels post-edit Ruff check not run (local Ruff unavailable); run make check.'
-        )
+    ruff = root / '.venv/bin/ruff'
+    ty = root / '.venv/bin/ty'
+    failed: list[str] = []
+    if ruff.is_file():
+        failed.extend(_ruff_failures(ruff, files, root))
     else:
-        failed = _ruff_failures(binary, files, root)
-        if not failed:
-            return None
-        message = (
-            'MightyModels post-edit checks: '
-            + ', '.join(failed)
-            + '; run make check to inspect and correct issues.'
-        )
+        failed.append('Ruff not run (local Ruff unavailable)')
+    if ty.is_file():
+        failed.extend(_ty_failures(ty, files, root))
+    else:
+        failed.append('ty not run (local ty unavailable)')
+    if not failed:
+        return None
+    message = (
+        'MightyModels post-edit checks: '
+        + ', '.join(failed)
+        + '; run make check to inspect and correct issues.'
+    )
     return {
         'hookSpecificOutput': {
             'hookEventName': 'PostToolUse',
