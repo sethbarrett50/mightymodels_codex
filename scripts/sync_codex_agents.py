@@ -94,12 +94,72 @@ def native_web_scout_tools(body: str) -> str:
 def native_terry_toolchain(body: str) -> str:
     """Translate read-only environment survey to actual Codex host discovery."""
     segments = (
-        ("Three limits of a sandboxed session", "</context>", "Codex host configuration is only declared evidence; never claim MCP connections, hook delivery, permission enforcement, or automatic skill loading without observing them. A git commit may execute repository hooks; inspect their declarations without running them.\n"),
-        ("2. Survey the harness", "3. Survey", "2. Inspect the tools actually exposed by the Codex host. If installed and permitted, run `codex mcp list` once. Read `$HOME/.codex/config.toml`, project `.codex/config.toml`, and `.codex/hooks.json` to identify declared servers and hooks. Treat declarations as different from connected or triggered facilities. Record unavailable CLI, MCP connections, or hook evidence under Not seen.\n"),
-        ("3. Survey the installed skills", "4. Survey", "3. Inspect `$HOME/.agents/skills/`, `$HOME/.codex/config.toml`, and native `.codex/agents/` role files. Read relevant SKILL.md files explicitly instead of assuming preloaded skill descriptions or doctrine. Report whether files exist separately from whether the host registered their roles.\n"),
-        ("5. Survey the sandbox", "6. Compose", "5. Inspect native `approval_policy`, `sandbox_mode`, hook settings and actual denials read-only. Never treat a writable-directory probe or configuration entry as proof that hooks fired or permissions were enforced. Record missing host evidence under Not seen.\n"),
-        ("- Run only these through `exec_command`:", "- You hold no", "- Run only allowed read-only commands: `codex mcp list`, `codex --version` (at most once each if available), `git config --get`, `git rev-parse`, `git ls-files`, `ls`, `test`, and `rg`. Do not run any hook, commit, test suite, build, or formatter. Unsupported inspection belongs under Not seen.\n"),
-        ("- The `head` line carries", "- When the survey would", "- The `head` line carries `git rev-parse --short HEAD` and observed `codex --version`, or records that the version was Not seen.\n"),
+        (
+            "Three limits of a sandboxed session"
+            "</context>",
+            (
+                "Codex host configuration is only declared evidence; never claim "
+                "MCP connections, hook delivery, permission enforcement, or "
+                "automatic skill loading without observing them. A git commit may "
+                "execute repository hooks; inspect their declarations without "
+                "running them.\n"
+            ),
+        ),
+        (
+            "2. Survey the harness"
+            "3. Survey",
+            (
+                "2. Inspect the tools actually exposed by the Codex host. If "
+                "installed and permitted, run `codex mcp list` once. Read "
+                "`$HOME/.codex/config.toml`, project `.codex/config.toml`, and "
+                "`.codex/hooks.json` to identify declared servers and hooks. "
+                "Treat declarations as different from connected or triggered "
+                "facilities. Record unavailable CLI, MCP connections, or hook "
+                "evidence under Not seen.\n"
+            ),
+        ),
+        (
+            "3. Survey the installed skills"
+            "4. Survey",
+            (
+                "3. Inspect `$HOME/.agents/skills/`, `$HOME/.codex/config.toml`, "
+                "and native `.codex/agents/` role files. Read relevant SKILL.md "
+                "files explicitly instead of assuming preloaded skill "
+                "descriptions or doctrine. Report whether files exist separately "
+                "from whether the host registered their roles.\n"
+            ),
+        ),
+        (
+            "5. Survey the sandbox"
+            "6. Compose",
+            (
+                "5. Inspect native `approval_policy`, `sandbox_mode`, hook "
+                "settings and actual denials read-only. Never treat a "
+                "writable-directory probe or configuration entry as proof that "
+                "hooks fired or permissions were enforced. Record missing host "
+                "evidence under Not seen.\n"
+            ),
+        ),
+        (
+            "- Run only these through `exec_command`:"
+            "- You hold no",
+            (
+                "- Run only allowed read-only commands: `codex mcp list`, `codex "
+                "--version` (at most once each if available), `git config --get`, "
+                "`git rev-parse`, `git ls-files`, `ls`, `test`, and `rg`. Do not "
+                "run any hook, commit, test suite, build, or formatter. "
+                "Unsupported inspection belongs under Not seen.\n"
+            ),
+        ),
+        (
+            "- The `head` line carries"
+            "- When the survey would",
+            (
+                "- The `head` line carries `git rev-parse --short HEAD` and "
+                "observed `codex --version`, or records that the version was Not "
+                "seen.\n"
+            ),
+        ),
     )
     for beginning, ending, native in segments:
         start = body.find(beginning)
