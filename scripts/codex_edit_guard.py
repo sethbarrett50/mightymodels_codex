@@ -44,20 +44,29 @@ def inspect(event: object) -> str | None:  # noqa: C901, PLR0911, PLR0912
     patch = arguments.get('command')
     if not isinstance(patch, str) or not patch.lstrip().startswith('*** Begin Patch'):
         return 'Edit patch unavailable for project review'
+    lines = patch.splitlines()
+    if not lines or lines[0] != '*** Begin Patch' or lines[-1] != '*** End Patch':
+        return 'Malformed project patch boundaries'
     python_file = False
-    for line in patch.splitlines():
+    file_header_seen = False
+    for line in lines[1:-1]:
         if line.startswith(_PATCH_HEADERS):
             path = line.split(': ', 1)[1].strip()
+            if not path:
+                return 'Edit patch has an empty file path'
             parts = PurePosixPath(path)
             if parts.is_absolute() or '..' in parts.parts:
                 return 'Patch path outside the project scope'
             if parts.name == 'uv.lock':
                 return 'Direct uv.lock edits are blocked; use the dependency lock workflow'
+            file_header_seen = True
             python_file = parts.suffix in ('.py', '.pyi')
         added_line = line.startswith('+') and not line.startswith('+++')
+        if added_line and not file_header_seen:
+            return 'Edit patch has changes without a file header'
         if python_file and added_line and _SUPPRESSION.search(line[1:]):
             return 'New lint/type suppression requires independent human review'
-    return None
+    return None if file_header_seen else 'Edit patch has no recognized file header'
 
 
 def main() -> int:
