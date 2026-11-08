@@ -28,8 +28,6 @@ PROMPT = (
 VERSION = re.compile(r'\Acodex(?:-cli)? [0-9A-Za-z.+-]+\Z')
 
 
-
-
 def file_digest(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open('rb') as stream:
