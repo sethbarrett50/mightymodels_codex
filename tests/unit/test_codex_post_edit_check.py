@@ -87,7 +87,8 @@ def test_successful_checks_do_not_emit_fake_diagnostics(tmp_path: Path) -> None:
     assert all(call.kwargs['cwd'] == tmp_path for call in execute.call_args_list)
     assert all(call.kwargs['timeout'] == 8 for call in execute.call_args_list)
     assert all(
-        '--no-fix' in call.args[0] or '--check' in call.args[0]
+        '--no-fix' in call.args[0]
+        or '--check' in call.args[0]
         or ('ty' in call.args[0][0] and 'check' in call.args[0])
         for call in execute.call_args_list
     )
