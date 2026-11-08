@@ -121,8 +121,10 @@ def check_project_mcp_overlap(config_path: Path) -> list[str]:
     servers = config.get('mcp_servers')
     if isinstance(servers, dict) and 'mighty_mcp' in servers:
         return [
-            '[WARN] Active project and global scopes both declare mighty_mcp; '
-            'trust, precedence and duplicate startup unverified'
+            (
+                '[WARN] Active project and global scopes both declare mighty_mcp; '
+                'trust, precedence and duplicate startup unverified'
+            )
         ]
     return []
 
@@ -142,8 +144,10 @@ def check_project_hook_overlap(hook_path: Path) -> list[str]:
         return ['[WARN] Active project Codex hook manifest malformed']
     if groups:
         return [
-            '[WARN] Active project and global Codex hooks coexist; '
-            'event precedence, trust and duplicate delivery unverified'
+            (
+                '[WARN] Active project and global Codex hooks coexist; '
+                'event precedence, trust and duplicate delivery unverified'
+            )
         ]
     return []
 
