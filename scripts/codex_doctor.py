@@ -190,6 +190,10 @@ def diagnose(home: Path, root: Path, cwd: Path) -> tuple[list[str], bool]:
     warning = check_project_overlap(root, cwd)
     if warning is not None:
         reports.append(warning)
+    if cwd.is_relative_to(root):
+        # Our own checkout intentionally installs project hooks as well as
+        # global lifecycle hooks; report coexistence without claiming delivery.
+        reports.extend(check_project_hook_overlap(root / '.codex/hooks.json'))
     reports.extend(check_other_repo_overlap(root, cwd))
     reports.append('[WARN] Live hook delivery, scout isolation and model identity unverified')
     return reports, all(not item.startswith('[FAIL]') for item in reports)
