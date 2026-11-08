@@ -18,6 +18,14 @@ LEGACY_ADAPTER = re.compile(
 MCP_PREFIX = 'mcp__plugin_mightymodels_mighty-mcp__'
 CODEX_PREFIX = 'mcp__mighty_mcp__'
 EXPECTED_SKILLS = 19
+# Companion files required by open-ticket's generated commands and references.
+# Preserve source files as authoritative; drift checks compare generated copies.
+OPEN_TICKET_COMPANIONS = (
+    'assets/tracker-body.md',
+    'references/ticket-schema.md',
+    'references/mightymodels-dir.md',
+    'scripts/humanize_tracker_body.py',
+)
 BANNER = (
     '> **Native Codex workflow (generated):** This file is generated from the '
     'Claude skill; do not edit it directly. MCP calls must use actual '
@@ -84,6 +92,12 @@ def generate(root: Path) -> dict[str, str]:
         name = source.parent.name
         key = f'.codex/skills/{name}/SKILL.md'
         result[key] = translated(source)
+    for relative in OPEN_TICKET_COMPANIONS:
+        original = root / 'skills/open-ticket' / relative
+        if not original.is_file() or original.is_symlink():
+            msg = f'Missing or unsafe source companion: {original}'
+            raise ValueError(msg)
+        result[f'.codex/skills/open-ticket/{relative}'] = original.read_text(encoding='utf-8')
     return result
 
 
