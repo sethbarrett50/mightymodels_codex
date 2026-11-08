@@ -22,7 +22,12 @@ ROLES = {
     }.items()
     for name in names
 }
-SPAWN_TOOL_NAMES = frozenset(('spawn_agent', 'Agent', 'collaborationspawn_agent', 'collaboration.spawn_agent'))
+SPAWN_TOOL_NAMES = frozenset((
+    'spawn_agent',
+    'Agent',
+    'collaborationspawn_agent',
+    'collaboration.spawn_agent',
+))
 HOOK_TIMEOUT = 8
 HOOK_ERRORS = (OSError, subprocess.TimeoutExpired, ValueError)
 INPUT_ERRORS = (ValueError, UnicodeError)
