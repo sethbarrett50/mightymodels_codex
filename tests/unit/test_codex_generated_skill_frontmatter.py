@@ -25,9 +25,7 @@ def test_baton_pass_summary_requires_real_chat_answers() -> None:
 @pytest.mark.unit
 def test_review_summary_keeps_native_model_pins_fixed() -> None:
     generated = translated(ROOT / 'skills/review-circus/SKILL.md')
-    assert generated == (ROOT / '.codex/skills/review-circus/SKILL.md').read_text(
-        encoding='utf-8'
-    )
+    assert generated == (ROOT / '.codex/skills/review-circus/SKILL.md').read_text(encoding='utf-8')
     front = generated.split('---', 2)[1]
     assert 'review depth (quick, standard, deep), persona' in front
     assert 'scope without changing native reviewer model pins' in front
