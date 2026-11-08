@@ -22,6 +22,7 @@ ROLES = {
     }.items()
     for name in names
 }
+SPAWN_TOOL_NAMES = frozenset(('spawn_agent', 'Agent', 'collaborationspawn_agent', 'collaboration.spawn_agent'))
 HOOK_TIMEOUT = 8
 HOOK_ERRORS = (OSError, subprocess.TimeoutExpired, ValueError)
 INPUT_ERRORS = (ValueError, UnicodeError)
@@ -49,7 +50,7 @@ def translate(event: object) -> tuple[dict | None, str | None]:  # noqa: C901, P
     """
     if not isinstance(event, dict) or event.get('hook_event_name') != 'PreToolUse':
         return None, 'Unexpected or malformed Codex PreToolUse event'
-    if event.get('tool_name') not in ('spawn_agent', 'Agent'):
+    if event.get('tool_name') not in SPAWN_TOOL_NAMES:
         return None, 'Unexpected hook tool name for agent dispatch'
     raw = event.get('tool_input')
     if not isinstance(raw, dict):
@@ -337,7 +338,7 @@ def audit_probe(event: object, environ: dict[str, str]) -> None:
         return
     if event.get('hook_event_name') != 'PreToolUse':
         return
-    if event.get('tool_name') not in ('Agent', 'spawn_agent'):
+    if event.get('tool_name') not in SPAWN_TOOL_NAMES:
         return
     home = Path(environ.get('HOME') or str(Path.home()))
     log = home / '.local/state/mightymodels/codex-dispatch-probe.log'
@@ -353,7 +354,7 @@ def audit_probe_decision(event: object, environ: dict[str, str], result: object)
         return
     if not isinstance(event, dict) or event.get('hook_event_name') != 'PreToolUse':
         return
-    if event.get('tool_name') not in ('Agent', 'spawn_agent'):
+    if event.get('tool_name') not in SPAWN_TOOL_NAMES:
         return
     hook_output = result.get('hookSpecificOutput') if isinstance(result, dict) else None
     denied = isinstance(hook_output, dict) and hook_output.get('permissionDecision') == 'deny'
