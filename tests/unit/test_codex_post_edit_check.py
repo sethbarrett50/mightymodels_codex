@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MODULE = run_path(str(ROOT / 'scripts/codex_post_edit_check.py'))
 python_paths = MODULE['python_paths']
 feedback = MODULE['feedback']
+probe_delivery = MODULE['probe_delivery']
 
 
 def edit_event(cwd: Path, patch_text: str, response: object = None) -> dict[str, object]:
@@ -209,3 +210,36 @@ def test_post_edit_missing_checkout_context_emits_sanitized_warning(
 def test_non_patch_tool_without_checkout_does_not_report_python_checks(tmp_path: Path) -> None:
     event = {'hook_event_name': 'PostToolUse', 'tool_name': 'Read'}
     assert feedback(event, tmp_path) is None
+
+
+@pytest.mark.unit
+def test_post_edit_delivery_receipt_is_opt_in_exclusive_and_redacted(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    checkout.mkdir()
+    marker = tmp_path / 'hook-seen'
+    event = edit_event(checkout, patch_for('demo.py'))
+    event['tool_input']['private'] = 'PRIVATE_TOKEN_DO_NOT_RETAIN'
+
+    probe_delivery(event, checkout, {})
+    assert not marker.exists()
+    probe_delivery(event, checkout, {'MIGHTYMODELS_CODEX_POST_EDIT_PROBE_FILE': str(marker)})
+    assert marker.read_text() == 'PostToolUse apply_patch observed\n'
+    assert marker.stat().st_mode & 0o777 == 0o600
+    probe_delivery(event, checkout, {'MIGHTYMODELS_CODEX_POST_EDIT_PROBE_FILE': str(marker)})
+    assert marker.read_text() == 'PostToolUse apply_patch observed\n'
+    assert 'PRIVATE_' not in marker.read_text()
+
+
+@pytest.mark.unit
+def test_post_edit_delivery_receipt_refuses_checkout_path_or_other_tool(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    checkout.mkdir()
+    inside = checkout / 'not-allowed'
+    event = edit_event(checkout, patch_for('demo.py'))
+    probe_delivery(event, checkout, {'MIGHTYMODELS_CODEX_POST_EDIT_PROBE_FILE': str(inside)})
+    assert not inside.exists()
+
+    outside = tmp_path / 'not-created'
+    event['tool_name'] = 'Read'
+    probe_delivery(event, checkout, {'MIGHTYMODELS_CODEX_POST_EDIT_PROBE_FILE': str(outside)})
+    assert not outside.exists()
