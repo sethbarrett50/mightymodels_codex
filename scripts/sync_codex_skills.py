@@ -555,6 +555,15 @@ def translated(source: Path) -> str:
     for previous, replacement in changes.items():
         front = front.replace(previous, replacement)
         body = body.replace(previous, replacement)
+    if name == 'open-ticket':
+        front = front.replace(
+            'one Codex user decision gate interview', 'a blocking ordinary-chat interview'
+        )
+        body = body.replace(
+            'This is Codex-only; the Claude `Codex user decision gate` steps below remain unchanged.',
+            'For Codex, the ordinary-chat requirements below are authoritative; '
+            'no native dialog API is implied.',
+        )
     front = native_baton_pass_frontmatter(front) if name == 'baton-pass' else front
     front = native_landing_frontmatter(front) if name == 'stick-the-landing' else front
     front = native_task_split_frontmatter(front) if name == 'break-it-down' else front
