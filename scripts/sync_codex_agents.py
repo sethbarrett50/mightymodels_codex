@@ -92,343 +92,35 @@ def native_web_scout_tools(body: str) -> str:
 
 
 def native_terry_toolchain(body: str) -> str:
-    """Use Codex host discovery without Claude CLI or implied hook enforcement."""
-    replacements = (
-        (
-            r'(?ms)^Three limits of a sandboxed session.*?(?=^</context>)',
-            (
-                'Codex host and repository restrictions must be observed, not inferred. '
-                'A declared MCP server or hook is not proof it loaded or executed. '
-                'A git commit may run repository hooks; inspect them without triggering '
-                'them. No tool, skill preload, approval, or sandbox guarantee is '
-                'assumed from configuration alone.\\n'
-            ),
-        ),
-        (
-            r'(?ms)^2\\. Survey the harness.*?(?=^3\\. Survey)',
-            (
-                '2. Survey the Codex host tools. Inspect the tools actually exposed '
-                'to this agent. If available and permitted, run `codex mcp list` '
-                'once, and distinguish its results from mere configuration. Read '
-                '`$HOME/.codex/config.toml`, project `.codex/config.toml`, '
-                '`.codex/hooks.json`, and related settings as declared facts only. '
-                'If a CLI, MCP listing, or hook state is not observable, report '
-                'it under Not seen instead of claiming a connected server or '
-                'running a different assistant CLI.\\n'
-            ),
-        ),
-        (
-            r'(?ms)^3\\. Survey the installed skills.*?(?=^4\\. Survey)',
-            (
-                '3. Survey native role registrations and installed skills. Inspect '
-                '`$HOME/.codex/config.toml`, `$HOME/.codex/agents/`, '
-                'project `.codex/agents/`, and `$HOME/.agents/skills/` with '
-                'read-only commands. Read relevant SKILL.md files explicitly; '
-                'never assume a skill listing or doctrine was preloaded. '
-                'Differentiate readable files from active host roles.\\n'
-            ),
-        ),
-        (
-            r'(?ms)^5\\. Survey the sandbox.*?(?=^6\\. Compose)',
-            (
-                '5. Survey declared Codex sandbox and approval settings without '
-                'changing them. Inspect `sandbox_mode`, `approval_policy`, '
-                'configured hooks and any actual host refusals. Never infer '
-                'effective hook delivery or permissions from a settings file. '
-                'Record unavailable inspection and refusals under Not seen.\\n'
-            ),
-        ),
-        (
-            r'(?m)^- Run only these through `exec_command`:.*
-    """Translate supported Claude tool references; never infer host enforcement."""
-    for original, native in ROLE_TRANSLATIONS:
-        source = source.replace(original, native)
-    if role == 'mm-triage-web-scout':
-        source = native_web_scout_tools(source)
-    if role == 'mm-triage-terry-toolchain':
-        source = native_terry_toolchain(source)
-    return source
-
-
-def generate(root: Path) -> dict[str, str]:  # noqa: PLR0914, PLR0915
-    result = {}
-    report = []
-    sources = sorted((root / 'agents').glob('*/*.md'))
-    if len(sources) != EXPECTED_AGENTS:
-        msg = f'Expected 12 MightyModels agents; got {len(sources)}'
-        raise ValueError(msg)
-    for source in sources:
-        raw = source.read_text(encoding='utf-8')
-        match = SOURCE.match(raw)
-        if match is None:
-            msg = f'Unrecognized frontmatter: {source}'
-            raise ValueError(msg)
-        front = match.group(1)
-        relative = source.relative_to(root).as_posix()
-        name = field(front, 'name')
-        description_match = DESCRIPTION.search(front)
-        if name is None or description_match is None:
-            msg = f'Missing name or folded description: {source}'
-            raise ValueError(msg)
-        description = ' '.join(description_match.group(1).split())
-        effort = field(front, 'effort')
-        source_model = field(front, 'model')
-        role = f'mm-{source.parent.name}-{name}'
-        if source_model == 'fable':
-            report.append({
-                'source': relative,
-                'role': role,
-                'source_model': source_model,
-                'source_effort': effort,
-                'codex_status': 'disabled: no Fable substitution',
-                'unmapped': [],
-            })
-            continue
-        if source_model not in MODEL_TIERS:
-            msg = f'Unsupported source model {source_model!r}: {source}'
-            raise ValueError(msg)
-        model, routed_effort = MODEL_TIERS[source_model]
-        notes = (
-            f'Ported from {relative}.\n'
-            'IMPORTANT: Claude-specific tool allowlists, skill preloads, '
-            'and agent dispatch identifiers are NOT automatically enforced by Codex. '
-            'Load required skills explicitly from $HOME/.agents/skills and use native '
-            'Codex role names (mm-triage-code-scout, mm-triage-web-scout, '
-            'mm-review-qualitylens). Consult docs/CODEX.md. '
-            'Do not execute write-capable workflows until '
-            'their MCP and safety controls are validated.\n\n'
-        )
-
-        def encoded(value: str) -> str:
-            return json.dumps(value, ensure_ascii=False)
-
-        lines = [f'name = {encoded(role)}', f'description = {encoded(description)}']
-        lines.append(f'model = {encoded(model)}')
-        lines.append(f'model_reasoning_effort = {encoded(routed_effort)}')
-        instructions = notes + native_body(raw[match.end() :], role=role)
-        lines.append(f'developer_instructions = {encoded(instructions)}')
-        target = (root / '.codex/agents' / f'{role}.toml').relative_to(root).as_posix()
-        result[target] = '\n'.join(lines) + '\n'
-        unmapped = [
-            key
-            for key in (
-                'tools',
-                'skills',
-                'maxTurns',
-                'permissionMode',
-                'disallowedTools',
-                'mcpServers',
-                'hooks',
-                'memory',
-            )
-            if re.search(rf'^{key}:', front, re.MULTILINE)
-        ]
-        report.append({
-            'source': relative,
-            'role': role,
-            'source_model': source_model,
-            'source_effort': effort,
-            'codex_model': model,
-            'codex_effort': routed_effort,
-            'unmapped': unmapped,
-        })
-    result['.codex/compatibility-report.json'] = (
-        json.dumps(
-            {
-                'status': 'experimental: generation only, not runtime-verified',
-                'count': len(report),
-                'agents': report,
-            },
-            indent=2,
-            ensure_ascii=False,
-        )
-        + '\n'
+    """Translate read-only environment survey to actual Codex host discovery."""
+    segments = (
+        ("Three limits of a sandboxed session", "</context>", "Codex host configuration is only declared evidence; never claim MCP connections, hook delivery, permission enforcement, or automatic skill loading without observing them. A git commit may execute repository hooks; inspect their declarations without running them.\n"),
+        ("2. Survey the harness", "3. Survey", "2. Inspect the tools actually exposed by the Codex host. If installed and permitted, run `codex mcp list` once. Read `$HOME/.codex/config.toml`, project `.codex/config.toml`, and `.codex/hooks.json` to identify declared servers and hooks. Treat declarations as different from connected or triggered facilities. Record unavailable CLI, MCP connections, or hook evidence under Not seen.\n"),
+        ("3. Survey the installed skills", "4. Survey", "3. Inspect `$HOME/.agents/skills/`, `$HOME/.codex/config.toml`, and native `.codex/agents/` role files. Read relevant SKILL.md files explicitly instead of assuming preloaded skill descriptions or doctrine. Report whether files exist separately from whether the host registered their roles.\n"),
+        ("5. Survey the sandbox", "6. Compose", "5. Inspect native `approval_policy`, `sandbox_mode`, hook settings and actual denials read-only. Never treat a writable-directory probe or configuration entry as proof that hooks fired or permissions were enforced. Record missing host evidence under Not seen.\n"),
+        ("- Run only these through `exec_command`:", "- You hold no", "- Run only allowed read-only commands: `codex mcp list`, `codex --version` (at most once each if available), `git config --get`, `git rev-parse`, `git ls-files`, `ls`, `test`, and `rg`. Do not run any hook, commit, test suite, build, or formatter. Unsupported inspection belongs under Not seen.\n"),
+        ("- The `head` line carries", "- When the survey would", "- The `head` line carries `git rev-parse --short HEAD` and observed `codex --version`, or records that the version was Not seen.\n"),
     )
-    return result
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--check', action='store_true')
-    parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[1])
-    args = parser.parse_args()
-    root = args.root.resolve()
-    files = generate(root)
-    stale = []
-    for name, content in files.items():
-        path = root / name
-        if path.suffix == '.toml':
-            tomllib.loads(content)
-        if args.check:
-            if not path.exists() or path.read_text(encoding='utf-8') != content:
-                stale.append(name)
-        else:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content, encoding='utf-8')
-    if stale:
-        parser.error('Stale generated roles: ' + ', '.join(stale))
-    print(f'Codex roles {"checked" if args.check else "updated"}: {len(files) - 1}')
-    return 0
-
-
-if __name__ == '__main__':
-    raise SystemExit(main())
-,
-            (
-                '- Run only permitted read-only commands: `codex mcp list` and '
-                '`codex --version` (once each if available), `git config --get`, '
-                '`git rev-parse`, `git ls-files`, `ls`, `test`, and `rg`. '
-                'Never execute a hook, build, formatter, test, commit, or a different '
-                'assistant CLI. Unsupported inspection belongs under Not seen.'
-            ),
-        ),
-        (
-            r'(?m)^- The `head` line carries.*
-    """Translate supported Claude tool references; never infer host enforcement."""
-    for original, native in ROLE_TRANSLATIONS:
-        source = source.replace(original, native)
-    if role == 'mm-triage-web-scout':
-        source = native_web_scout_tools(source)
-    return source
-
-
-def generate(root: Path) -> dict[str, str]:  # noqa: PLR0914, PLR0915
-    result = {}
-    report = []
-    sources = sorted((root / 'agents').glob('*/*.md'))
-    if len(sources) != EXPECTED_AGENTS:
-        msg = f'Expected 12 MightyModels agents; got {len(sources)}'
-        raise ValueError(msg)
-    for source in sources:
-        raw = source.read_text(encoding='utf-8')
-        match = SOURCE.match(raw)
-        if match is None:
-            msg = f'Unrecognized frontmatter: {source}'
+    for beginning, ending, native in segments:
+        start = body.find(beginning)
+        if start < 0 or body.count(beginning) != 1:
+            msg = 'Expected exactly one native toolchain survey start'
             raise ValueError(msg)
-        front = match.group(1)
-        relative = source.relative_to(root).as_posix()
-        name = field(front, 'name')
-        description_match = DESCRIPTION.search(front)
-        if name is None or description_match is None:
-            msg = f'Missing name or folded description: {source}'
+        stop = body.find(ending, start + len(beginning))
+        if stop < 0:
+            msg = 'Missing native toolchain survey boundary'
             raise ValueError(msg)
-        description = ' '.join(description_match.group(1).split())
-        effort = field(front, 'effort')
-        source_model = field(front, 'model')
-        role = f'mm-{source.parent.name}-{name}'
-        if source_model == 'fable':
-            report.append({
-                'source': relative,
-                'role': role,
-                'source_model': source_model,
-                'source_effort': effort,
-                'codex_status': 'disabled: no Fable substitution',
-                'unmapped': [],
-            })
-            continue
-        if source_model not in MODEL_TIERS:
-            msg = f'Unsupported source model {source_model!r}: {source}'
-            raise ValueError(msg)
-        model, routed_effort = MODEL_TIERS[source_model]
-        notes = (
-            f'Ported from {relative}.\n'
-            'IMPORTANT: Claude-specific tool allowlists, skill preloads, '
-            'and agent dispatch identifiers are NOT automatically enforced by Codex. '
-            'Load required skills explicitly from $HOME/.agents/skills and use native '
-            'Codex role names (mm-triage-code-scout, mm-triage-web-scout, '
-            'mm-review-qualitylens). Consult docs/CODEX.md. '
-            'Do not execute write-capable workflows until '
-            'their MCP and safety controls are validated.\n\n'
-        )
-
-        def encoded(value: str) -> str:
-            return json.dumps(value, ensure_ascii=False)
-
-        lines = [f'name = {encoded(role)}', f'description = {encoded(description)}']
-        lines.append(f'model = {encoded(model)}')
-        lines.append(f'model_reasoning_effort = {encoded(routed_effort)}')
-        instructions = notes + native_body(raw[match.end() :], role=role)
-        lines.append(f'developer_instructions = {encoded(instructions)}')
-        target = (root / '.codex/agents' / f'{role}.toml').relative_to(root).as_posix()
-        result[target] = '\n'.join(lines) + '\n'
-        unmapped = [
-            key
-            for key in (
-                'tools',
-                'skills',
-                'maxTurns',
-                'permissionMode',
-                'disallowedTools',
-                'mcpServers',
-                'hooks',
-                'memory',
-            )
-            if re.search(rf'^{key}:', front, re.MULTILINE)
-        ]
-        report.append({
-            'source': relative,
-            'role': role,
-            'source_model': source_model,
-            'source_effort': effort,
-            'codex_model': model,
-            'codex_effort': routed_effort,
-            'unmapped': unmapped,
-        })
-    result['.codex/compatibility-report.json'] = (
-        json.dumps(
-            {
-                'status': 'experimental: generation only, not runtime-verified',
-                'count': len(report),
-                'agents': report,
-            },
-            indent=2,
-            ensure_ascii=False,
-        )
-        + '\n'
+        body = body[:start] + native + body[stop:]
+    examples = (
+        ('claude mcp list', 'codex mcp list'),
+        ('claude plugin list --json', 'Codex plugin registry (not exposed)'),
+        ('claude --version', 'codex --version'),
+        ('claude: 2.1.296', 'codex: observed version'),
+        ('~/.claude/plugins/data', '$HOME/.codex'),
     )
-    return result
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--check', action='store_true')
-    parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[1])
-    args = parser.parse_args()
-    root = args.root.resolve()
-    files = generate(root)
-    stale = []
-    for name, content in files.items():
-        path = root / name
-        if path.suffix == '.toml':
-            tomllib.loads(content)
-        if args.check:
-            if not path.exists() or path.read_text(encoding='utf-8') != content:
-                stale.append(name)
-        else:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content, encoding='utf-8')
-    if stale:
-        parser.error('Stale generated roles: ' + ', '.join(stale))
-    print(f'Codex roles {"checked" if args.check else "updated"}: {len(files) - 1}')
-    return 0
-
-
-if __name__ == '__main__':
-    raise SystemExit(main())
-,
-            (
-                '- The `head` line carries `git rev-parse --short HEAD` and '
-                'the observed `codex --version`, or marks that version Not seen.'
-            ),
-        ),
-    )
-    for pattern, replacement in replacements:
-        body, count = re.subn(pattern, lambda _match: replacement, body)
-        if count != 1:
-            msg = 'Expected exactly one native toolchain survey source section'
-            raise ValueError(msg)
+    for original, replacement in examples:
+        body = body.replace(original, replacement)
     return body
-
 
 def native_body(source: str, *, role: str | None = None) -> str:
     """Translate supported Claude tool references; never infer host enforcement."""
@@ -436,6 +128,8 @@ def native_body(source: str, *, role: str | None = None) -> str:
         source = source.replace(original, native)
     if role == 'mm-triage-web-scout':
         source = native_web_scout_tools(source)
+    if role == 'mm-triage-terry-toolchain':
+        source = native_terry_toolchain(source)
     return source
 
 
