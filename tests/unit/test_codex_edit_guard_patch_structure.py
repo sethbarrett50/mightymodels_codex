@@ -45,8 +45,7 @@ def test_patch_must_have_exact_boundaries(patch: str) -> None:
 @pytest.mark.unit
 def test_patch_cannot_have_edits_before_first_file_header() -> None:
     patch = (
-        '*** Begin Patch\n+value = 1\n*** Update File: src/demo.py\n'
-        '@@\n+print(1)\n*** End Patch'
+        '*** Begin Patch\n+value = 1\n*** Update File: src/demo.py\n@@\n+print(1)\n*** End Patch'
     )
     assert inspect(event(patch)) == 'Edit patch has changes without a file header'
 
