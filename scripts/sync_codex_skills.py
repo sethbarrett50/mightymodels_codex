@@ -349,8 +349,10 @@ def native_task_split_decisions(body: str) -> str:
     changes = (
         (
             'then open one\n`Codex user decision gate` dialog about them.',
-            'then ask in ordinary chat whether to split, keep, or revise. '
-            'End the turn until the user explicitly responds.',
+            (
+                'then ask in ordinary chat whether to split, keep, or revise. '
+                'End the turn until the user explicitly responds.'
+            ),
         ),
         (
             'The dialog has one question with these options:',
