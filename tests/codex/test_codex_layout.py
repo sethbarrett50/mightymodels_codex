@@ -99,8 +99,9 @@ def test_hook_configurations_parse() -> None:
     assert set(local_hooks['hooks']) == {'PreToolUse', 'PostToolUse'}
     assert 'apply_patch' in local_hooks['hooks']['PreToolUse'][0]['matcher']
     post_edit = local_hooks['hooks']['PostToolUse'][0]
-    assert post_edit['matcher'] == '^apply_patch
-
+    assert post_edit['matcher'] == '^apply_patch$'
+    assert 'codex_post_edit_check.py' in post_edit['hooks'][0]['command']
+    assert 'spawn_agent' not in json.dumps(local_hooks)
 
 @pytest.mark.unit
 def test_shell_launcher_syntax() -> None:
