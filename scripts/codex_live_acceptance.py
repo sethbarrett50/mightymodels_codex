@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import io
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -44,7 +45,9 @@ def fixture_snapshot(root: Path) -> tuple[tuple[str, str, str], ...]:
         if relative.parts[0] == '.git':
             continue
         if path.is_symlink():
-            kind, fingerprint = 'symlink', ''
+            # Hash the link itself, not its destination file; never disclose the target.
+            kind = 'symlink'
+            fingerprint = hashlib.sha256(os.fsencode(os.readlink(path))).hexdigest()
         elif path.is_dir():
             kind, fingerprint = 'directory', ''
         elif path.is_file():
