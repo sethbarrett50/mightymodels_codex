@@ -185,10 +185,29 @@ def validate_hook_groups(groups: list, expected: list) -> None:
                 raise ValueError(msg)
 
 
+def discard_legacy_spawn_groups(groups: list, wanted: list, *, event: str) -> None:
+    """Remove only exact previous-version groups; refuse ambiguous duplicates."""
+    if event != 'PreToolUse':
+        return
+    legacy = [
+        {**group, 'matcher': '^(spawn_agent|Agent)$'}
+        for group in wanted
+        if group.get('matcher') == '^(Agent|(?:.*[._:/])?spawn_agent)$'
+    ]
+    validate_hook_groups(groups, [*wanted, *legacy])
+    for old in legacy:
+        count = groups.count(old)
+        if count > 1 or (count and any(group in groups for group in wanted)):
+            msg = 'Duplicate or conflicting MightyModels spawn hook group'
+            raise ValueError(msg)
+    for old in legacy:
+        if old in groups:
+            groups.remove(old)
 def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:  # noqa: PLR0913
-    """Apply exact owned group additions/removals without touching foreign entries."""
+    """Apply exact owned groups while migrating old dispatch matchers safely."""
+    before = list(groups)
+    discard_legacy_spawn_groups(groups, wanted, event=event)
     validate_hook_groups(groups, wanted)
-    changed = False
     for group in wanted:
         count = groups.count(group)
         if count > 1:
@@ -196,11 +215,9 @@ def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: s
             raise ValueError(msg)
         if remove and count:
             groups.remove(group)
-            changed = True
         elif not remove and not count:
             groups.append(group)
-            changed = True
-    return changed
+    return groups != before
 
 
 def merge_hook_text(existing: str | None, expected: str, *, remove: bool) -> str | None:  # noqa: C901, PLR0912

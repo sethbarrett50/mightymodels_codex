@@ -527,3 +527,29 @@ def test_failing_subprocess_exception_is_not_disclosed(tmp_path: Path) -> None:
         )
     assert result['hookSpecificOutput']['permissionDecision'] == 'deny'
     assert canary not in json.dumps(result)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    'tool',
+    ['spawn_agent', 'Agent', 'collaborationspawn_agent', 'collaboration.spawn_agent'],
+)
+def test_namespaced_spawn_dispatch_receives_same_legacy_admission(tool: str) -> None:
+    incoming = event('mm-workers-engineer')
+    incoming['tool_name'] = tool
+    payload, reason = module.translate(incoming)
+    assert reason is None
+    assert payload['tool_name'] == 'Agent'
+    assert payload['tool_input']['subagent_type'] == 'mightymodels:workers:engineer'
+
+
+@pytest.mark.unit
+def test_namespaced_dispatch_adapter_denial_is_not_host_proof(tmp_path: Path) -> None:
+    incoming = event('mm-workers-engineer')
+    incoming['tool_name'] = 'collaborationspawn_agent'
+    failed = subprocess.CompletedProcess(args=[], returncode=2, stdout='', stderr='not admitted')
+    with patch.object(module.subprocess, 'run', return_value=failed):
+        denied = module.run_admission(
+            incoming, project_root=tmp_path, environ={'HOME': str(tmp_path)}
+        )
+    assert denied['hookSpecificOutput']['permissionDecision'] == 'deny'
