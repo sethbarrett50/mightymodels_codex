@@ -185,10 +185,10 @@ def validate_hook_groups(groups: list, expected: list) -> None:
                 raise ValueError(msg)
 
 
-def discard_legacy_spawn_groups(groups: list, wanted: list, *, event: str) -> bool:
+def discard_legacy_spawn_groups(groups: list, wanted: list, *, event: str) -> None:
     """Remove only exact previous-version groups; refuse ambiguous duplicates."""
     if event != 'PreToolUse':
-        return False
+        return
     legacy = [
         {**group, 'matcher': '^(spawn_agent|Agent)$'}
         for group in wanted
@@ -203,9 +203,6 @@ def discard_legacy_spawn_groups(groups: list, wanted: list, *, event: str) -> bo
     for old in legacy:
         if old in groups:
             groups.remove(old)
-    return any(old not in groups for old in legacy) and bool(legacy)
-
-
 def reconcile_event_groups(groups: list, wanted: list, *, remove: bool, event: str) -> bool:  # noqa: PLR0913
     """Apply exact owned groups while migrating old dispatch matchers safely."""
     before = list(groups)
