@@ -72,3 +72,32 @@ def test_does_not_follow_symlinks(tmp_path: Path) -> None:
     (repo / 'file.py').unlink()
     (repo / 'file.py').symlink_to(repo / 'outside.py')
     assert check('HEAD', repo) == 2
+
+
+@pytest.mark.unit
+def test_untracked_python_file_with_suppression_is_detected(tmp_path: Path) -> None:
+    repo = setup_repo(tmp_path)
+    (repo / 'new_file.py').write_text('value = 1  # noqa: F841\n')
+    assert check('HEAD', repo) == 1
+
+
+@pytest.mark.unit
+def test_untracked_python_file_without_suppression_is_allowed(tmp_path: Path) -> None:
+    repo = setup_repo(tmp_path)
+    (repo / 'new_file.py').write_text('value = 1\n')
+    assert check('HEAD', repo) == 0
+
+
+@pytest.mark.unit
+def test_ignored_python_file_is_not_checked(tmp_path: Path) -> None:
+    repo = setup_repo(tmp_path)
+    (repo / '.gitignore').write_text('ignored.py\n')
+    (repo / 'ignored.py').write_text('value = 1  # type: ignore\n')
+    assert check('HEAD', repo) == 0
+
+
+@pytest.mark.unit
+def test_untracked_symlink_python_file_fails_closed(tmp_path: Path) -> None:
+    repo = setup_repo(tmp_path)
+    (repo / 'new_file.py').symlink_to(repo / 'missing.py')
+    assert check('HEAD', repo) == 2
