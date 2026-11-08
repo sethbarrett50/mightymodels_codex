@@ -91,19 +91,37 @@ def test_records_only_known_item_types_and_does_not_count_item_updates() -> None
 @pytest.mark.unit
 def test_completed_tool_outcomes_do_not_expose_command_content() -> None:
     events = [
-        {'type': 'item.completed', 'item': {
-            'type': 'command_execution', 'exit_code': 2,
-            'command': 'SECRET_COMMAND', 'aggregated_output': 'SECRET_STDOUT',
-        }},
-        {'type': 'item.completed', 'item': {
-            'type': 'command_execution', 'exit_code': 0,
-        }},
-        {'type': 'item.completed', 'item': {
-            'type': 'mcp_tool_call', 'status': 'failed', 'arguments': 'SECRET_ARGUMENTS',
-        }},
-        {'type': 'item.completed', 'item': {
-            'type': 'mcp_tool_call', 'status': 'completed',
-        }},
+        {
+            'type': 'item.completed',
+            'item': {
+                'type': 'command_execution',
+                'exit_code': 2,
+                'command': 'SECRET_COMMAND',
+                'aggregated_output': 'SECRET_STDOUT',
+            },
+        },
+        {
+            'type': 'item.completed',
+            'item': {
+                'type': 'command_execution',
+                'exit_code': 0,
+            },
+        },
+        {
+            'type': 'item.completed',
+            'item': {
+                'type': 'mcp_tool_call',
+                'status': 'failed',
+                'arguments': 'SECRET_ARGUMENTS',
+            },
+        },
+        {
+            'type': 'item.completed',
+            'item': {
+                'type': 'mcp_tool_call',
+                'status': 'completed',
+            },
+        },
     ]
     report = METRICS.summarize(io.StringIO(''.join(json.dumps(e) + '\n' for e in events)))
     assert report['events']['commands_completed'] == 2
