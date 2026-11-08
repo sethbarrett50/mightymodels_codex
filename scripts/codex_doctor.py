@@ -98,6 +98,8 @@ def check_project_overlap(root: Path, cwd: Path) -> str | None:
     except _CONFIG_READ_ERRORS:
         return '[WARN] Project-scoped Codex config missing or malformed'
     servers = project.get('mcp_servers')
+    if servers is None:
+        return None  # This project intentionally relies on the global MCP registration.
     if not isinstance(servers, dict):
         return '[WARN] Project-scoped MCP config has unexpected shape'
     if 'mighty_mcp' not in servers:
