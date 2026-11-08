@@ -64,7 +64,10 @@ can settle get settled now rather than inherited.
 
 ## 2. Ask what the next session is for
 
-One `Codex user decision gate` call, two questions, options drawn from the state rather than generic:
+Ask the user in ordinary chat for the next-session focus and, only if the tree is dirty,
+for the uncommitted-work action. Offer options supported by the current state and
+end the turn until the user explicitly answers each required question; do not assume
+a popup timeout or empty response is consent.
 
 **Focus.** Derived from what is open: continue the in-flight task; start the next task not
 yet verified; take a specific open thread the session surfaced (name it); re-plan because the picture
@@ -80,14 +83,13 @@ diff is the least durable thing a session can leave.
 Act on the second answer before writing anything else. The baton describes the tree as it is
 after that action, and a baton that describes a stash that was never made is worse than none.
 
-Write no decision entry by hand. The recorder hook on `Codex user decision gate` already stored every
-answer the user gave in a dialog, including the two just given, but only if the session was
-pointed at a ledger or ticket when it was given; the snapshot carries those to the next session.
-In a session with no ticket and no pointer it stored nothing, so those decisions go in
-BATON.md. A choice
-the user made only in chat has no writer: if it matters to the next session, put it to them
-through `Codex user decision gate` now, so the recorder takes it. One only in the baton is one more line
-to drift.
+Do not assume a Codex user-input recorder hook executed. Preserve only the user's actual
+confirmed focus and uncommitted-work choice in BATON.md, not a predicted or default answer.
+If an active ticket exists, also update its durable context through available MightyModels
+state tools before the final snapshot, and verify the state write succeeded. If the state
+writer is unavailable or fails, say so explicitly and do not claim a persisted handoff.
+Do not store credentials or raw private responses in the baton. A missing user answer is
+still pending and must not be converted into approval.
 
 ## 3. Prepare the ticket directory
 
