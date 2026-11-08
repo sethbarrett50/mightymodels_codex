@@ -47,7 +47,7 @@ def fixture_snapshot(root: Path) -> tuple[tuple[str, str, str], ...]:
         if path.is_symlink():
             # Hash the link itself, not its destination file; never disclose the target.
             kind = 'symlink'
-            fingerprint = hashlib.sha256(os.fsencode(os.readlink(path))).hexdigest()
+            fingerprint = hashlib.sha256(os.fsencode(Path(path).readlink())).hexdigest()
         elif path.is_dir():
             kind, fingerprint = 'directory', ''
         elif path.is_file():
