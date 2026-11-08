@@ -34,7 +34,7 @@ def _positive_count(value: object) -> int:
 
 
 def _parse_event(line: str) -> dict | None:
-    if len(line) > MAX_LINE_LENGTH:
+    if len(line.encode('utf-8', errors='replace')) > MAX_LINE_LENGTH:
         return None
     try:
         parsed = json.loads(line)
@@ -65,9 +65,22 @@ def _count_event(event: dict, counts: Counter[str], tokens: Counter[str]) -> Non
             else 'other_items'
         )
         counts[mapped] += 1
+    elif kind == 'item.completed':
+        item = event.get('item')
+        if isinstance(item, dict):
+            item_type = item.get('type')
+            if item_type == 'command_execution':
+                counts['commands_completed'] += 1
+                exit_code = item.get('exit_code')
+                if isinstance(exit_code, int) and not isinstance(exit_code, bool) and exit_code != 0:
+                    counts['commands_exited_nonzero'] += 1
+            elif item_type == 'mcp_tool_call':
+                counts['mcp_calls_completed'] += 1
+                if item.get('status') == 'failed':
+                    counts['mcp_calls_failed'] += 1
     elif kind == 'error':
         counts['errors'] += 1
-    elif kind not in ('thread.started', 'item.updated', 'item.completed'):
+    elif kind not in ('thread.started', 'item.updated'):
         counts['unknown_events'] += 1
     if kind == 'turn.completed':
         _count_usage(event.get('usage'), counts, tokens)
