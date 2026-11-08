@@ -83,3 +83,43 @@ def test_denial_uses_codex_pretooluse_shape_without_patch_content() -> None:
     assert got['hookSpecificOutput']['permissionDecision'] == 'deny'
     assert got['hookSpecificOutput']['hookEventName'] == 'PreToolUse'
     assert 'source' not in str(got)
+
+
+@pytest.mark.unit
+def test_absolute_path_inside_checkout_keeps_suppression_guard(tmp_path: Path) -> None:
+    target = tmp_path / 'acceptance_hook_probe.py'
+    patch = f'*** Begin Patch\n*** Add File: {target}\n+value = 1  # noqa: F841\n*** End Patch'
+    assert 'suppression' in GUARD.inspect(event(patch), root=tmp_path)
+
+
+@pytest.mark.unit
+def test_absolute_path_inside_checkout_can_be_allowed(tmp_path: Path) -> None:
+    target = tmp_path / 'accepted.py'
+    patch = f'*** Begin Patch\n*** Add File: {target}\n+value = 1\n*** End Patch'
+    assert GUARD.inspect(event(patch), root=tmp_path) is None
+
+
+@pytest.mark.unit
+def test_absolute_path_outside_checkout_denied(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    checkout.mkdir()
+    patch = f'*** Begin Patch\n*** Add File: {tmp_path / "outside.py"}\n+value = 1\n*** End Patch'
+    assert 'scope' in GUARD.inspect(event(patch), root=checkout)
+
+
+@pytest.mark.unit
+def test_absolute_symlink_escape_denied(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    outside = tmp_path / 'outside'
+    checkout.mkdir()
+    outside.mkdir()
+    (checkout / 'link').symlink_to(outside, target_is_directory=True)
+    target = checkout / 'link' / 'escape.py'
+    patch = f'*** Begin Patch\n*** Add File: {target}\n+value = 1\n*** End Patch'
+    assert 'scope' in GUARD.inspect(event(patch), root=checkout)
+
+
+@pytest.mark.unit
+def test_absolute_lockfile_still_denied(tmp_path: Path) -> None:
+    patch = f'*** Begin Patch\n*** Update File: {tmp_path / "uv.lock"}\n+change\n*** End Patch'
+    assert 'uv.lock' in GUARD.inspect(event(patch), root=tmp_path)

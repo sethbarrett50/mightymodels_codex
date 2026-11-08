@@ -48,11 +48,11 @@ def _candidate(line: str, directory: Path, root: Path) -> Path | bool | None:
         return None
     filename = line.split(': ', 1)[1].strip()
     relative = PurePosixPath(filename)
-    if not filename or relative.is_absolute() or '..' in relative.parts:
+    if not filename or '..' in relative.parts:
         return False
     if relative.suffix not in ('.py', '.pyi'):
         return None
-    candidate = directory.joinpath(*relative.parts)
+    candidate = Path(filename) if relative.is_absolute() else directory.joinpath(*relative.parts)
     if candidate.is_symlink() or not candidate.is_file():
         return None
     if not candidate.resolve().is_relative_to(root.resolve()):

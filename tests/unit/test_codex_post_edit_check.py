@@ -163,3 +163,19 @@ def test_ty_runtime_timeout_reports_unavailable(tmp_path: Path) -> None:
         report = feedback(edit_event(tmp_path, patch_for('demo.py')), tmp_path)
     assert report is not None
     assert 'type check unavailable' in report['hookSpecificOutput']['additionalContext']
+
+
+@pytest.mark.unit
+def test_absolute_native_patch_file_inside_checkout_is_selected(tmp_path: Path) -> None:
+    source = tmp_path / 'demo.py'
+    source.write_text('value = 1')
+    assert python_paths(edit_event(tmp_path, patch_for(str(source))), tmp_path) == (source,)
+
+
+@pytest.mark.unit
+def test_absolute_native_patch_file_outside_checkout_is_rejected(tmp_path: Path) -> None:
+    checkout = tmp_path / 'checkout'
+    checkout.mkdir()
+    source = tmp_path / 'outside.py'
+    source.write_text('value = 1')
+    assert python_paths(edit_event(checkout, patch_for(str(source))), checkout) == ()
