@@ -120,14 +120,18 @@ def _ty_failures(binary: Path, files: tuple[Path, ...], root: Path) -> list[str]
     return ['type check did not pass'] if result.returncode else []
 
 
+def _missing_checkout_context(event: object) -> bool:
+    if not isinstance(event, dict):
+        return False
+    if event.get('hook_event_name') != 'PostToolUse' or event.get('tool_name') != 'apply_patch':
+        return False
+    cwd = event.get('cwd')
+    return not isinstance(cwd, str) or not cwd.strip()
+
+
 def feedback(event: object, root: Path) -> dict | None:
     """Report only checker outcomes; never expose source, paths or stderr."""
-    if (
-        isinstance(event, dict)
-        and event.get('hook_event_name') == 'PostToolUse'
-        and event.get('tool_name') == 'apply_patch'
-        and (not isinstance(event.get('cwd'), str) or not event['cwd'].strip())
-    ):
+    if _missing_checkout_context(event):
         return {
             'hookSpecificOutput': {
                 'hookEventName': 'PostToolUse',
