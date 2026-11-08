@@ -19,10 +19,7 @@ def prepare_sources(root: Path) -> None:
 @pytest.mark.unit
 def test_companion_check_is_read_only_and_repair_creates_links(tmp_path: Path) -> None:
     prepare_sources(tmp_path)
-    expected = {
-        f'.codex/skills/open-ticket/{name}'
-        for name in ('assets', 'references', 'scripts')
-    }
+    expected = {f'.codex/skills/open-ticket/{name}' for name in ('assets', 'references', 'scripts')}
     assert set(sync_companions(tmp_path, check=True)) == expected
     assert not (tmp_path / '.codex').exists()
     assert sync_companions(tmp_path, check=False) == []
