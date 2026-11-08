@@ -1,6 +1,7 @@
 """Read-only doctor cannot disclose secrets or silently bless missing setup."""
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -79,3 +80,23 @@ def test_doctor_accepts_owned_hooks_alongside_foreign_groups(tmp_path: Path) -> 
     result = run_script(DOCTOR, tmp_path)
     assert result.returncode == 0, result.stderr
     assert 'runtime trust not verified' in result.stdout
+
+
+@pytest.mark.unit
+def test_doctor_fails_when_uv_is_not_on_path(tmp_path: Path) -> None:
+    installed = run_script(INSTALLER, tmp_path)
+    assert installed.returncode == 0, installed.stderr
+    empty_bin = tmp_path / 'empty-bin'
+    empty_bin.mkdir()
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, str(DOCTOR), '--home', str(tmp_path), '--root', str(ROOT)],
+        text=True,
+        capture_output=True,
+        check=False,
+        cwd=ROOT,
+        env={**os.environ, 'PATH': str(empty_bin)},
+    )
+    assert result.returncode == 1
+    assert '[FAIL] uv executable unavailable for MightyModels MCP launcher' in result.stdout
+    assert '11/11' in result.stdout
+    assert '19/19' in result.stdout

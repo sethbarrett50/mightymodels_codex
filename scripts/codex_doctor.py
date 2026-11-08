@@ -3,6 +3,7 @@
 import argparse
 import tomllib
 from pathlib import Path
+from shutil import which
 
 from install_codex_user import AGENT_COUNT, SKILL_COUNT, hook_config, managed_hooks_present
 
@@ -24,6 +25,17 @@ def check_mcp(config: dict, root: Path) -> str:
         else 'Global MightyModels MCP registration missing or unexpected'
     )
     return note(message, ok=valid)
+
+
+def check_runtime() -> str:
+    """Diagnose the launcher dependency without invoking it or exposing paths."""
+    available = which('uv') is not None
+    return note(
+        'uv executable available for MightyModels MCP launcher'
+        if available
+        else 'uv executable unavailable for MightyModels MCP launcher',
+        ok=available,
+    )
 
 
 def check_agents(config: dict, home: Path, root: Path) -> str:
@@ -98,6 +110,7 @@ def diagnose(home: Path, root: Path, cwd: Path) -> tuple[list[str], bool]:
 
     reports = [
         check_mcp(config, root),
+        check_runtime(),
         check_agents(config, home, root),
         check_skills(home, root),
         check_hooks(home, root),
