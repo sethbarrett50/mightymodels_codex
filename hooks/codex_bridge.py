@@ -151,6 +151,28 @@ def run_admission(event: object, *, project_root: Path, environ: dict) -> dict |
     return decision
 
 
+def unconfirmed_user_input(event: dict, response: dict) -> bool:
+    """Treat explicit host timeout/cancellation metadata as no user answer."""
+    for record in (event, response):
+        if record.get('status') in (
+            'timeout',
+            'timed_out',
+            'cancelled',
+            'canceled',
+            'interrupted',
+            'auto_resolved',
+        ):
+            return True
+        if any(
+            record.get(key) is True
+            for key in ('timedOut', 'timed_out', 'autoResolved', 'auto_resolved', 'cancelled')
+        ):
+            return True
+        if 'afkTimeoutMs' in record:
+            return True
+    return False
+
+
 def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901, PLR0911, PLR0912, PLR0914, PLR0915
     """Convert only explicit, nonsecret Plan-mode answers for the legacy recorder.
 
@@ -175,9 +197,9 @@ def translate_plan_answers(event: dict) -> dict | None:  # noqa: C901, PLR0911, 
     returned = response.get('answers')
     if not isinstance(questions, list) or not isinstance(returned, dict):
         return None
-    # Even an explicit JSON null marks a host timeout field as present.
-    # Match the legacy recorder's fail-closed presence check.
-    if 'afkTimeoutMs' in response:
+    # Never turn a host-expired question into a persisted choice, even if
+    # the response also contains an answer-shaped object.
+    if unconfirmed_user_input(event, response):
         return None
 
     answers: dict[str, str] = {}
