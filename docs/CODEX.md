@@ -41,9 +41,29 @@ coverage. Configuration support is not evidence that this installation
 delivered those events; test that separately in unrelated repositories.
 See https://learn.chatgpt.com/docs/hooks for the current host contract.
 
+## Verified Default-mode question and decision persistence — November 9, 2026
+
+User-provided Codex CLI v0.167.0 transcripts from a disposable unrelated
+repository demonstrate two native `request_user_input` questions in Default
+mode, with explicit answers `Confirm target` and `Continue testing`.
+`mighty_mcp.investigation_start` created
+`20261109-verify-native-codex-user-decisions`; `investigation_add` saved
+`e1: Continue testing (user, round 1)`, and `investigation_render`
+returned the same decision. In a separate new Codex session,
+`investigation_list` and `investigation_render` recovered the same ID,
+target, entry, source and round without rewriting or re-asking.
+
+These results **verify explicit MCP decision persistence and cross-session
+read-back**, not automatic hook-backed recording. Both question calls emitted
+a hook warning that the response was not automatically persisted; the
+explicit MCP fallback succeeded. `SessionStart` pointer injection,
+compaction/resume, duplicate-event idempotence and full workflow lifecycle
+remain unverified under issues #8 and #14. The unrelated read-only scout
+test is not proof of host-level admission denial (issue #9).
+
 ## Observed live results — Debian 13, Codex CLI 0.167.0 (November 2026)
 
-**Historical observations, not current end-to-end acceptance.** Static checks and CLI discovery do not demonstrate host-enforced dispatch denial, read-only scout isolation, actual spawned-agent model identity, decision persistence, or complete lifecycle behavior. Track these separately under issues [#9](https://github.com/sethbarrett50/mightymodels_codex/issues/9), [#8](https://github.com/sethbarrett50/mightymodels_codex/issues/8), [#14](https://github.com/sethbarrett50/mightymodels_codex/issues/14) and [#16](https://github.com/sethbarrett50/mightymodels_codex/issues/16).
+**Historical observations, not current end-to-end acceptance.** Static checks and CLI discovery do not demonstrate host-enforced dispatch denial, read-only scout isolation, actual spawned-agent model identity, automatic hook-based decision recording, or complete lifecycle behavior. Track these separately under issues [#9](https://github.com/sethbarrett50/mightymodels_codex/issues/9), [#8](https://github.com/sethbarrett50/mightymodels_codex/issues/8), [#14](https://github.com/sethbarrett50/mightymodels_codex/issues/14) and [#16](https://github.com/sethbarrett50/mightymodels_codex/issues/16).
 
 The separate, unprivileged `codex` user on Debian 13 successfully:
 
