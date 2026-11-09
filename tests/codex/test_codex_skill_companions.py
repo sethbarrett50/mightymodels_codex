@@ -63,3 +63,18 @@ def test_review_model_metadata_not_misrepresented_as_runtime_identity() -> None:
     assert 'records the actual reviewer model' not in rendered
     assert 'effective model identity as unverified' in rendered
     assert 'gpt-6.1-sol' in rendered
+
+
+@pytest.mark.unit
+def test_generated_investigation_gates_wait_and_persist_explicit_user_decisions() -> None:
+    source = ROOT / 'skills/lets-investigate/SKILL.md'
+    rendered = GENERATE(source)
+    installed = (ROOT / '.codex/skills/lets-investigate/SKILL.md').read_text()
+    assert rendered == installed
+    assert 'Codex user decision gate' not in rendered
+    assert 'ordinary chat' in rendered
+    assert 'End the turn until the user explicitly responds' in rendered
+    assert 'investigation_add' in rendered
+    assert 'kind `decision`' in rendered
+    assert 'investigation_render' in rendered
+    assert 'Never record silence or defaults as decisions' in rendered
