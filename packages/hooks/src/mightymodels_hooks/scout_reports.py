@@ -16,6 +16,7 @@ on standard output.
 """
 
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import TYPE_CHECKING, TextIO
 
 from mightymodels_core.edge import open_state
@@ -64,7 +65,14 @@ def target_of(scout: Scout, payload: ScoutPayload) -> str:
     if payload.agent_id is None or payload.agent_id == '':
         return scout
 
-    return f'{scout} {payload.agent_id}'[: SimilarityOptions().name_limit]
+    target = f'{scout} {payload.agent_id}'
+    limit = SimilarityOptions().name_limit
+    if len(target) <= limit:
+        return target
+
+    # Keep distinct long native IDs from collapsing onto the same truncated target.
+    digest = sha256(payload.agent_id.encode('utf-8')).hexdigest()[:16]
+    return f'{target[: limit - len(digest) - 1]}-{digest}'
 
 
 def scout_report_of(
