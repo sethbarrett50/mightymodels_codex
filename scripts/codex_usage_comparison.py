@@ -43,6 +43,8 @@ def _validated_usage(usage: object, events: object) -> dict[str, int] | None:
             'malformed_events',
             'turns_without_usage',
             'turns_with_incomplete_usage',
+            'mcp_calls_failed',
+            'commands_exited_nonzero',
         )
     )
     if any(value is None or value > 0 for value in errors):
