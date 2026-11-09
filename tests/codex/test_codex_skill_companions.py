@@ -37,9 +37,9 @@ def test_open_ticket_metadata_requires_real_chat_instead_of_nonexistent_dialog()
     rendered = GENERATE(source)
     installed = (ROOT / '.codex/skills/open-ticket/SKILL.md').read_text()
     assert rendered == installed
-    assert 'a blocking ordinary-chat interview' in rendered
+    assert 'a blocking native Plan-mode interview' in rendered
     assert 'one Codex user decision gate interview' not in rendered
-    assert 'no native dialog API is implied' in rendered
+    assert 'blocking native `request_user_input`' in rendered
 
 
 @pytest.mark.unit
@@ -72,8 +72,8 @@ def test_generated_investigation_gates_wait_and_persist_explicit_user_decisions(
     installed = (ROOT / '.codex/skills/lets-investigate/SKILL.md').read_text()
     assert rendered == installed
     assert 'Codex user decision gate' not in rendered
-    assert 'ordinary chat' in rendered
-    assert 'End the turn until the user explicitly responds' in rendered
+    assert 'blocking native `request_user_input` in Plan mode' in rendered
+    assert 'Wait for an explicit verified response' in rendered
     assert 'investigation_add' in rendered
     assert 'kind `decision`' in rendered
     assert 'investigation_render' in rendered
