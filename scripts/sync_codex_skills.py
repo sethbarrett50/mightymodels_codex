@@ -41,6 +41,21 @@ CODEX_NATIVE_QUESTION_POLICY = (
 )
 
 
+def native_question_contract(body: str, name: str) -> str:
+    """Override legacy Claude question instructions with the native Codex gate."""
+    if name == 'ask-an-adult':
+        return body
+    text, count = re.subn(
+        r'(?m)^> \*\*Codex required user-input contract \(all skills\):\*\*[^\n]*$',
+        CODEX_NATIVE_QUESTION_POLICY,
+        body,
+    )
+    if count != 1:
+        msg = 'Expected exactly one Codex skill question policy to translate'
+        raise ValueError(msg)
+    return text
+
+
 def native_dispatch_steps(body: str) -> str:
     """Replace Claude-only dispatch steps with Codex role and model semantics."""
     model_step = (
@@ -651,15 +666,7 @@ def translated(source: Path) -> str:
     transformer = transformers.get(name)
     if transformer is not None:
         body = transformer(body)
-    if name != 'ask-an-adult':
-        body, count = re.subn(
-            r'(?m)^> \*\*Codex required user-input contract \(all skills\):\*\*[^\n]*$',
-            CODEX_NATIVE_QUESTION_POLICY,
-            body,
-        )
-        if count != 1:
-            msg = 'Expected exactly one Codex skill question policy to translate'
-            raise ValueError(msg)
+    body = native_question_contract(body, name)
     return f'---\n{front}\n---\n\n{BANNER}\n\n{native_companion_guidance(name)}{body}'
 
 
