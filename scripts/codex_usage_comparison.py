@@ -38,7 +38,10 @@ def _validated_usage(usage: object, events: object) -> dict[str, int] | None:
     errors = (
         _safe_count(events.get(name, 0))
         for name in (
-            'turn_failed', 'errors', 'malformed_events', 'turns_without_usage',
+            'turn_failed',
+            'errors',
+            'malformed_events',
+            'turns_without_usage',
             'turns_with_incomplete_usage',
         )
     )
