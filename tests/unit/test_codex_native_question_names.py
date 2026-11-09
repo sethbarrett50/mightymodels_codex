@@ -18,3 +18,10 @@ def test_native_question_instructions_do_not_name_fake_tool(name: str) -> None:
     assert 'Codex user decision gate' not in generated
     assert 'native `request_user_input`' in generated
     assert generated == (ROOT / '.codex/skills' / name / 'SKILL.md').read_text(encoding='utf-8')
+
+
+@pytest.mark.unit
+def test_all_generated_skills_avoid_fictitious_dialog_tool_names() -> None:
+    for source in (ROOT / 'skills').glob('*/SKILL.md'):
+        generated = translated(source)
+        assert 'Codex user decision gate' not in generated
