@@ -173,11 +173,42 @@ means the bridge returned a bounded persisted pointer hint; `hint=absent`
 means no hint was returned, and `hint=warning` means the handler reported a
 failure. These sanitized receipts contain no pointer identifiers or answers.
 Even `hint=present` does **not** alone prove the Codex host injected the
-context into its model; verify that separately in the resumed session. Validate the resumed pointer separately by reading the exact
-MCP record, without reconstructing its value from chat. `PreCompact`
+context into its model; verify that separately in the resumed session.
+Validate the resumed pointer separately by reading the exact MCP record, without reconstructing its value from chat. `PreCompact`
 delivery requires an actual compaction event. A missing log is
 inconclusive until hook trust, matcher and marker ownership are checked.
 This probe never changes MCP state or authorization decisions.
+
+### Registered-repository prerequisite for pointer acceptance
+
+A new disposable Git repository has **no MightyModels repository record**.
+Read-only MCP calls such as `investigation_list` can fail with
+`no repository is recorded ... a write unit of work records it on first use`.
+This is expected: investigations and session pointers are repository-scoped;
+the investigation ID from a previously registered checkout must **not** be
+assumed visible in a new checkout.
+
+A bounded real-host test must use a fresh disposable Git checkout and
+explicitly authorize one `mighty_mcp.investigation_start` write *in that
+checkout*, supplying a target and kind to avoid interactive questions.
+Read the returned investigation ID from the actual tool result, then call
+`mighty_mcp.investigation_render` with that **new** ID. The render's named
+`investigation_id` input is what permits the Codex `PostToolUse` bridge
+to establish a session pointer; the returned ID from
+`investigation_start` by itself cannot do so. Do not assume that a failed
+tool call, `investigation_list`, or unrelated session history recorded
+a pointer. Exit normally and resume the **same Codex session ID** in the
+same checkout with the private lifecycle marker enabled.
+
+Expected evidence is all of: the start returned an ID, render succeeded,
+the log contains `event=SessionStart source=resume` and
+`event=SessionResumePointer hint=present`, and the resumed host independently
+reports seeing `MightyModels persisted active investigation:` in injected
+SessionStart context *before* any MCP reads. The sanitized `hint=present`
+receipt proves the bridge returned a hint, not that the host injected it.
+`hint=absent` after an unregistered-repository read failure is a missing
+precondition, **not** a pointer-restoration defect. Never auto-resolve pending
+choices or run dispatch/security probes as part of this test.
 
 ### Session resume pointer fallback (issue #8)
 
