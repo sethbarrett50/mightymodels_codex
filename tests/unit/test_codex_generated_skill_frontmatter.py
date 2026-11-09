@@ -12,11 +12,12 @@ native_baton_pass_frontmatter = SYNC['native_baton_pass_frontmatter']
 
 
 @pytest.mark.unit
-def test_baton_pass_summary_requires_real_chat_answers() -> None:
+def test_baton_pass_summary_requires_native_questions_and_real_answers() -> None:
     generated = translated(ROOT / 'skills/baton-pass/SKILL.md')
     assert generated == (ROOT / '.codex/skills/baton-pass/SKILL.md').read_text(encoding='utf-8')
     front = generated.split('---', 2)[1]
-    assert 'asks in ordinary chat' in front
+    assert 'asks using native interactive input' in front
+    assert 'asks in ordinary chat' not in front
     assert 'awaits explicit user answers' in front
     assert 'Codex user decision gate' not in front
     assert 'asks in one' not in front
