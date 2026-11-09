@@ -15,7 +15,7 @@ when_to_use: >-
   does not know what to do next.
 ---
 
-> **Native Codex workflow (generated):** This file is generated from the Claude skill; do not edit it directly. MCP calls must use actual `mighty_mcp` tools exposed by the current Codex session. Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage APIs or inherit model aliases. A required decision in Default mode uses ordinary chat and stops until a real answer; auto-resolution never grants permission. `USER_REQUEST_ARGS` denotes the user-provided invocation text, not a shell variable. Helper paths resolve through the installed `$HOME/.agents/skills/` links; if these links are missing, stop rather than guessing a file location.
+> **Native Codex workflow (generated):** This file is generated from the Claude skill; do not edit it directly. MCP calls must use actual `mighty_mcp` tools exposed by the current Codex session. Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage APIs or inherit model aliases. Always invoke real `request_user_input` for user questions, never a chat imitation of a popup. Required decisions need blocking Plan-mode input; if unavailable stop without auto-consent. `USER_REQUEST_ARGS` denotes the user-provided invocation text, not a shell variable. Helper paths resolve through the installed `$HOME/.agents/skills/` links; if these links are missing, stop rather than guessing a file location.
 
 # ask-an-adult — native Codex decision escalation
 
@@ -36,10 +36,13 @@ at least two real options and their costs, and your tentative preference. State
 clearly that this is your own analysis, **not a Wingman report**. Include the
 information still needed for a well-founded decision.
 
-Ask the user in **ordinary chat** to pick an option or give a free-text instruction.
-End the turn until they explicitly respond. A timeout, dismissal, empty answer,
-nonblocking popup or automatic resolution does not grant permission. Do not
-proceed with implementation or silently substitute your preference.
+Use the actual native `request_user_input` question tool in **Plan mode**, offering
+at least two choices plus a free-text path when supported. Do not imitate
+its UI by listing options in ordinary chat. The user must provide an explicit
+answer to the blocking prompt. If the tool or blocking Plan mode is unavailable,
+stop and explain the capability needed; do not ask a textual substitute or
+proceed. A timeout, dismissal, empty answer, or automatic resolution does not
+grant permission. Never silently substitute your preference.
 
 ## 2. Persist the actual answer before resuming
 
