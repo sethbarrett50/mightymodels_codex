@@ -97,9 +97,7 @@ triage wearing thoroughness as a costume.
 four options each (the user can always type an answer of their own), only for uncertainties
 the user can actually answer (intent, production observations, history, priorities). Uncertainties a scout could answer get one more narrow dispatch instead
 of a question; uncertainties nobody can answer yet are recorded as such. Record each answer as
-a known with source `user`. When no dialog is available, list the questions you
-would ask, state a working assumption for each, and proceed on the assumptions labelled as
-assumptions.
+a known with source `user`. If native input is unavailable or its explicit-human provenance cannot be verified, leave user-answerable uncertainties pending. Record only supported facts and unresolved questions; do not invent a user-source decision or proceed on assumed answers. Stop before downstream work requiring that choice.
 
 **Persist before analysing.** Write the session's verdicts in one batch with
 `investigation_add`, with `round` the next one after the ledger's latest. The batch
