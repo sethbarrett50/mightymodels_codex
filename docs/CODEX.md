@@ -252,16 +252,27 @@ task and `engineer` attempts=1. After exact-session resume, two
 `task_show` and two `ticket_show` MCP read-backs matched and retained
 the explicit ticket-context handoff marker. No agent was dispatched.
 
-**Still unverified for #8:** full `baton-pass` snapshot/BATON.md workflow,
-scout handback/`SubagentStop` delivery on the real Codex host, and
-pending user decisions across an interrupted workflow. The earlier
-native-question tests must not be mistaken for explicit human authorization.
-Host dispatch admission/security acceptance is separately deferred in #9.
-Neither milestone completes #14 full native workflow acceptance or #16
-effective model and quota measurements.
+**Also verified on 2026-11-09:** In the disposable ticket checkout,
+native `baton-pass` wrote `handoffs/snapshot.json`, `snapshot.md`, and
+`BATON.md`. An unverified native popup answer was correctly rejected.
+The user then explicitly confirmed the next-session focus in chat; Codex
+persisted it through `ticket_update_context`, refreshed the snapshot,
+and read back the files and MCP state. The user exited and resumed exact
+session `01a1c1e5-4237-7072-ae1d-33bc3fbc33a4`; post-resume
+`task_show` and `ticket_show` agreed with the baton and snapshot:
+T1 remained in progress, with one engineer attempt. This proves the
+scoped baton artifact and context handoff across a genuine session boundary,
+not complete multiagent workflow parity.
 
-This distinction is intentional: successful hooks and durable MCP records
-do not prove the remaining full-workflow transitions.
+**Still unverified for #8:** live scout handback/`SubagentStop` report
+persistence and pending required decisions across interruption *before*
+an explicit answer is supplied. An auto-resolved native question is not
+human authorization. Host dispatch admission/security acceptance is
+separately deferred in #9; #14 full native workflow and #16 effective
+model/usage measurements also remain unverified.
+
+Successful hooks and durable MCP records do not prove those remaining
+full-workflow transitions.
 
 ### Project-only post-edit Python checks (issue #17)
 
