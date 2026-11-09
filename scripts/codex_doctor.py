@@ -66,7 +66,9 @@ def skill_manifest_named(source: Path) -> bool:
     try:
         with source.open(encoding='utf-8') as manifest:
             first, name, third = (manifest.readline().strip() for _ in range(3))
-    except OSError, UnicodeError:
+    except OSError:
+        return False
+    except UnicodeError:
         return False
     return (
         first == '---'
