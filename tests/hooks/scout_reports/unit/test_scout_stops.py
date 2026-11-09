@@ -55,6 +55,18 @@ class TestScoutReportOf:
         assert isinstance(incoming, IncomingReport)
         assert len(incoming.target) == NAME_LIMIT
 
+    def test_long_agent_ids_with_same_prefix_have_distinct_stable_targets(self) -> None:
+        first = scout_report_of(stop_event(CODE_SCOUT, agent_id='z' * 400 + 'one'), REPORT)
+        second = scout_report_of(stop_event(CODE_SCOUT, agent_id='z' * 400 + 'two'), REPORT)
+        again = scout_report_of(stop_event(CODE_SCOUT, agent_id='z' * 400 + 'one'), REPORT)
+
+        assert isinstance(first, IncomingReport)
+        assert isinstance(second, IncomingReport)
+        assert isinstance(again, IncomingReport)
+        assert first.target != second.target
+        assert first.target == again.target
+        assert len(first.target) == len(second.target) == NAME_LIMIT
+
     @blank_report_cases()
     def test_a_missing_or_blank_report_is_no_report(self, report: str | None) -> None:
         assert isinstance(scout_report_of(stop_event(CODE_SCOUT), report), NoReportError)
