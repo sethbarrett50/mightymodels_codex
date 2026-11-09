@@ -114,6 +114,21 @@ class TestStop:
 
         assert len(harness.rows()) == 2
 
+    async def test_long_agent_ids_remain_distinct_and_replays_are_idempotent(
+        self, harness: ScoutHarness
+    ) -> None:
+        first = 'x' * 400 + 'first'
+        second = 'x' * 400 + 'second'
+        await harness.hand_back(handback_payload(CODE_SCOUT, agent_id=first))
+        await harness.stop(stop_payload(CODE_SCOUT, agent_id=first))
+        await harness.stop(stop_payload(CODE_SCOUT, agent_id=second))
+        await harness.stop(stop_payload(CODE_SCOUT, agent_id=second))
+
+        rows = harness.rows()
+        assert len(rows) == 2
+        assert len({row.target for row in rows}) == 2
+        assert all(len(row.target) <= 255 for row in rows)
+
     async def test_a_stop_for_the_other_scout_adds_its_own_row(self, harness: ScoutHarness) -> None:
         await harness.hand_back(handback_payload(CODE_SCOUT))
         await harness.stop(stop_payload(WEB_SCOUT))
