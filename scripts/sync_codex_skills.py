@@ -35,8 +35,10 @@ BANNER = (
 
 
 CODEX_NATIVE_QUESTION_POLICY = (
-    Path(__file__).resolve().parent / 'codex_native_question_policy.txt'
-).read_text(encoding='utf-8').strip()
+    (Path(__file__).resolve().parent / 'codex_native_question_policy.txt')
+    .read_text(encoding='utf-8')
+    .strip()
+)
 
 
 def native_dispatch_steps(body: str) -> str:
