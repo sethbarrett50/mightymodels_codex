@@ -599,9 +599,7 @@ def translated(source: Path) -> str:
             'no native dialog API is implied.',
         )
     front, body = (
-        native_investigation_decisions(front, body)
-        if name == 'lets-investigate'
-        else (front, body)
+        native_investigation_decisions(front, body) if name == 'lets-investigate' else (front, body)
     )
     front = native_baton_pass_frontmatter(front) if name == 'baton-pass' else front
     front = native_landing_frontmatter(front) if name == 'stick-the-landing' else front
