@@ -103,14 +103,14 @@ def native_investigation_decisions(front: str, body: str) -> tuple[str, str]:
 def native_escalation(front: str) -> tuple[str, str]:
     """Replace Claude Wingman dispatch with an explicit Codex user decision."""
     original = (
-        "Escalate a stuck decision to the wingman advisor and act on what comes back. Builds the"
+        'Escalate a stuck decision to the wingman advisor and act on what comes back. Builds the'
         "\n  escalation packet, dispatches wingman, then puts wingman's questions to the"
-        "\n  user through `Codex user decision gate` before any work resumes."
+        '\n  user through `Codex user decision gate` before any work resumes.'
     )
     replacement = (
-        "Resolve a stuck judgment call through an explicit Codex ordinary-chat user decision."
-        "\n  No Wingman/Fable agent or substitute dispatch is available. Persist confirmed"
-        "\n  decisions through supported MCP tools before resuming."
+        'Resolve a stuck judgment call through an explicit Codex ordinary-chat user decision.'
+        '\n  No Wingman/Fable agent or substitute dispatch is available. Persist confirmed'"
+        '\n  decisions through supported MCP tools before resuming.'
     )
     if front.count(original) != 1:
         msg = 'Expected exactly one Wingman-only escalation frontmatter description'
