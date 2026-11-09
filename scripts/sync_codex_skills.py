@@ -34,7 +34,9 @@ BANNER = (
 )
 
 
-CODEX_NATIVE_QUESTION_POLICY = "> **Codex native user questions (all skills):** Use the actual `request_user_input` tool for every question needing a user answer when available; never simulate an interactive popup using prose or a text multiple-choice list. Optional questions may use it in Default mode. Required decision gates must use a genuinely blocking question in Plan mode. If the tool or blocking mode is unavailable, stop and explain that the user must switch to Plan mode or enable native questions; do not substitute an ordinary-chat question or proceed. Empty, missing, timed-out, cancelled, interrupted or automatically resolved responses never count as approval. Preserve the pending decision and persist only a verified explicit answer with available MightyModels MCP tools. This Codex-only contract overrides any later legacy instruction to ask in ordinary chat or use Claude question dialogs."
+CODEX_NATIVE_QUESTION_POLICY = (
+    Path(__file__).resolve().parent / 'codex_native_question_policy.txt'
+).read_text(encoding='utf-8').strip()
 
 
 def native_dispatch_steps(body: str) -> str:
