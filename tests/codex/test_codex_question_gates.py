@@ -47,3 +47,14 @@ def test_default_mode_native_choices_are_not_approval() -> None:
     assert 'do **not** refuse to ask solely' in instructions
     assert 'Default-mode dialogs may auto-resolve' in instructions
     assert 'leave the gate pending' in instructions
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('name', ['open-ticket', 'lets-investigate'])
+def test_primary_workflow_questions_use_native_default_mode(name: str) -> None:
+    text = (ROOT / '.codex/skills' / name / 'SKILL.md').read_text(encoding='utf-8')
+    assert 'request_user_input' in text
+    assert 'Default or Plan mode' in text
+    assert 'only a verified explicit user answer satisfies a gate' in text
+    assert 'blocking native `request_user_input` in Plan mode' not in text
+    assert 'free-text input in ordinary chat' not in text
