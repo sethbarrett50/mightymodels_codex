@@ -66,7 +66,20 @@ def native_dispatch_steps(body: str) -> str:
         if count != 1:
             msg = 'Expected exactly one Claude dispatch step to translate'
             raise ValueError(msg)
-    return body
+    legacy_doctrine = (
+        'each preloads its doctrine as a skill of its own, '
+        '`becoming-merge-vader` or `becoming-uncle-bob`.'
+    )
+    native_doctrine = (
+        'each must explicitly read its installed doctrine from '
+        '`$HOME/.agents/skills/becoming-merge-vader/SKILL.md` or '
+        '`$HOME/.agents/skills/becoming-uncle-bob/SKILL.md` before review; '
+        'Codex does not guarantee skill preloads.'
+    )
+    if body.count(legacy_doctrine) != 1:
+        msg = 'Expected exactly one Claude reviewer doctrine preload claim'
+        raise ValueError(msg)
+    return body.replace(legacy_doctrine, native_doctrine)
 
 
 def native_open_ticket_decisions(body: str) -> str:
