@@ -373,7 +373,15 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
         # Legacy persistence handlers can report unreadable state on stderr
         # despite exit 0. Never echo private handler diagnostics.
         elif (
-            command in ('session-pointer', 'ask-recorder', 'subagent-record', 'pre-compact')
+            command
+            in (
+                'session-pointer',
+                'ask-recorder',
+                'subagent-record',
+                'pre-compact',
+                'session-prune',
+                'session-resume',
+            )
             and result.stderr.strip()
         ):
             warning = f'MightyModels {command} reported a persistence warning'
