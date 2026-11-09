@@ -115,8 +115,7 @@ four handlings (the user can always type a handling of their own):
   again.
 
 Record the choice in the Risks section verbatim. A risk without a user-chosen handling is a
-risk the post-compaction primary will handle by improvising. When no dialog is available, ask
-in chat with the four handlings spelled out, and wait.
+risk the post-compaction primary will handle by improvising. If native input is unavailable, leave the risk handling pending; do not infer an answer.
 
 **5b. Ask who answers a block.** The ticket's `auto-escalate` decides what happens when a task
 ends `blocked` or `failed` in the sprint. Invoke native `request_user_input` for one question; wait for a verified explicit answer, the
@@ -129,8 +128,7 @@ default first:
   ticket.yml, then call `ticket_validate` with the `slug`, which stores it. A block then goes
   to the architect once with no question.
 
-A ticket.yml that already has the key has its answer, so do not ask again. When no dialog is
-available, ask in chat with both answers spelled out, and wait.
+A ticket.yml that already has the key has its answer, so do not ask again. If native input is unavailable, leave the escalation choice pending; do not infer an answer.
 
 **6. Get approval.** Write `plan.md` with the handlings folded in, present it, and invoke native `request_user_input` when exposed and stop for an explicit choice: approve, revise, or abandon. This gate is the user's, and it is the last cheap
 moment to change direction. On approve, call `task_declare` with the `slug` and the plan's task
