@@ -251,8 +251,10 @@ def native_baton_pass_decisions(body: str) -> str:
                 'from the state rather than generic:'
             ),
             (
-                'For an active ticket, BEFORE asking, read the current ticket context via `ticket_show`, '
-                'preserve every existing entry, add `Pending baton focus: explicit user answer not yet '
+                'For an active ticket, BEFORE asking, read the current ticket context via '
+                '`ticket_show`, '
+                'preserve every existing entry, add `Pending baton focus: explicit user '
+                'answer not yet '
                 'verified` (and a pending uncommitted-work marker if the tree is dirty), '
                 'write the entire context with `ticket_update_context`, and verify the new '
                 'markers through `ticket_show`. If this write fails, STOP rather than '
