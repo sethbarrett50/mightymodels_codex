@@ -1,6 +1,7 @@
 """Read-only doctor cannot disclose secrets or silently bless missing setup."""
 
 import json
+from importlib import import_module
 import os
 import subprocess
 import sys
@@ -187,8 +188,6 @@ def test_doctor_rejects_mismatched_skill_manifest_name(tmp_path: Path) -> None:
         ),
         encoding='utf-8',
     )
-    from importlib import import_module
-
     # Importing the module does not execute its CLI or modify the checkout.
     sys.path.insert(0, str(ROOT / 'scripts'))
     try:
