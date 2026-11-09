@@ -516,7 +516,8 @@ def native_landing_decisions(body: str) -> str:
     after = (
         'invoke native `request_user_input` in Default or Plan mode for review '
         'now versus hand off. Await a verified explicit choice; if native input '
-        'is unavailable, stop with the decision pending. Neither timeout nor auto-resolution is consent:'
+        'is unavailable, stop with the decision pending. Neither timeout nor '
+        'auto-resolution is consent:'
     )
     if body.count(before) != 1:
         msg = 'Expected exactly one landing decision instruction'
