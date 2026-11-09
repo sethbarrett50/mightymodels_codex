@@ -269,8 +269,21 @@ decisions remain pending across resume/compaction. The original Claude
 and read-back verification instead.
 
 The `request_user_input` schema is controlled by the host. Do not invent
-`autoResolutionMs` or `isBlocking` arguments, and never promise a
-Default-mode question will remain open indefinitely.
+`autoResolutionMs` or `isBlocking` arguments. **Plan mode is the
+blocking-capable mode, but it does not guarantee infinite wait:** Codex may
+still expire a prompt due to host/session lifecycle or stream timeouts.
+An expired question remains unanswered; stop the dependent workflow and
+re-present the pending decision through a new native question after resuming.
+If the investigation or ticket exists, read the persisted state first rather
+than rebuilding or choosing a decision on the user's behalf. Verify an
+explicit answer by MCP read-back before advancing.
+
+The bridge rejects recognized timeout, interruption, cancellation and
+auto-resolution markers even if the host also returns answer-shaped data.
+Unrecognized host payloads cannot prove user confirmation; this is a
+fail-closed safeguard, **not** a way to disable host-managed timeouts.
+See upstream Codex issues #27458 and #43759 for the unresolved timeout
+behavior. Do not promise either Default or Plan mode waits indefinitely.
 
 ### Global instructions under `~/.codex/AGENTS.md`
 
