@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 MAX_INPUT_BYTES = 65536
+PARSE_ERRORS = (OSError, UnicodeError, ValueError)
 
 
 def _safe_count(value: object) -> int | None:
@@ -33,7 +34,10 @@ def _validated_usage(usage: object, events: object) -> dict[str, int] | None:
     assert turns is not None
     if turns == 0 or cached_tokens > input_tokens:
         return None
-    errors = (_safe_count(events.get(name, 0)) for name in ('turn_failed', 'errors', 'malformed_events'))
+    errors = (
+        _safe_count(events.get(name, 0))
+        for name in ('turn_failed', 'errors', 'malformed_events')
+    )
     if any(value is None or value > 0 for value in errors):
         return None
     return {'turns': turns, 'input_tokens': input_tokens, 'output_tokens': output_tokens}
@@ -44,7 +48,7 @@ def _load_summary(path: Path) -> dict[str, int] | None:
         return None
     try:
         data = json.loads(path.read_text(encoding='utf-8'))
-    except OSError, UnicodeError, ValueError:
+    except PARSE_ERRORS:
         return None
     if not isinstance(data, dict) or data.get('source') != 'codex-exec-jsonl':
         return None
