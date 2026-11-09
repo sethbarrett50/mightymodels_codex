@@ -4,7 +4,7 @@ description: >-
   Split one mightymodels task that is too large into tasks of one reviewable unit of work each,
   and put the split to the user before anything changes. Size is guidance. Use when
   `task_start` warns that a task is large, when an engineer or architect returns `too-large` with
-  its cuts, or when a plan task is plainly several changes. Ends by asking in ordinary chat and awaiting explicit approval for every piece (id, intent, acceptance, owned
+  its cuts, or when a plan task is plainly several changes. Ends with native `request_user_input` and verified explicit approval for every piece (id, intent, acceptance, owned
   files); only after the user answers is the original superseded and the plan updated. Not for
   revising the ASKED stanza of one task (the architect's `replanned`).
 when_to_use: >-
@@ -30,8 +30,7 @@ routes here, and the user decides whether to split.
 
 **Nothing changes before the user answers.** Until the user explicitly answers the blocking question in step 4 this skill
 writes nothing: no task call that moves a task, no edit to the plan or to a
-brief. The pieces are a proposal, and the plan is the user's. A timeout, cancellation, dismissal or empty reply is not an answer: ask again in
-ordinary chat. Do not decide for the user or start a piece while awaiting approval.
+brief. The pieces are a proposal, and the plan is the user's. A timeout, cancellation, dismissal, empty or auto-resolved response is not an answer: keep the decision pending and invoke native `request_user_input` again when available. Do not start a piece.
 
 **Argument:** the id of the task to split, given when the skill was started: "USER_REQUEST_ARGS". Empty
 quotes mean none was given, and the task is the one `task_start` just warned about or a worker just returned
@@ -74,7 +73,7 @@ and offer the task whole; the user decides, and a warning stops nothing.
 **3. Give the pieces ids.** The next free `T` ids of the task list, in dependency order. The
 original's id is never reused, because its history stays under it. Each task that named the original in `depends-on` will name the piece that carries what it waited for.
 
-**4. Ask the user once.** Write the pieces out in full in your message, then ask in ordinary chat whether to split, keep, or revise. End the turn until the user explicitly responds. Each piece shows its id, its intent, its acceptance and its
+**4. Ask the user once.** Write the pieces out in full in your message, then invoke native `request_user_input` in Default or Plan mode to choose split, keep or revise. Stop until a verified explicit answer; if unavailable, leave the gate pending. Each piece shows its id, its intent, its acceptance and its
 owned files:
 
 ```text
@@ -88,11 +87,11 @@ T7 (sm): <one-line intent: what and where>
 
 Below the pieces, list what the split changes outside them: each `depends-on` that moves, each
 criterion that was divided, and each file a worker already edited with the piece that takes it.
-Ask one blocking question with these options:
+Use one native `request_user_input` question with these options:
 
 - **Split as shown.** The original is superseded and the pieces replace it.
 - **Keep it as one task.** Nothing is split; the task starts whole on the user's approval.
-- **Change the split.** The user says what to change, using an explicit free-text response in chat.
+- **Change the split.** The user says what to change, using the native tool free-text option with a verified user response.
 
 ## After the answer
 
