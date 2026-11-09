@@ -24,13 +24,17 @@ BANNER = (
     'Claude skill; do not edit it directly. MCP calls must use actual '
     '`mighty_mcp` tools exposed by the current Codex session. '
     'Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage '
-    'APIs or inherit model aliases. A required decision in Default mode uses '
-    'ordinary chat and stops until a real answer; auto-resolution never grants '
-    'permission. `USER_REQUEST_ARGS` denotes the user-provided invocation '
+    'APIs or inherit model aliases. Always invoke real `request_user_input` '
+    'for user questions, never a chat imitation of a popup. Required decisions '
+    'need blocking Plan-mode input; if unavailable stop without auto-consent. '
+    '`USER_REQUEST_ARGS` denotes the user-provided invocation '
     'text, not a shell variable. Helper paths resolve through the installed '
     '`$HOME/.agents/skills/` links; if these links are missing, stop rather '
     'than guessing a file location.'
 )
+
+
+CODEX_NATIVE_QUESTION_POLICY = "> **Codex native user questions (all skills):** Use the actual `request_user_input` tool for every question needing a user answer when available; never simulate an interactive popup using prose or a text multiple-choice list. Optional questions may use it in Default mode. Required decision gates must use a genuinely blocking question in Plan mode. If the tool or blocking mode is unavailable, stop and explain that the user must switch to Plan mode or enable native questions; do not substitute an ordinary-chat question or proceed. Empty, missing, timed-out, cancelled, interrupted or automatically resolved responses never count as approval. Preserve the pending decision and persist only a verified explicit answer with available MightyModels MCP tools. This Codex-only contract overrides any later legacy instruction to ask in ordinary chat or use Claude question dialogs."
 
 
 def native_dispatch_steps(body: str) -> str:
@@ -644,6 +648,77 @@ def translated(source: Path) -> str:
     transformer = transformers.get(name)
     if transformer is not None:
         body = transformer(body)
+    if name != 'ask-an-adult':
+        body, count = re.subn(
+            r'(?m)^> \\*\\*Codex required user-input contract \\(all skills\\):\\*\\*[^\\n]*
+
+
+def generate(root: Path) -> dict[str, str]:
+    sources = sorted((root / 'skills').glob('*/SKILL.md'))
+    if len(sources) != EXPECTED_SKILLS:
+        msg = f'Expected {EXPECTED_SKILLS} source skills, found {len(sources)}'
+        raise ValueError(msg)
+    result = {}
+    for source in sources:
+        name = source.parent.name
+        key = f'.codex/skills/{name}/SKILL.md'
+        result[key] = translated(source)
+    return result
+
+
+def sync_open_ticket_companions(root: Path, *, check: bool) -> list[str]:
+    """Keep generated skill companion links pointed at canonical Claude assets."""
+    stale = []
+    for name in ('assets', 'references', 'scripts'):
+        source = root / 'skills/open-ticket' / name
+        destination = root / '.codex/skills/open-ticket' / name
+        if not source.is_dir():
+            msg = f'Missing source skill companion: {source}'
+            raise ValueError(msg)
+        if destination.is_symlink() and destination.resolve() == source.resolve():
+            continue
+        if check:
+            stale.append(destination.relative_to(root).as_posix())
+        elif destination.exists() or destination.is_symlink():
+            msg = f'Refusing unmanaged Codex companion: {destination}'
+            raise ValueError(msg)
+        else:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.symlink_to(source, target_is_directory=True)
+    return stale
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true')
+    parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[1])
+    args = parser.parse_args()
+    root = args.root.resolve()
+    stale = []
+    for name, content in generate(root).items():
+        path = root / name
+        if args.check:
+            if not path.is_file() or path.read_text(encoding='utf-8') != content:
+                stale.append(name)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding='utf-8')
+    stale.extend(sync_open_ticket_companions(root, check=args.check))
+    if stale:
+        parser.error('Stale generated Codex skills: ' + ', '.join(stale))
+    print(f'Codex skills {"checked" if args.check else "updated"}: 19')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
+,
+            CODEX_NATIVE_QUESTION_POLICY,
+            body,
+        )
+        if count != 1:
+            msg = 'Expected exactly one Codex skill question policy to translate'
+            raise ValueError(msg)
     return f'---\n{front}\n---\n\n{BANNER}\n\n{native_companion_guidance(name)}{body}'
 
 
