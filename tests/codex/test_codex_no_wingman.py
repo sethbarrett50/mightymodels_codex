@@ -1,6 +1,7 @@
 """Guard the Codex Fable-disabled decision route across its consumers."""
 
 from pathlib import Path
+from runpy import run_path
 
 import pytest
 
@@ -36,8 +37,6 @@ def test_codex_global_policy_does_not_substitute_fable() -> None:
 
 @pytest.mark.unit
 def test_installed_codex_ask_an_adult_never_uses_claude_wingman_dispatch() -> None:
-    from runpy import run_path
-
     rendered = run_path(str(ROOT / 'scripts/sync_codex_skills.py'))['translated'](
         ROOT / 'skills/ask-an-adult/SKILL.md'
     )
