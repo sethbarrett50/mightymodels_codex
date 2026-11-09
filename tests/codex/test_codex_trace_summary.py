@@ -169,7 +169,7 @@ def test_missing_or_invalid_turn_usage_is_explicitly_counted() -> None:
             },
         },
     ]
-    report = METRICS.summarize(io.StringIO(''.join(json.dumps(e) + '\\n' for e in events)))
+    report = METRICS.summarize(io.StringIO(''.join(json.dumps(e) + '\n' for e in events)))
     assert report['events']['turns_without_usage'] == 1
     assert report['events']['turns_with_incomplete_usage'] == 1
     assert report['usage']['input_tokens'] == 13
