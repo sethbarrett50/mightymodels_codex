@@ -55,3 +55,40 @@ def test_question_probe_does_not_treat_presence_as_consent(tmp_path: Path) -> No
     assert 'answers_object=True' in record
     assert 'timeout_field=True' in record
     assert 'approved' not in record
+
+
+@pytest.mark.unit
+def test_private_opt_in_marker_survives_missing_hook_environment(tmp_path: Path) -> None:
+    state = tmp_path / '.local/state/mightymodels'
+    state.mkdir(parents=True)
+    marker = state / 'codex-question-probe.enabled'
+    marker.touch(mode=0o600)
+    event = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'request_user_input',
+        'permission_mode': 'default',
+        'tool_response': {'answers': {'a': {'answers': ['DO_NOT_LOG_ANSWER']}}},
+    }
+    question_probe_receipt(event, {'HOME': str(tmp_path)})
+    receipt = (state / 'codex-question-probe.log').read_text(encoding='utf-8')
+    assert 'mode=default' in receipt
+    assert 'DO_NOT_LOG_ANSWER' not in receipt
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('unsafe', ['world_readable', 'symlink'])
+def test_question_probe_rejects_unsafe_opt_in_marker(tmp_path: Path, unsafe: str) -> None:
+    state = tmp_path / '.local/state/mightymodels'
+    state.mkdir(parents=True)
+    marker = state / 'codex-question-probe.enabled'
+    if unsafe == 'symlink':
+        actual = state / 'unrelated'
+        actual.touch(mode=0o600)
+        marker.symlink_to(actual)
+    else:
+        marker.touch(mode=0o644)
+    question_probe_receipt(
+        {'hook_event_name': 'PostToolUse', 'tool_name': 'request_user_input'},
+        {'HOME': str(tmp_path)},
+    )
+    assert not (state / 'codex-question-probe.log').exists()
