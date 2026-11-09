@@ -465,12 +465,9 @@ def lifecycle_probe_receipt(event: object, environ: dict[str, str]) -> None:
         status = marker.stat(follow_symlinks=False)
     except OSError:
         return
-    if (
-        not marker.is_file()
-        or marker.is_symlink()
-        or (status.st_mode & 0o777) != QUESTION_PROBE_MARKER_MODE
-        or status.st_uid != os.getuid()
-    ):
+    if not marker.is_file() or marker.is_symlink():
+        return
+    if (status.st_mode & 0o777) != QUESTION_PROBE_MARKER_MODE or status.st_uid != os.getuid():
         return
     source = event.get('source')
     source_name = source if source in ('startup', 'resume', 'compact') else 'unknown'
