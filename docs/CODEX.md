@@ -736,6 +736,32 @@ verify agent routing, trust and state transitions before claiming #16 passed.
 The summarizer cannot reconstruct hidden child turns or model metadata if
 the event stream does not expose them.
 
+### Compare two sanitized Codex runs without assuming quota savings
+
+To compare a baseline run with one using MightyModels, run **the same bounded,
+authorized workload** with the same Codex CLI version and capture *only* the
+sanitized JSON summary. Never redirect the raw `codex exec --json` stream to
+a retained file.
+
+```sh
+codex exec --json --sandbox read-only "Inspect README.md without edits or agents" \
+  | python3 ~/code/mightymodels_codex/scripts/codex_trace_summary.py > baseline.json
+# After enabling the intended MightyModels workflow, run a matched approved prompt
+# and save the second sanitized stream summary as candidate.json.
+python3 ~/code/mightymodels_codex/scripts/codex_usage_comparison.py \
+  baseline.json candidate.json
+```
+
+The comparator accepts only the sanitized JSONL-summary schema with valid
+nonnegative token counts, completed turns and no error events; missing or
+invalid inputs exit nonzero. It reports input+output tokens **per completed
+turn** and a relative change, without counting cached inputs twice. These are
+observations, not matched-workload proof or provider quota savings. The output
+explicitly marks effective child models, matched workload and quota savings
+`false`; other telemetry and host evidence must verify them independently.
+Delete the sanitized files when no longer needed. Never expose tokens, PATs,
+prompts, raw event streams or credential files to CI logs.
+
 ## Project hygiene without unverified Claude hooks — issue #17
 
 The original Claude project settings use Write/Edit suppression prompts,
