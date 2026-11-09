@@ -31,6 +31,7 @@ SPAWN_TOOL_NAMES = frozenset((
 HOOK_TIMEOUT = 8
 MAX_RESUME_CONTEXT = 600
 MAX_MCP_RESULT_LENGTH = 8192
+QUESTION_PROBE_MARKER_MODE = 0o600
 HOOK_ERRORS = (OSError, subprocess.TimeoutExpired, ValueError)
 INPUT_ERRORS = (ValueError, UnicodeError)
 
@@ -393,16 +394,34 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     return restored or ({'systemMessage': warning} if warning else None)
 
 
+def question_probe_enabled(home: Path, environ: dict[str, str]) -> bool:
+    """Require an explicit shell flag or a private, locally owned regular file."""
+    if environ.get('MIGHTYMODELS_CODEX_QUESTION_PROBE') == '1':
+        return True
+    marker = home / '.local/state/mightymodels/codex-question-probe.enabled'
+    try:
+        status = marker.stat(follow_symlinks=False)
+    except OSError:
+        return False
+    return (
+        marker.is_file()
+        and not marker.is_symlink()
+        and (status.st_mode & 0o777) == QUESTION_PROBE_MARKER_MODE
+        and status.st_uid == os.getuid()
+    )
+
+
 def question_probe_receipt(event: object, environ: dict[str, str]) -> None:
     """Opt-in receipt of hook delivery and response *shape*, never answer contents."""
-    if environ.get('MIGHTYMODELS_CODEX_QUESTION_PROBE') != '1':
+    home = Path(environ.get('HOME') or str(Path.home()))
+    if not question_probe_enabled(home, environ):
         return
+    state_dir = home / '.local/state/mightymodels'
     if not isinstance(event, dict) or event.get('hook_event_name') != 'PostToolUse':
         return
     if event.get('tool_name') != 'request_user_input':
         return
-    home = Path(environ.get('HOME') or str(Path.home()))
-    receipt = home / '.local/state/mightymodels/codex-question-probe.log'
+    receipt = state_dir / 'codex-question-probe.log'
     response = event.get('tool_response')
     if isinstance(response, str):
         try:

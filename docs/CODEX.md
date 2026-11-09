@@ -110,18 +110,31 @@ an explicit user selection from an auto-resolved response. Do not delete
 the Plan-mode restriction merely to suppress the warning.
 
 To collect a **sanitized hook receipt** from a fresh Codex session without
-logging prompts, answers, session IDs, working-directory paths or MCP state:
+logging prompts, answers, session IDs, working-directory paths or MCP state,
+opt in using a private on-disk marker:
 
 ```sh
-cd /tmp/tmp.3Ae4vuYgko
-MIGHTYMODELS_CODEX_QUESTION_PROBE=1 codex
+install -d -m 700 ~/.local/state/mightymodels
+install -m 600 /dev/null ~/.local/state/mightymodels/codex-question-probe.enabled
+cd /path/to/disposable-repo
+codex
 ```
 
-Invoke one native `request_user_input` question. After exiting Codex, read:
+The private marker is preferred over `MIGHTYMODELS_CODEX_QUESTION_PROBE=1 codex`
+because a Codex host may not propagate the shell environment to hook
+processes. An absent, symlinked, foreign-owned or non-0600 marker does not
+enable the probe. The existing environment-variable opt-in remains supported.
+
+Invoke one native `request_user_input` question. After exiting Codex, read
+the receipt and **disable the marker**:
 
 ```sh
 cat ~/.local/state/mightymodels/codex-question-probe.log
+rm -f ~/.local/state/mightymodels/codex-question-probe.enabled
 ```
+
+If the receipt remains absent, that does not prove hook delivery failed:
+inspect hook trust and whether the host executed the configured script.
 
 The probe writes only a fixed event label, tool label, whitelisted permission
 mode and boolean presence/type checks (`input_questions`, `response_object`,
