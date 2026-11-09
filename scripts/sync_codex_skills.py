@@ -666,8 +666,10 @@ def translated(source: Path) -> str:
     transformer = transformers.get(name)
     if transformer is not None:
         body = transformer(body)
-    body = native_question_contract(body, name)
-    return f'---\n{front}\n---\n\n{BANNER}\n\n{native_companion_guidance(name)}{body}'
+    return (
+        f'---\n{front}\n---\n\n{BANNER}\n\n'
+        f'{native_companion_guidance(name)}{native_question_contract(body, name)}'
+    )
 
 
 def generate(root: Path) -> dict[str, str]:
