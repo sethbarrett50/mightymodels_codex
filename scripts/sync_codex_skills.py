@@ -148,6 +148,20 @@ def native_special_skill(front: str, body: str, name: str) -> tuple[str, str]:
         return native_investigation_decisions(front, body)
     if name == 'ask-an-adult':
         return native_escalation(front)
+    if name == 'whats-broken':
+        old = (
+            'present evidence to the user in ordinary chat and stop for their answer. '
+            'Continue only after a real user choice.'
+        )
+        new = (
+            'invoke native `request_user_input` when exposed and stop for a verified '
+            'explicit answer. If the tool cannot verify consent, keep the decision '
+            'pending; do not use ordinary-chat imitation or infer approval.'
+        )
+        if body.count(old) != 1:
+            msg = 'Expected exactly one recovery decision gate'
+            raise ValueError(msg)
+        return front, body.replace(old, new)
     return front, body
 
 
@@ -264,7 +278,7 @@ def native_baton_pass_decisions(body: str) -> str:
 
 
 def native_game_plan_decisions(body: str) -> str:
-    """Use actual native questions rather than chat imitations."""
+    """Use actual native questions and registered Codex toolchain scout role."""
     changes = (
         (
             (
@@ -320,7 +334,20 @@ def native_game_plan_decisions(body: str) -> str:
             msg = 'Expected exactly one game-plan native question fallback'
             raise ValueError(msg)
         body = body.replace(original, native)
-    return body
+    toolchain_old = (
+        'dispatch\n`mightymodels:triage:terry-toolchain` on `sonnet` '
+        'with its `prompting-subagents` template.'
+    )
+    toolchain_new = (
+        'dispatch\nnative `spawn_agent` with '
+        '`agent_type=mm-triage-terry-toolchain` and its '
+        '`prompting-subagents` template. Use the model and reasoning effort '
+        'registered for this native role; never pass the Claude `sonnet` alias.'
+    )
+    if body.count(toolchain_old) != 1:
+        msg = 'Expected exactly one game-plan Claude toolchain dispatch'
+        raise ValueError(msg)
+    return body.replace(toolchain_old, toolchain_new)
 
 
 def native_review_routing(front: str, body: str) -> tuple[str, str]:

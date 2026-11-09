@@ -13,7 +13,7 @@ argument-hint: "[failing check, test or symptom]"
 > **Codex native user questions (all skills):** Use the actual `request_user_input` tool for every question needing a user answer when available; never simulate an interactive popup using prose or a text multiple-choice list. Default mode should invoke the native tool for choices, including required decisions, when exposed. Invoking a popup is not approval: only a verified explicit user answer satisfies a gate. If the host cannot verify an explicit answer or enforce blocking authorization, leave the gate pending and request Plan mode; if the tool is unavailable, report that fact without an ordinary-chat choice imitation. Empty, missing, timed-out, cancelled, interrupted or automatically resolved responses never count as approval. Preserve the pending decision and persist only a verified explicit answer with available MightyModels MCP tools. This Codex-only contract overrides any later legacy instruction to ask in ordinary chat or use Claude question dialogs.
 
 
-> **Codex-only recovery:** When the confirmed cause leaves two defensible choices, call the Codex-only decision path in `ask-an-adult`. Do not spawn or claim a Wingman ran; present evidence to the user in ordinary chat and stop for their answer. Continue only after a real user choice.
+> **Codex-only recovery:** When the confirmed cause leaves two defensible choices, call the Codex-only decision path in `ask-an-adult`. Do not spawn or claim a Wingman ran; invoke native `request_user_input` when exposed and stop for a verified explicit answer. If the tool cannot verify consent, keep the decision pending; do not use ordinary-chat imitation or infer approval.
 
 # whats-broken
 
