@@ -109,7 +109,7 @@ def native_escalation(front: str) -> tuple[str, str]:
     )
     replacement = (
         'Resolve a stuck judgment call through an explicit Codex ordinary-chat user decision.'
-        '\n  No Wingman/Fable agent or substitute dispatch is available. Persist confirmed'"
+        '\n  No Wingman/Fable agent or substitute dispatch is available. Persist confirmed'
         '\n  decisions through supported MCP tools before resuming.'
     )
     if front.count(original) != 1:
