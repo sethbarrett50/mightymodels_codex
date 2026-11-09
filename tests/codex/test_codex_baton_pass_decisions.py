@@ -14,11 +14,16 @@ native_baton_pass_decisions = GENERATOR['native_baton_pass_decisions']
 @pytest.mark.unit
 def test_baton_requires_native_questions_and_durable_handoff() -> None:
     generated = translated(ROOT / 'skills/baton-pass/SKILL.md')
-    assert 'Use native `request_user_input` for the next-session focus' in generated
+    assert 'use native `request_user_input` for the next-session focus' in generated
     assert 'end the turn until the user explicitly answers' in ' '.join(generated.split())
     assert 'asks using native interactive input' in generated
     assert 'Ask the user in ordinary chat' not in generated
     assert "Preserve only the user's actual" in generated
+    assert 'Pending baton focus: explicit user answer not yet verified' in generated
+    assert 'BEFORE asking, read the current ticket context' in generated
+    assert 'preserve every existing entry' in generated
+    assert 'If this write fails, STOP' in generated
+    assert 'replace pending markers with the confirmed actual choices' in generated
     assert 'do not claim a persisted handoff' in generated
     assert 'recorder hook on `Codex user decision gate` already stored' not in generated
     assert generated == (ROOT / '.codex/skills/baton-pass/SKILL.md').read_text(encoding='utf-8')
