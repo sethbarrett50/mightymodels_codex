@@ -15,7 +15,7 @@ when_to_use: >-
   does not know what to do next.
 ---
 
-> **Native Codex workflow (generated):** This file is generated from the Claude skill; do not edit it directly. MCP calls must use actual `mighty_mcp` tools exposed by the current Codex session. Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage APIs or inherit model aliases. Always invoke real `request_user_input` for user questions, never a chat imitation of a popup. Required decisions need blocking Plan-mode input; if unavailable stop without auto-consent. `USER_REQUEST_ARGS` denotes the user-provided invocation text, not a shell variable. Helper paths resolve through the installed `$HOME/.agents/skills/` links; if these links are missing, stop rather than guessing a file location.
+> **Native Codex workflow (generated):** This file is generated from the Claude skill; do not edit it directly. MCP calls must use actual `mighty_mcp` tools exposed by the current Codex session. Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage APIs or inherit model aliases. Always invoke real `request_user_input` for user questions, never a chat imitation of a popup. Required decisions should invoke native input in Default or Plan mode when exposed; never trust auto-resolved answers. `USER_REQUEST_ARGS` denotes the user-provided invocation text, not a shell variable. Helper paths resolve through the installed `$HOME/.agents/skills/` links; if these links are missing, stop rather than guessing a file location.
 
 # ask-an-adult — native Codex decision escalation
 
@@ -36,11 +36,13 @@ at least two real options and their costs, and your tentative preference. State
 clearly that this is your own analysis, **not a Wingman report**. Include the
 information still needed for a well-founded decision.
 
-Use the actual native `request_user_input` question tool in **Plan mode**, offering
-at least two choices plus a free-text path when supported. Do not imitate
+Use the actual native `request_user_input` question tool in Default or Plan mode
+when exposed, offering at least two choices plus a free-text path when supported. Do not imitate
 its UI by listing options in ordinary chat. The user must provide an explicit
-answer to the blocking prompt. If the tool or blocking Plan mode is unavailable,
-stop and explain the capability needed; do not ask a textual substitute or
+answer explicitly; an automatic response does not qualify. If the host cannot
+verify an explicit answer or enforce blocking authorization in Default mode,
+leave the decision pending and request Plan mode. If the tool is unavailable,
+stop and explain the missing capability; do not ask a textual substitute or
 proceed. A timeout, dismissal, empty answer, or automatic resolution does not
 grant permission. Never silently substitute your preference.
 
