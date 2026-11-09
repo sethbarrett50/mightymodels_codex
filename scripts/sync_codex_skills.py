@@ -132,7 +132,7 @@ def native_special_skill(front: str, body: str, name: str) -> tuple[str, str]:
 
 
 def native_open_ticket_decisions(body: str) -> str:
-    """Make user decisions explicit chat gates, not fictitious host dialogs."""
+    """Require native blocking question UI for ticket choices."""
     steps = (
         (
             (
@@ -142,11 +142,10 @@ def native_open_ticket_decisions(body: str) -> str:
                 'answer of their own.'
             ),
             (
-                'In Codex Default mode, ask only unanswered interview questions in '
-                'ordinary chat and end the\nturn until the user explicitly responds. '
-                'Offer two to four choices per question and accept\nfree-text '
-                'answers; no timeout, empty response or auto-resolution counts as a '
-                'decision.'
+                'In Codex Plan mode, ask only unanswered interview questions using '
+                'blocking native `request_user_input`. Offer two to four choices '
+                'and free-text input when supported; never auto-select or continue '
+                'after missing, timed-out, or auto-resolved responses.'
             ),
         ),
         (
@@ -158,14 +157,14 @@ def native_open_ticket_decisions(body: str) -> str:
             ),
             (
                 'An answer starting `needs input` means the MCP tool could not '
-                'collect required inputs.\nAsk each named question in ordinary chat '
-                'and end the turn until the user explicitly\nanswers; then call '
-                '`ticket_write` again using those actual answers'
+                'collect required inputs.\nAsk each named question with blocking native '
+                '`request_user_input` in Plan mode, wait for an explicit answer, '
+                'then call `ticket_write` again using those actual answers'
             ),
         ),
         (
             'Ask once, through `Codex user decision gate`:',
-            ('Ask once in ordinary chat, then end the turn until the user explicitly chooses:'),
+            ('Ask once using blocking native `request_user_input` in Plan mode:'),
         ),
     )
     for old, new in steps:
