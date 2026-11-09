@@ -87,3 +87,14 @@ def test_generated_skills_never_nest_native_question_tool_backticks() -> None:
         installed = ROOT / '.codex/skills' / source.parent.name / 'SKILL.md'
         assert rendered == installed.read_text(encoding='utf-8')
         assert '`native `request_user_input``' not in rendered
+
+
+@pytest.mark.unit
+def test_what_we_know_never_advances_on_unverified_user_answer() -> None:
+    source = ROOT / 'skills/what-we-know/SKILL.md'
+    rendered = GENERATE(source)
+    installed = (ROOT / '.codex/skills/what-we-know/SKILL.md').read_text(encoding='utf-8')
+    assert rendered == installed
+    assert 'proceed on the assumptions labelled as' not in rendered
+    assert 'leave user-answerable uncertainties pending' in rendered
+    assert 'do not invent a user-source decision' in rendered
