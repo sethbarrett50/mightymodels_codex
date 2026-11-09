@@ -512,6 +512,41 @@ def lifecycle_resume_probe_outcome(event: object, result: object, environ: dict[
     receipt.chmod(0o600)
 
 
+def scout_stop_probe_receipt(event: object, result: object, environ: dict[str, str]) -> None:
+    """Opt-in stop delivery and handler outcome; never write role IDs or report text."""
+    if not isinstance(event, dict) or event.get('hook_event_name') != 'SubagentStop':
+        return
+    home = Path(environ.get('HOME') or str(Path.home()))
+    state_dir = home / '.local/state/mightymodels'
+    if not lifecycle_probe_enabled(state_dir):
+        return
+    translated_role = role(event.get('agent_type'))
+    if translated_role in (
+        'mightymodels:triage:code-scout',
+        'mightymodels:triage:web-scout',
+    ):
+        role_kind = 'scout'
+    elif isinstance(translated_role, str) and translated_role.strip():
+        role_kind = 'other'
+    else:
+        role_kind = 'missing'
+    agent_id = event.get('agent_id')
+    message = event.get('last_assistant_message')
+    id_present = isinstance(agent_id, str) and bool(agent_id.strip())
+    report_present = isinstance(message, str) and bool(message.strip())
+    warned = isinstance(result, dict) and bool(result.get('systemMessage'))
+    receipt = state_dir / 'codex-lifecycle-probe.log'
+    if receipt.is_symlink():
+        return
+    receipt.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with receipt.open('a', encoding='utf-8') as stream:
+        stream.write(
+            f'event=SubagentStop role={role_kind} agent_id={id_present} '
+            f'report={report_present} handler_warning={warned}\n'
+        )
+    receipt.chmod(0o600)
+
+
 def audit_probe(event: object, environ: dict[str, str]) -> None:
     """Record that the host reached this hook, without persisting tool arguments."""
     if environ.get('MIGHTYMODELS_CODEX_DISPATCH_PROBE') != '1':
@@ -569,6 +604,7 @@ def main() -> int:
     else:
         result = run_admission(event, project_root=root, environ=dict(os.environ))
     lifecycle_resume_probe_outcome(event, result, dict(os.environ))
+    scout_stop_probe_receipt(event, result, dict(os.environ))
     audit_probe_decision(event, dict(os.environ), result)
     if result is not None:
         print(json.dumps(result))

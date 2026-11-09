@@ -674,3 +674,66 @@ def test_resume_pointer_probe_ignores_other_lifecycle_events(tmp_path: Path) -> 
         {'HOME': str(tmp_path)},
     )
     assert not (state / 'codex-lifecycle-probe.log').exists()
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ('agent_type', 'expected_role'),
+    [
+        ('mm-triage-code-scout', 'scout'),
+        ('mm-triage-web-scout', 'scout'),
+        ('mm-workers-engineer', 'other'),
+        (None, 'missing'),
+    ],
+)
+def test_scout_stop_receipt_only_records_nonsecret_shape(
+    tmp_path: Path, agent_type: str | None, expected_role: str
+) -> None:
+    state = tmp_path / '.local/state/mightymodels'
+    state.mkdir(parents=True)
+    marker = state / 'codex-lifecycle-probe.enabled'
+    marker.write_text('')
+    marker.chmod(0o600)
+    event = {
+        'hook_event_name': 'SubagentStop',
+        'agent_type': agent_type,
+        'agent_id': 'PRIVATE_AGENT_IDENTIFIER',
+        'last_assistant_message': 'PRIVATE_REPORT_CONTENT',
+        'session_id': 'PRIVATE_SESSION_IDENTIFIER',
+    }
+    module.scout_stop_probe_receipt(event, {'continue': True}, {'HOME': str(tmp_path)})
+    receipt = state / 'codex-lifecycle-probe.log'
+    assert receipt.read_text() == (
+        f'event=SubagentStop role={expected_role} agent_id=True report=True handler_warning=False\n'
+    )
+    assert receipt.stat().st_mode & 0o777 == 0o600
+    assert 'PRIVATE_' not in receipt.read_text()
+
+
+@pytest.mark.unit
+def test_scout_stop_receipt_reports_handler_warning_without_sensitive_details(
+    tmp_path: Path,
+) -> None:
+    state = tmp_path / '.local/state/mightymodels'
+    state.mkdir(parents=True)
+    marker = state / 'codex-lifecycle-probe.enabled'
+    marker.write_text('')
+    marker.chmod(0o600)
+    module.scout_stop_probe_receipt(
+        {'hook_event_name': 'SubagentStop', 'agent_type': 'mm-triage-code-scout'},
+        {'continue': True, 'systemMessage': 'PRIVATE_FAILURE_DETAILS'},
+        {'HOME': str(tmp_path)},
+    )
+    receipt = (state / 'codex-lifecycle-probe.log').read_text()
+    assert 'agent_id=False report=False handler_warning=True' in receipt
+    assert 'PRIVATE_' not in receipt
+
+
+@pytest.mark.unit
+def test_scout_stop_receipt_is_disabled_without_opt_in_marker(tmp_path: Path) -> None:
+    module.scout_stop_probe_receipt(
+        {'hook_event_name': 'SubagentStop', 'agent_type': 'mm-triage-code-scout'},
+        {'continue': True},
+        {'HOME': str(tmp_path)},
+    )
+    assert not (tmp_path / '.local/state/mightymodels/codex-lifecycle-probe.log').exists()

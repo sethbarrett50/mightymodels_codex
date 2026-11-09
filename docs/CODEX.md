@@ -179,6 +179,19 @@ delivery requires an actual compaction event. A missing log is
 inconclusive until hook trust, matcher and marker ownership are checked.
 This probe never changes MCP state or authorization decisions.
 
+### Opt-in scout stop diagnostics (issue #8)
+
+The same owner-only lifecycle marker also records a sanitized
+`SubagentStop` receipt: `event=SubagentStop role=scout agent_id=True report=True handler_warning=False`. Values are bounded role categories and
+booleans; raw child IDs, reports, prompts and errors are never logged.
+`role=missing` or `report=False` highlights an incomplete native host
+payload. `handler_warning=True` means the adapter detected a persistence
+warning. **`handler_warning=False` is not proof that a report was saved**:
+verify a separately retrievable scout report via MightyModels MCP, and use
+the report target/agent ID returned by the actual host. A missing receipt
+does not prove the event never fired until hook trust and registration are
+checked. The probe does not alter persistence or dispatch permissions.
+
 ### Registered-repository prerequisite for pointer acceptance
 
 A new disposable Git repository has **no MightyModels repository record**.
