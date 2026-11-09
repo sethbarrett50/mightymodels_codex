@@ -193,6 +193,31 @@ class TestTaskRestart:
         assert view['outside_owned'] == []
 
 
+class TestTaskReplay:
+    async def test_duplicate_declare_preserves_pending_tasks(self, staged: TaskHarness) -> None:
+        await staged.commit('first')
+        request = {'slug': SLUG, 'task_ids': ['T1', 'T2']}
+
+        first = view_of(await staged.call('task_declare', request))
+        second = view_of(await staged.call('task_declare', request))
+        observed = view_of(await staged.call('task_show', {'slug': SLUG}))
+
+        assert first['tasks'] == second['tasks'] == observed['tasks']
+        assert [task['status'] for task in observed['tasks']] == ['pending', 'pending']
+
+    async def test_replayed_start_refusal_preserves_attempt_count(
+        self, started: TaskHarness
+    ) -> None:
+        before = view_of(await started.call('task_show', {'slug': SLUG}))
+
+        duplicate = await started.call('task_start', START)
+        after = view_of(await started.call('task_show', {'slug': SLUG}))
+
+        assert duplicate.is_error
+        assert after['tasks'] == before['tasks']
+        assert after['tasks'][0]['attempts'] == {'engineer': 1}
+
+
 class TestTaskShow:
     async def test_unstarted_ticket_has_no_tasks(self, staged: TaskHarness) -> None:
         view = view_of(await staged.call('task_show', {'slug': SLUG}))
