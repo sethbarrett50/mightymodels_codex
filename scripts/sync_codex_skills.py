@@ -271,15 +271,24 @@ def native_game_plan_decisions(body: str) -> str:
                 'One `Codex user decision gate` dialog, risks batched up to four a call, '
                 'each offering the same'
             ),
-            'Invoke native `request_user_input` when exposed, at most four risks per call, each offering the same',
+            (
+                'Invoke native `request_user_input` when exposed, at most four risks '
+                'per call, each offering the same'
+            ),
         ),
         (
             'One `Codex user decision gate` dialog with one question, the',
-            'Invoke native `request_user_input` for one question; wait for a verified explicit answer, the',
+            (
+                'Invoke native `request_user_input` for one question; wait for a '
+                'verified explicit answer, the'
+            ),
         ),
         (
             'ask through\n`Codex user decision gate`: approve, revise, or abandon.',
-            'invoke native `request_user_input` when exposed and stop for an explicit choice: approve, revise, or abandon.',
+            (
+                'invoke native `request_user_input` when exposed and stop for an '
+                'explicit choice: approve, revise, or abandon.'
+            ),
         ),
     )
     for old, new in changes:
@@ -289,16 +298,21 @@ def native_game_plan_decisions(body: str) -> str:
         body = body.replace(old, new)
     fallbacks = (
         (
-            'When no dialog is available, ask\nin chat with the four handlings '
-            'spelled out, and wait.',
-            'If native input is unavailable, leave the risk handling pending; '
-            'do not infer an answer.',
+            (
+                'When no dialog is available, ask\nin chat with the four handlings '
+                'spelled out, and wait.'
+            ),
+            (
+                'If native input is unavailable, leave the risk handling pending; '
+                'do not infer an answer.'
+            ),
         ),
         (
-            'When no dialog is\navailable, ask in chat with both answers spelled '
-            'out, and wait.',
-            'If native input is unavailable, leave the escalation choice pending; '
-            'do not infer an answer.',
+            ('When no dialog is\navailable, ask in chat with both answers spelled out, and wait.'),
+            (
+                'If native input is unavailable, leave the escalation choice pending; '
+                'do not infer an answer.'
+            ),
         ),
     )
     for original, native in fallbacks:
