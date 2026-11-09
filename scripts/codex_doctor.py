@@ -61,17 +61,35 @@ def check_agents(config: dict, home: Path, root: Path) -> str:
     return note(message, ok=valid == AGENT_COUNT)
 
 
+def skill_manifest_named(source: Path) -> bool:
+    """Check the generated skill name without interpreting arbitrary YAML or executing it."""
+    try:
+        with source.open(encoding='utf-8') as manifest:
+            first, name, third = (manifest.readline().strip() for _ in range(3))
+    except OSError:
+        return False
+    except UnicodeError:
+        return False
+    return (
+        first == '---'
+        and name == f'name: {source.parent.name}'
+        and third.startswith('description:')
+    )
+
+
 def check_skills(home: Path, root: Path) -> str:
+    sources = sorted((root / '.codex/skills').glob('*/SKILL.md'))
     valid = sum(
         bool(
             (home / '.agents/skills' / source.parent.name).is_symlink()
             and (home / '.agents/skills' / source.parent.name).resolve(strict=False)
             == source.parent.resolve()
+            and skill_manifest_named(source)
         )
-        for source in (root / '.codex/skills').glob('*/SKILL.md')
+        for source in sources
     )
-    message = f'Installed owned Codex skill links: {valid}/{SKILL_COUNT}'
-    return note(message, ok=valid == SKILL_COUNT)
+    message = f'Installed owned Codex skill links and manifests: {valid}/{SKILL_COUNT}'
+    return note(message, ok=len(sources) == SKILL_COUNT and valid == SKILL_COUNT)
 
 
 def check_hooks(home: Path, root: Path) -> str:
