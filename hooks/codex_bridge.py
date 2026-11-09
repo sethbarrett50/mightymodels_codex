@@ -451,6 +451,21 @@ def question_probe_receipt(event: object, environ: dict[str, str]) -> None:
     receipt.chmod(0o600)
 
 
+def lifecycle_probe_enabled(state_dir: Path) -> bool:
+    """Require the existing owner-only marker for lifecycle diagnostics."""
+    marker = state_dir / 'codex-lifecycle-probe.enabled'
+    try:
+        status = marker.stat(follow_symlinks=False)
+    except OSError:
+        return False
+    return (
+        marker.is_file()
+        and not marker.is_symlink()
+        and (status.st_mode & 0o777) == QUESTION_PROBE_MARKER_MODE
+        and status.st_uid == os.getuid()
+    )
+
+
 def lifecycle_probe_receipt(event: object, environ: dict[str, str]) -> None:
     """Record bounded host lifecycle delivery metadata, never payload contents."""
     if not isinstance(event, dict):
@@ -460,14 +475,7 @@ def lifecycle_probe_receipt(event: object, environ: dict[str, str]) -> None:
         return
     home = Path(environ.get('HOME') or str(Path.home()))
     state_dir = home / '.local/state/mightymodels'
-    marker = state_dir / 'codex-lifecycle-probe.enabled'
-    try:
-        status = marker.stat(follow_symlinks=False)
-    except OSError:
-        return
-    if not marker.is_file() or marker.is_symlink():
-        return
-    if (status.st_mode & 0o777) != QUESTION_PROBE_MARKER_MODE or status.st_uid != os.getuid():
+    if not lifecycle_probe_enabled(state_dir):
         return
     source = event.get('source')
     source_name = source if source in ('startup', 'resume', 'compact') else 'unknown'
@@ -488,14 +496,7 @@ def lifecycle_resume_probe_outcome(event: object, result: object, environ: dict[
         return
     home = Path(environ.get('HOME') or str(Path.home()))
     state_dir = home / '.local/state/mightymodels'
-    marker = state_dir / 'codex-lifecycle-probe.enabled'
-    try:
-        status = marker.stat(follow_symlinks=False)
-    except OSError:
-        return
-    if not marker.is_file() or marker.is_symlink():
-        return
-    if (status.st_mode & 0o777) != QUESTION_PROBE_MARKER_MODE or status.st_uid != os.getuid():
+    if not lifecycle_probe_enabled(state_dir):
         return
     output = result.get('hookSpecificOutput') if isinstance(result, dict) else None
     hint = output.get('additionalContext') if isinstance(output, dict) else None
