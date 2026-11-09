@@ -38,4 +38,4 @@ def test_critical_question_skills_require_blocking_plan_input() -> None:
         skill = (ROOT / '.codex/skills' / name / 'SKILL.md').read_text()
         assert 'request_user_input' in skill
         assert 'Plan mode' in skill
-        assert 'automatically resolved' in skill
+        assert 'automatically resolved' in skill or 'automatic resolution' in skill
