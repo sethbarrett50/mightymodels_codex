@@ -480,7 +480,6 @@ def lifecycle_probe_receipt(event: object, environ: dict[str, str]) -> None:
     receipt.chmod(0o600)
 
 
-
 def lifecycle_resume_probe_outcome(event: object, result: object, environ: dict[str, str]) -> None:
     """Opt-in receipt of a returned pointer hint, never the target or its contents."""
     if not isinstance(event, dict) or event.get('hook_event_name') != 'SessionStart':
