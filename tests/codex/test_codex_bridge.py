@@ -704,8 +704,7 @@ def test_scout_stop_receipt_only_records_nonsecret_shape(
     module.scout_stop_probe_receipt(event, {'continue': True}, {'HOME': str(tmp_path)})
     receipt = state / 'codex-lifecycle-probe.log'
     assert receipt.read_text() == (
-        f'event=SubagentStop role={expected_role} agent_id=True '
-        'report=True handler_warning=False\n'
+        f'event=SubagentStop role={expected_role} agent_id=True report=True handler_warning=False\n'
     )
     assert receipt.stat().st_mode & 0o777 == 0o600
     assert 'PRIVATE_' not in receipt.read_text()
