@@ -41,7 +41,7 @@ State the target in one line: the plan, design, or decision under examination. I
 game-plan it is the ticket's `summary`, which game-plan records as the plan's `base-intent`;
 standalone it is whatever the user brought.
 
-Then one `native `request_user_input`` dialog with two questions:
+Then one `request_user_input` dialog with two questions:
 
 **Depth.** How far the interview goes before it stops.
 
@@ -75,7 +75,7 @@ Three kinds of question arrive at the frontier, and only one goes to the user:
   unsettled prerequisite: only the questions downstream of it wait; ask the rest of the
   frontier now.
 - **Decisions** (which behavior, which boundary, which trade-off, what done looks like) go to
-  the user through `native `request_user_input``.
+  the user through `request_user_input`.
 - **Feel** questions (how should the interaction feel, is this abstraction pleasant) do not
   grill well and get a prototype instead. Record them as Open with "needs a prototype" and
   move on rather than asking the user to imagine the answer.
@@ -149,7 +149,7 @@ Open items are handed forward, never resolved by the primary's best guess.
 ## Ending
 
 The interview ends when the frontier is empty, when the depth's round cap is reached, or when
-the user says stop. Close with one `native `request_user_input`` dialog: shared understanding reached,
+the user says stop. Close with one `request_user_input` dialog: shared understanding reached,
 one more round, or stop here. Only the first hands the record onward; inside game-plan that
 is a return to the drafting step, standalone it is an offer of game-plan or open-ticket,
 never an invocation.
