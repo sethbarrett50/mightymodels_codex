@@ -37,6 +37,10 @@
     [
       "- A Decision carries the user's word from a dialog. Once the session is pointed at the\n  investigation, the recorder hook writes each answer to an `Codex user decision gate` as a Decision; you\n  never add one. Answers given before that are recorded by hand as Knowns from `user` in round 0\n  (see Round zero). Your own conclusion, however well cited, is a Known or an Open item until the\n  user takes it through a dialog.",
       "- A Decision carries the user's confirmed words, not an inferred approval. In Codex,\n  explicitly persist each gate answer with `investigation_add` as kind `decision`, source\n  `user`, and verify it with `investigation_render` before moving on. The initial framing\n  facts belong as `known` entries in round 0. Your conclusion remains a Known or Open\n  item until the user explicitly decides."
+    ],
+    [
+      "Offer free-text input in ordinary chat; the legacy Claude question recorder",
+      "Offer free-text through native input when supported; the legacy Claude question recorder"
     ]
   ]
 }
