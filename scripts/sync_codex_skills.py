@@ -112,7 +112,7 @@ def native_escalation(front: str) -> tuple[str, str]:
         '\n  user through `Codex user decision gate` before any work resumes.'
     )
     replacement = (
-        'Resolve a stuck judgment call through an explicit Codex ordinary-chat user decision.'
+        'Resolve a stuck judgment call through native blocking Plan-mode user input.'
         '\n  No Wingman/Fable agent or substitute dispatch is available. Persist confirmed'
         '\n  decisions through supported MCP tools before resuming.'
     )
