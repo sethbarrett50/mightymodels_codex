@@ -393,6 +393,45 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
     return restored or ({'systemMessage': warning} if warning else None)
 
 
+def question_probe_receipt(event: object, environ: dict[str, str]) -> None:
+    """Opt-in receipt of hook delivery and response *shape*, never answer contents."""
+    if environ.get('MIGHTYMODELS_CODEX_QUESTION_PROBE') != '1':
+        return
+    if not isinstance(event, dict) or event.get('hook_event_name') != 'PostToolUse':
+        return
+    if event.get('tool_name') != 'request_user_input':
+        return
+    home = Path(environ.get('HOME') or str(Path.home()))
+    receipt = home / '.local/state/mightymodels/codex-question-probe.log'
+    response = event.get('tool_response')
+    if isinstance(response, str):
+        try:
+            response = json.loads(response)
+        except ValueError:
+            response = None
+    answers = response.get('answers') if isinstance(response, dict) else None
+    mode = event.get('permission_mode')
+    allowed_modes = ('default', 'plan', 'acceptEdits', 'dontAsk', 'bypassPermissions')
+    mode = mode if mode in allowed_modes else 'unknown'
+    request = event.get('tool_input')
+    question_present = isinstance(request, dict) and isinstance(request.get('questions'), list)
+    fields = (
+        'event=PostToolUse',
+        'tool=request_user_input',
+        f'mode={mode}',
+        f'input_questions={question_present}',
+        f'response_object={isinstance(response, dict)}',
+        f'answers_object={isinstance(answers, dict)}',
+        f'timeout_field={isinstance(response, dict) and "afkTimeoutMs" in response}',
+    )
+    receipt.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if receipt.is_symlink():
+        return
+    with receipt.open('a', encoding='utf-8') as stream:
+        stream.write(' '.join(fields) + '\n')
+    receipt.chmod(0o600)
+
+
 def audit_probe(event: object, environ: dict[str, str]) -> None:
     """Record that the host reached this hook, without persisting tool arguments."""
     if environ.get('MIGHTYMODELS_CODEX_DISPATCH_PROBE') != '1':
@@ -438,6 +477,7 @@ def main() -> int:
         return 0
     root = Path(__file__).resolve().parent.parent
     audit_probe(event, dict(os.environ))
+    question_probe_receipt(event, dict(os.environ))
     if isinstance(event, dict) and event.get('hook_event_name') in (
         'PreCompact',
         'SubagentStop',
