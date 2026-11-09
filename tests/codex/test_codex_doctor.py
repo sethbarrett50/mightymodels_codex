@@ -187,8 +187,13 @@ def test_doctor_rejects_mismatched_skill_manifest_name(tmp_path: Path) -> None:
         ),
         encoding='utf-8',
     )
-    from runpy import run_path
+    from importlib import import_module
 
-    doctor = run_path(str(DOCTOR))
-    assert not doctor['skill_manifest_named'](destination)
-    assert doctor['skill_manifest_named'](source)
+    # Importing the module does not execute its CLI or modify the checkout.
+    sys.path.insert(0, str(ROOT / 'scripts'))
+    try:
+        doctor = import_module('codex_doctor')
+        assert not doctor.skill_manifest_named(destination)
+        assert doctor.skill_manifest_named(source)
+    finally:
+        sys.path.remove(str(ROOT / 'scripts'))
