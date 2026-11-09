@@ -150,9 +150,9 @@ def native_special_skill(front: str, body: str, name: str) -> tuple[str, str]:
         return native_escalation(front)
     if name == 'what-we-know':
         old = (
-            'When no dialog is available, list the questions you\\n'
+            'When no dialog is available, list the questions you\n'
             'would ask, state a working assumption for each, and proceed on the assumptions '
-            'labelled as\\nassumptions.'
+            'labelled as\nassumptions.'
         )
         new = (
             'If native input is unavailable or its explicit-human provenance cannot be '
