@@ -1,7 +1,7 @@
 ---
 name: open-ticket
 description: >-
-  Turn an understood problem into a staged unit of work: a blocking ordinary-chat interview (slug,
+  Turn an understood problem into a staged unit of work: a blocking native Plan-mode interview (slug,
   tracker GitHub / Jira / both / none), then the
   ticket directory, a Findings rollup from the lets-investigate ledger or what-we-know, the
   GitHub issue and/or Jira ticket (a draft file when the CLI is absent) with a checked tracker
