@@ -8,15 +8,15 @@
   "body": [
     [
       "This is Codex-only; the Claude `Codex user decision gate` steps below remain unchanged.",
-      "For Codex, the ordinary-chat requirements below are authoritative; no native dialog API is implied."
+      "For Codex, use the actual native question tool when exposed; only verified explicit answers satisfy required gates."
     ],
     [
       "Put the framing to the user through one `Codex user decision gate` dialog before dispatching anything: the\ntarget line, and one question asking what they already know or have ruled out (the user can\nalways type an answer of their own).",
-      "Before dispatching anything, use blocking native `request_user_input` in Plan mode to ask whether the target line is correct\nand what the user already knows or has ruled out. End the turn until the user explicitly\nanswers; do not treat silence, timeout or an automatic response as consent."
+      "Before dispatching anything, invoke native `request_user_input` when exposed in Default or Plan mode to ask whether the target line is correct\nand what the user already knows or has ruled out. End the turn until the user explicitly\nanswers; do not treat silence, timeout or an automatic response as consent."
     ],
     [
       "be asked through the tool: put the question it names to the user in one `Codex user decision gate`\ndialog, then call again with `kind`.",
-      "be asked through the tool: use blocking native `request_user_input` in Plan mode for the named classification question; wait for a verified user response, then call again with that actual `kind`."
+      "be asked through the tool: invoke native `request_user_input` when exposed for the named classification question; wait for a verified explicit user response, then call again with that actual `kind`."
     ],
     [
       "The session is pointed at the investigation by the first `investigation_add`,\n`investigation_render` or `investigation_knowns` call that names the id; `investigation_start`\ndoes not point it. Until a pointer exists the recorder writes nothing. After that, the recorder\nhook on `Codex user decision gate` writes each answer the user gives in a dialog into the ledger as a\n`decision` entry from `user`, stamped with the ledger's latest round, or round 1 when that is 0,\nnever round 0. An answer given before a round's `investigation_add` is stamped by the same rule, so it\nlands in the latest existing round, or in round 1 when only round 0 exists. Do not write a gate answer yourself. Record by hand, as a `known` from `user` in round 0\n(cite `user`, source `user`), each framing answer and any answer given before the first call\nnaming the id, along with any fact the user states. The kind answer goes through the tool's own\nform: `investigation_start` stores it as the investigation's kind, and it is not a ledger entry.\n`known` and `resource` entries need a `cite`.",
@@ -24,7 +24,7 @@
     ],
     [
       "**5. Stop at the gate.** Open an `Codex user decision gate` dialog with the round's decision and any questions\nheld for the user, batched into one call (up to four questions). The decision offers exactly\nthese choices:",
-      "**5. Stop at the gate.** Use blocking native `request_user_input` in Plan mode for the round's decision and unresolved questions, at most four per call. Wait for an explicit verified response.\nOnly then persist the answer as a `decision` entry and verify it by reading the ledger.\nOffer exactly these choices:"
+      "**5. Stop at the gate.** Invoke native `request_user_input` when exposed in Default or Plan mode for the round's decision and unresolved questions, at most four per call. Wait for an explicit verified response.\nOnly then persist the answer as a `decision` entry and verify it by reading the ledger.\nOffer exactly these choices:"
     ],
     [
       "say so in the dialog text and recommend Sufficient,",
