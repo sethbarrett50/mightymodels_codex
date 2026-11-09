@@ -24,13 +24,36 @@ BANNER = (
     'Claude skill; do not edit it directly. MCP calls must use actual '
     '`mighty_mcp` tools exposed by the current Codex session. '
     'Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage '
-    'APIs or inherit model aliases. A required decision in Default mode uses '
-    'ordinary chat and stops until a real answer; auto-resolution never grants '
-    'permission. `USER_REQUEST_ARGS` denotes the user-provided invocation '
+    'APIs or inherit model aliases. Always invoke real `request_user_input` '
+    'for user questions, never a chat imitation of a popup. Required decisions '
+    'need blocking Plan-mode input; if unavailable stop without auto-consent. '
+    '`USER_REQUEST_ARGS` denotes the user-provided invocation '
     'text, not a shell variable. Helper paths resolve through the installed '
     '`$HOME/.agents/skills/` links; if these links are missing, stop rather '
     'than guessing a file location.'
 )
+
+
+CODEX_NATIVE_QUESTION_POLICY = (
+    (Path(__file__).resolve().parent / 'codex_native_question_policy.txt')
+    .read_text(encoding='utf-8')
+    .strip()
+)
+
+
+def native_question_contract(body: str, name: str) -> str:
+    """Override legacy Claude question instructions with the native Codex gate."""
+    if name == 'ask-an-adult':
+        return body
+    text, count = re.subn(
+        r'(?m)^> \*\*Codex required user-input contract \(all skills\):\*\*[^\n]*$',
+        CODEX_NATIVE_QUESTION_POLICY,
+        body,
+    )
+    if count != 1:
+        msg = 'Expected exactly one Codex skill question policy to translate'
+        raise ValueError(msg)
+    return text
 
 
 def native_dispatch_steps(body: str) -> str:
@@ -108,7 +131,7 @@ def native_escalation(front: str) -> tuple[str, str]:
         '\n  user through `Codex user decision gate` before any work resumes.'
     )
     replacement = (
-        'Resolve a stuck judgment call through an explicit Codex ordinary-chat user decision.'
+        'Resolve a stuck judgment call through native blocking Plan-mode user input.'
         '\n  No Wingman/Fable agent or substitute dispatch is available. Persist confirmed'
         '\n  decisions through supported MCP tools before resuming.'
     )
@@ -128,7 +151,7 @@ def native_special_skill(front: str, body: str, name: str) -> tuple[str, str]:
 
 
 def native_open_ticket_decisions(body: str) -> str:
-    """Make user decisions explicit chat gates, not fictitious host dialogs."""
+    """Require native blocking question UI for ticket choices."""
     steps = (
         (
             (
@@ -138,11 +161,10 @@ def native_open_ticket_decisions(body: str) -> str:
                 'answer of their own.'
             ),
             (
-                'In Codex Default mode, ask only unanswered interview questions in '
-                'ordinary chat and end the\nturn until the user explicitly responds. '
-                'Offer two to four choices per question and accept\nfree-text '
-                'answers; no timeout, empty response or auto-resolution counts as a '
-                'decision.'
+                'In Codex Plan mode, ask only unanswered interview questions using '
+                'blocking native `request_user_input`. Offer two to four choices '
+                'and free-text input when supported; never auto-select or continue '
+                'after missing, timed-out, or auto-resolved responses.'
             ),
         ),
         (
@@ -154,14 +176,14 @@ def native_open_ticket_decisions(body: str) -> str:
             ),
             (
                 'An answer starting `needs input` means the MCP tool could not '
-                'collect required inputs.\nAsk each named question in ordinary chat '
-                'and end the turn until the user explicitly\nanswers; then call '
-                '`ticket_write` again using those actual answers'
+                'collect required inputs.\nAsk each named question with blocking native '
+                '`request_user_input` in Plan mode, wait for an explicit answer, '
+                'then call `ticket_write` again using those actual answers'
             ),
         ),
         (
             'Ask once, through `Codex user decision gate`:',
-            ('Ask once in ordinary chat, then end the turn until the user explicitly chooses:'),
+            ('Ask once using blocking native `request_user_input` in Plan mode:'),
         ),
     )
     for old, new in steps:
@@ -615,7 +637,7 @@ def translated(source: Path) -> str:
         body = body.replace(previous, replacement)
     if name == 'open-ticket':
         front = front.replace(
-            'one Codex user decision gate interview', 'a blocking ordinary-chat interview'
+            'one Codex user decision gate interview', 'a blocking native Plan-mode interview'
         )
         body = body.replace(
             (
@@ -644,7 +666,10 @@ def translated(source: Path) -> str:
     transformer = transformers.get(name)
     if transformer is not None:
         body = transformer(body)
-    return f'---\n{front}\n---\n\n{BANNER}\n\n{native_companion_guidance(name)}{body}'
+    return (
+        f'---\n{front}\n---\n\n{BANNER}\n\n'
+        f'{native_companion_guidance(name)}{native_question_contract(body, name)}'
+    )
 
 
 def generate(root: Path) -> dict[str, str]:

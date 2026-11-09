@@ -232,53 +232,52 @@ is active; prefer the user-scoped setup when working across repos.
 
 The project is not production-ready until these acceptance checks pass.
 
-## Native interactive user questions (Codex Default mode)
+## Native interactive user questions (Codex CLI)
 
-On the unprivileged `codex` Linux account, add this user-scoped feature flag to
-`~/.codex/config.toml` (preserve existing TOML sections and settings):
+MightyModels requires the **real** Codex `request_user_input` interactive
+question tool for questions directed to the user. A plain chat message listing
+choices is not an interactive question and must not be presented as one.
+
+The optional Default-mode input tool can be enabled in the user's
+`~/.codex/config.toml` (preserve existing settings):
 
 ```toml
 [features]
 default_mode_request_user_input = true
 ```
 
-Restart Codex, then check with `codex features list`. This setting is
-intentionally **not** written by the MightyModels installer; user-specific
-Codex preferences and permissions remain separate from the repository.
+Restart Codex and inspect `codex features list`, then verify the tool is
+actually available in the running session. The MightyModels installer does
+not modify this user preference.
 
-For **optional** feedback, use the actual native `request_user_input` tool
-when listed in the active session. It provides choices and free-text input; do
-not claim a popup was shown unless the tool was actually called.
+**Required user decisions** must use a truly blocking `request_user_input`
+call in **Plan mode**. The Codex Default-mode tool is intended for optional
+questions and can auto-resolve; it must never grant approval. If the current
+mode or host cannot provide blocking native input, stop and explain that a
+Plan-mode interactive prompt is required. Do not substitute a text question
+or proceed as if an unanswered popup selected an option.
 
-For **required MightyModels decisions** (including investigation framing and
-end-of-round gates), Default-mode Codex popups can auto-resolve. Ask the user
-in ordinary conversation and end the turn without progressing the gate.
-In Plan mode, the native question can be blocking when available, but a real
-answer is still required. Never treat an empty reply, timeout, failure, or
-interruption as consent. Persist pending decisions through existing MCP state
-mechanisms where supported and verify resumption behavior before relying on it.
+For **optional** questions, use the native tool if exposed in Default mode.
+If unavailable, report that the interactive control is unavailable rather
+than pretending a text multiple-choice question is a popup.
 
-`autoResolutionMs` is deprecated in current Codex; `isBlocking` is decided
-by the host/collaboration mode and isn't a general model-controlled timeout
-switch. No documented `AGENTS.md` directive can force a Default-mode popup
-to remain indefinitely. The safest fallback is a regular chat question.
+Only a verified, explicit user answer may be persisted in MightyModels
+MCP state. Tool failure, timeout, cancellation, empty replies, auto-resolution
+and interrupted sessions are not permission to proceed. Existing pending
+decisions remain pending across resume/compaction. The original Claude
+`AskUserQuestion` recorder does not run in Codex; use supported MCP writes
+and read-back verification instead.
+
+The `request_user_input` schema is controlled by the host. Do not invent
+`autoResolutionMs` or `isBlocking` arguments, and never promise a
+Default-mode question will remain open indefinitely.
 
 ### Global instructions under `~/.codex/AGENTS.md`
 
-The installer manages a stanza in the user's global instructions that points
-to this repository's `AGENTS.md`. Keep that managed stanza intact. An older
-user-authored instruction such as “never specify `autoResolutionMs`” is
-harmless but **does not disable the popup timeout**. Replace any promise that
-questions will always remain visually pending with the accurate fallback:
-required decisions use a normal chat question and pause the workflow until
-an explicit answer. Do not append a duplicate managed stanza.
-
-The `default_mode_request_user_input` feature flag enables the optional
-Default-mode question tool but does not make its prompts blocking.
-The original Claude `AskUserQuestion`
-recorder hook is **not migrated**; do not assume Codex answers were
-automatically recorded. Persist only the user's actual decision/evidence with
-the available investigation tools and preserve the skill's ledger invariants.
+The installer manages a stanza pointing to this repository's `AGENTS.md`.
+Keep it intact and update the repository checkout; do not append a duplicate
+managed stanza. The shared policy overrides older generated skill instructions
+that suggest ordinary-chat choice lists for Codex gates.
 
 ## Troubleshooting named scout dispatches
 

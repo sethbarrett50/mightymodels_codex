@@ -3,7 +3,7 @@ name: lets-investigate
 description: >-
   Run a chat-first investigation as a gated loop: frame one target, dispatch scouts for
   repository facts and documentation facts, fold every report into a restated in-chat ledger
-  (knowns, open questions, decisions, resources), then stop for an explicit ordinary-chat decision where the user
+  (knowns, open questions, decisions, resources), then stop for an explicit native interactive decision where the user
   chooses to dig further, redirect, or consolidate. Persists its ledger as rows
   in the state database and changes nothing else. Not for reviewing a branch or grading a codebase (review-circus), debugging
   with a known reproduction (whats-broken), or non-engineering research such as market or
@@ -17,10 +17,10 @@ when_to_use: >-
 argument-hint: "[question, claim or error]"
 ---
 
-> **Native Codex workflow (generated):** This file is generated from the Claude skill; do not edit it directly. MCP calls must use actual `mighty_mcp` tools exposed by the current Codex session. Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage APIs or inherit model aliases. A required decision in Default mode uses ordinary chat and stops until a real answer; auto-resolution never grants permission. `USER_REQUEST_ARGS` denotes the user-provided invocation text, not a shell variable. Helper paths resolve through the installed `$HOME/.agents/skills/` links; if these links are missing, stop rather than guessing a file location.
+> **Native Codex workflow (generated):** This file is generated from the Claude skill; do not edit it directly. MCP calls must use actual `mighty_mcp` tools exposed by the current Codex session. Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage APIs or inherit model aliases. Always invoke real `request_user_input` for user questions, never a chat imitation of a popup. Required decisions need blocking Plan-mode input; if unavailable stop without auto-consent. `USER_REQUEST_ARGS` denotes the user-provided invocation text, not a shell variable. Helper paths resolve through the installed `$HOME/.agents/skills/` links; if these links are missing, stop rather than guessing a file location.
 
 
-> **Codex required user-input contract (all skills):** In Default mode, a question that gates further action MUST be asked in ordinary chat; end the turn until the user explicitly replies. The native `request_user_input` popup may auto-resolve and is only for optional feedback in Default mode. In Plan mode, a genuinely blocking native question may be used when the host exposes it, but require a real explicit answer. Empty input, timeout, cancellation, interruption, and automatic resolution never count as consent. Preserve the pending decision and persist only the user's actual answer using available MightyModels tools. For Codex, the ordinary-chat requirements below are authoritative; no native dialog API is implied.
+> **Codex native user questions (all skills):** Use the actual `request_user_input` tool for every question needing a user answer when available; never simulate an interactive popup using prose or a text multiple-choice list. Optional questions may use it in Default mode. Required decision gates must use a genuinely blocking question in Plan mode. If the tool or blocking mode is unavailable, stop and explain that the user must switch to Plan mode or enable native questions; do not substitute an ordinary-chat question or proceed. Empty, missing, timed-out, cancelled, interrupted or automatically resolved responses never count as approval. Preserve the pending decision and persist only a verified explicit answer with available MightyModels MCP tools. This Codex-only contract overrides any later legacy instruction to ask in ordinary chat or use Claude question dialogs.
 
 > **Codex investigation gate:** Required framing, classification, and end-of-round decisions follow the shared Codex required user-input contract above. Offer free-text input in ordinary chat; the legacy Claude question recorder does not run in Codex, so persist real answers through supported MCP tools only.
 
@@ -59,7 +59,7 @@ the runtime configuration; a claim needs the exact lines that would make it true
 research question needs the documentation for the version in the lockfile and the call sites
 that depend on it.
 
-Before dispatching anything, ask in ordinary chat whether the target line is correct
+Before dispatching anything, use blocking native `request_user_input` in Plan mode to ask whether the target line is correct
 and what the user already knows or has ruled out. End the turn until the user explicitly
 answers; do not treat silence, timeout or an automatic response as consent. Scouts pointed at a vague target return precise answers to the wrong question, and facts
 the user already holds cost nothing to record and a round to rediscover.
@@ -68,13 +68,12 @@ Once the user confirms the target, open the ledger and record their answers as r
 
 Call `investigation_start` with the `target` line and leave `kind` out: the tool asks the user for
 the classification and records the answer. An answer starting `needs input` means no one could
-be asked through the tool: ask the named classification question in ordinary chat, end the
-turn until the user explicitly responds, then call again with that actual `kind`. Kind `change` means a proposed change to weigh, which what-we-know opens.
+be asked through the tool: use blocking native `request_user_input` in Plan mode for the named classification question; wait for a verified user response, then call again with that actual `kind`. Kind `change` means a proposed change to weigh, which what-we-know opens.
 `investigation_start` returns the investigation id, and every later call names it.
 
 The session is pointed at the investigation by the first `investigation_add`,
 `investigation_render` or `investigation_knowns` call naming its id; `investigation_start`
-does not point it. Codex ordinary-chat answers are not automatically recorded by a Claude
+does not point it. Codex `request_user_input` answers are not automatically recorded by a Claude
 question hook. Record confirmed framing facts as `known` entries from `user` in round 0
 with cite `user`, using `investigation_add`, and verify them with `investigation_render`.
 The classification belongs to `investigation_start`'s `kind` parameter, not a ledger entry.
@@ -132,8 +131,7 @@ print, naming an entry from an earlier call. Paste the `render` output into chat
 If `add` cannot write at all, stop at the gate and say so. A gate on an unpersisted round is the loss this skill exists to
 prevent.
 
-**5. Stop at the gate.** Ask the round's decision and any unresolved questions in ordinary
-chat, at most four questions at a time. End the turn until the user explicitly responds.
+**5. Stop at the gate.** Use blocking native `request_user_input` in Plan mode for the round's decision and unresolved questions, at most four per call. Wait for an explicit verified response.
 Only then persist the answer as a `decision` entry and verify it by reading the ledger.
 Offer exactly these choices:
 
@@ -142,13 +140,13 @@ Offer exactly these choices:
 - **Redirect**: the target or the Next questions need changing; the user says how.
 - **Stop here**: keep the ledger in chat and end without consolidating.
 
-When you believe the picture is complete, say so in the chat question and recommend Sufficient,
+When you believe the picture is complete, say so in the interactive question and recommend Sufficient,
 and still ask. When the Next questions would not change the picture, say that too; a user who
 hears "one more round would only confirm what we have" can make a real choice. What you do
 not do is skip the gate because the answer seems obvious. Ending someone's triage for them is
 how half-understood problems get ticketed.
 
-Do not substitute a nonblocking popup or infer an answer from silence. Never dispatch
+Do not substitute an ordinary-chat choice list or a nonblocking popup or infer an answer from silence. Never dispatch
 another round or consolidate until the user makes an explicit choice.
 
 ## The ledger

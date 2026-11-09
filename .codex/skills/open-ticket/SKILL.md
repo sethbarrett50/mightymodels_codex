@@ -1,7 +1,7 @@
 ---
 name: open-ticket
 description: >-
-  Turn an understood problem into a staged unit of work: a blocking ordinary-chat interview (slug,
+  Turn an understood problem into a staged unit of work: a blocking native Plan-mode interview (slug,
   tracker GitHub / Jira / both / none), then the
   ticket directory, a Findings rollup from the lets-investigate ledger or what-we-know, the
   GitHub issue and/or Jira ticket (a draft file when the CLI is absent) with a checked tracker
@@ -16,10 +16,10 @@ when_to_use: >-
 argument-hint: "[slug]"
 ---
 
-> **Native Codex workflow (generated):** This file is generated from the Claude skill; do not edit it directly. MCP calls must use actual `mighty_mcp` tools exposed by the current Codex session. Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage APIs or inherit model aliases. A required decision in Default mode uses ordinary chat and stops until a real answer; auto-resolution never grants permission. `USER_REQUEST_ARGS` denotes the user-provided invocation text, not a shell variable. Helper paths resolve through the installed `$HOME/.agents/skills/` links; if these links are missing, stop rather than guessing a file location.
+> **Native Codex workflow (generated):** This file is generated from the Claude skill; do not edit it directly. MCP calls must use actual `mighty_mcp` tools exposed by the current Codex session. Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage APIs or inherit model aliases. Always invoke real `request_user_input` for user questions, never a chat imitation of a popup. Required decisions need blocking Plan-mode input; if unavailable stop without auto-consent. `USER_REQUEST_ARGS` denotes the user-provided invocation text, not a shell variable. Helper paths resolve through the installed `$HOME/.agents/skills/` links; if these links are missing, stop rather than guessing a file location.
 
 
-> **Codex required user-input contract (all skills):** In Default mode, a question that gates further action MUST be asked in ordinary chat; end the turn until the user explicitly replies. The native `request_user_input` popup may auto-resolve and is only for optional feedback in Default mode. In Plan mode, a genuinely blocking native question may be used when the host exposes it, but require a real explicit answer. Empty input, timeout, cancellation, interruption, and automatic resolution never count as consent. Preserve the pending decision and persist only the user's actual answer using available MightyModels tools. For Codex, the ordinary-chat requirements below are authoritative; no native dialog API is implied.
+> **Codex native user questions (all skills):** Use the actual `request_user_input` tool for every question needing a user answer when available; never simulate an interactive popup using prose or a text multiple-choice list. Optional questions may use it in Default mode. Required decision gates must use a genuinely blocking question in Plan mode. If the tool or blocking mode is unavailable, stop and explain that the user must switch to Plan mode or enable native questions; do not substitute an ordinary-chat question or proceed. Empty, missing, timed-out, cancelled, interrupted or automatically resolved responses never count as approval. Preserve the pending decision and persist only a verified explicit answer with available MightyModels MCP tools. This Codex-only contract overrides any later legacy instruction to ask in ordinary chat or use Claude question dialogs.
 
 
 # open-ticket
@@ -38,9 +38,7 @@ reports, or the database, which may carry raw command output.
 
 ## The interview
 
-In Codex Default mode, ask only unanswered interview questions in ordinary chat and end the
-turn until the user explicitly responds. Offer two to four choices per question and accept
-free-text answers; no timeout, empty response or auto-resolution counts as a decision.
+In Codex Plan mode, ask only unanswered interview questions using blocking native `request_user_input`. Offer two to four choices and free-text input when supported; never auto-select or continue after missing, timed-out, or auto-resolved responses.
 Answers already given are confirmed in the summary, not re-asked.
 
 **Argument:** a slug for the new ticket, given when the skill was started: "USER_REQUEST_ARGS". Empty
@@ -131,8 +129,7 @@ checkout the sprint can run on; the tool refuses it, so ask the user for a branc
 `scope`, `compaction` or `branch`; the tool asks the user for those three.
 
 An answer starting `needs input` means the MCP tool could not collect required inputs.
-Ask each named question in ordinary chat and end the turn until the user explicitly
-answers; then call `ticket_write` again using those actual answers
+Ask each named question with blocking native `request_user_input` in Plan mode, wait for an explicit answer, then call `ticket_write` again using those actual answers
 (`scope`, `compaction`, and `branch` as the current branch name or the new branch name).
 
 The tool refuses to overwrite an existing ticket.yml. Tell the user the file exists
@@ -148,7 +145,7 @@ around it. The ticket is not staged until this passes.
 
 ## What next
 
-Ask once in ordinary chat, then end the turn until the user explicitly chooses:
+Ask once using blocking native `request_user_input` in Plan mode:
 
 - **Plan now**: invoke game-plan in this session. Recommended when `plan-first` is true and the
   context has room for it.
