@@ -182,8 +182,7 @@ This probe never changes MCP state or authorization decisions.
 ### Opt-in scout stop diagnostics (issue #8)
 
 The same owner-only lifecycle marker also records a sanitized
-`SubagentStop` receipt: `event=SubagentStop role=scout agent_id=True
-report=True handler_warning=False`. Values are bounded role categories and
+`SubagentStop` receipt: `event=SubagentStop role=scout agent_id=True report=True handler_warning=False`. Values are bounded role categories and
 booleans; raw child IDs, reports, prompts and errors are never logged.
 `role=missing` or `report=False` highlights an incomplete native host
 payload. `handler_warning=True` means the adapter detected a persistence
