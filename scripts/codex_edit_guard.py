@@ -13,7 +13,13 @@ _SUPPRESSION = re.compile(
     r'#\s*(?:ruff\s*:\s*)?noqa\b|#\s*(?:type|ty)\s*:\s*ignore\b',
     re.IGNORECASE,
 )
-_PROTECTED_CONFIG = frozenset({'pyproject.toml', 'ruff.toml', 'pytest.toml', 'ty.toml', 'CLAUDE.md'})
+_PROTECTED_CONFIG = frozenset({
+    'pyproject.toml',
+    'ruff.toml',
+    'pytest.toml',
+    'ty.toml',
+    'CLAUDE.md',
+})
 _BAD_INPUT = (ValueError, UnicodeError)
 _PATCH_HEADERS = (
     '*** Update File: ',
