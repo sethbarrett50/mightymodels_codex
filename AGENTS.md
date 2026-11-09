@@ -19,7 +19,7 @@ This fork has two runtimes: native Codex roles in `.codex/agents/`, and legacy C
 
 ## Disabled Wingman decision routing
 
-Codex has **no Fable/Wingman agent**. When any MightyModels skill requests a Wingman consultation, do not attempt a spawn, claim that a consultation occurred, or silently use Sol/Astra. Present evidence and options through the real `request_user_input` interface in Plan mode; if blocking native input is unavailable, stop without a text-choice substitute and resume only after a verified explicit answer. Preserve that answer using the existing MCP mechanisms when available; unanswered/timeout is never permission to proceed. This conditional route applies only to Codex, not to the original Claude workflow.
+Codex has **no Fable/Wingman agent**. When any MightyModels skill requests a Wingman consultation, do not attempt a spawn, claim that a consultation occurred, or silently use Sol/Astra. Present evidence and options through the real `request_user_input` interface when available, including Default mode with the native input feature enabled. Only a verified, explicit user choice permits dependent work; if a blocking authorization cannot be established, stop and request Plan mode without treating any automatic answer as consent. Preserve that answer using the existing MCP mechanisms when available; unanswered/timeout is never permission to proceed. This conditional route applies only to Codex, not to the original Claude workflow.
 
 ## Tool translation
 
@@ -27,7 +27,7 @@ Codex has **no Fable/Wingman agent**. When any MightyModels skill requests a Win
 2. Call MCP tools exposed by `mighty_mcp` using the tool names that Codex actually lists; Claude-qualified `mcp__plugin_mightymodels_mighty-mcp__tool` in skills means the corresponding `tool` from this MCP server. Never guess a tool that isn't exposed.
 3. Read the named skill's `SKILL.md` and its references before running the workflow; Claude `skills:` frontmatter was not automatically migrated to a preloaded Codex context.
 4. Use the explicit model and reasoning effort in each native role: original Haiku → `gpt-6-luna`, Sonnet → `gpt-6.1-sol` medium, Opus → `gpt-6.1-sol` high. Fable/wingman is disabled; do not spawn it or silently substitute the parent model. An unavailable selected model is a blocker, not permission to escalate to expensive alternatives. The coordinator retains its own chosen model.
-5. When a skill asks the user a question, use Codex's actual `request_user_input` tool instead of a chat imitation of a popup. Optional input may use the tool in Default mode when exposed. For choice questions, offer a free-text path where supported. Required decisions must use genuinely blocking native input in Plan mode; if unavailable or in Default mode, stop and instruct the user to switch modes rather than displaying multiple-choice text or choosing a default. Accept only explicit answers; never count auto-resolution, timeout, cancellation or missing input as consent. Do not claim to have opened a popup unless you called the tool. This is distinct from execution approval.
+5. When a skill asks the user a question, use Codex's actual `request_user_input` tool instead of a chat imitation of a popup. Optional input may use the tool in Default mode when exposed. For choice questions, offer a free-text path where supported. In Default mode, invoke native input for choice questions when the tool is exposed, even if the choice is required by the workflow. Never interpret a default/auto-resolved choice as approval. If the host cannot verify an explicit answer or enforce a blocking authorization, leave the gate pending and ask the user to switch to Plan mode; do not proceed on unverified input. Accept only explicit answers; never count auto-resolution, timeout, cancellation or missing input as consent. Do not claim to have opened a popup unless you called the tool. This is distinct from execution approval.
 
 ## Model routing policy
 
@@ -46,13 +46,17 @@ multiple-choice imitation. Check the live tool list; the user-scoped
 `~/.codex/config.toml` can expose optional questions in supported Default-mode
 sessions after restarting Codex. The installer does not modify that preference.
 
-A **required decision** (framing, approval, escalation, ticket choices,
-end-of-round gates) needs blocking `request_user_input` in **Plan mode**.
-Default-mode dialogs can auto-resolve; they are not safe permission gates.
-If currently in Default mode, the tool is unavailable, or the host cannot
-supply blocking input, **stop before the gate** and explain that the user
-must switch to Plan mode or enable the native question tool. Never replace
-the missing popup with prose/bullets, fabricate a tool call, or select a default.
+For **any multiple-choice question**, including workflow decisions, first
+invoke the real `request_user_input` tool if it is exposed in the current
+session. Default mode may present native questions when
+`default_mode_request_user_input` is enabled; do **not** refuse to ask solely
+because the session is in Default mode. Tool invocation alone does not satisfy
+a required gate: proceed only after an explicit, verified user response.
+Default-mode dialogs may auto-resolve, so an absent, defaulted, inferred or
+unverifiable answer leaves the gate pending. For blocking authorization that
+the host cannot provide in Default mode, ask the user to switch to Plan mode
+and re-ask using a blocking native call. Never replace a missing popup with
+a prose choice list, fabricate a tool call, or select a default.
 
 A missing/empty answer, cancellation, timeout, interruption, tool failure or
 automatic resolution never authorizes proceeding. Do not infer consent from
