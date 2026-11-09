@@ -35,11 +35,13 @@ def report(
     )
     return path
 
+
 @pytest.mark.unit
 def test_compare_is_numeric_and_never_claims_quota_savings(tmp_path: Path) -> None:
     before = load(report(tmp_path / 'before.json'))
     after = load(report(tmp_path / 'after.json', input_tokens=70, output_tokens=10))
-    assert before is not None and after is not None
+    assert before is not None
+    assert after is not None
     output = compare(before, after)
     assert output['relative_change_percent'] == -33.33
     assert output['quota_savings_verified'] is False
@@ -53,12 +55,13 @@ def test_compare_is_numeric_and_never_claims_quota_savings(tmp_path: Path) -> No
 def test_zero_baseline_cannot_report_percentage(tmp_path: Path) -> None:
     before = load(report(tmp_path / 'before.json', input_tokens=0, output_tokens=0))
     after = load(report(tmp_path / 'after.json'))
-    assert before is not None and after is not None
+    assert before is not None
+    assert after is not None
     assert compare(before, after)['relative_change_percent'] is None
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('turns,errors', [(0, 0), (1, 1)])
+@pytest.mark.parametrize(('turns', 'errors'), [(0, 0), (1, 1)])
 def test_failed_or_unfinished_stream_is_rejected(tmp_path: Path, turns: int, errors: int) -> None:
     assert load(report(tmp_path / 'bad.json', turns=turns, errors=errors)) is None
 
