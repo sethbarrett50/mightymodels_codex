@@ -16,9 +16,9 @@ def test_generated_review_summary_requires_real_user_decisions() -> None:
     generated = translated(ROOT / 'skills/review-circus/SKILL.md')
     assert generated == (ROOT / '.codex/skills/review-circus/SKILL.md').read_text(encoding='utf-8')
     front = generated.split('---', 2)[1]
-    assert 'An ordinary-chat decision sets review depth' in front
-    assert 'presented by id for explicit ordinary-chat decisions' in front
-    assert 'One\n  An ordinary-chat' not in front
+    assert 'A native `request_user_input` decision sets review depth' in front
+    assert 'presented by id for explicit native `request_user_input` decisions' in front
+    assert 'One\n  A native `request_user_input`' not in front
     assert 'Codex user decision gate gate' not in front
     assert 'through Codex user decision gate' not in front
 
