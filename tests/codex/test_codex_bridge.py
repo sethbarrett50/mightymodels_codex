@@ -612,3 +612,60 @@ def test_clean_session_pointer_success_has_no_false_warning(tmp_path: Path) -> N
             supplied, project_root=tmp_path, environ={'HOME': str(tmp_path)}
         )
     assert result is None
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ('outcome', 'expected'),
+    [
+        ({'hookSpecificOutput': {
+            'hookEventName': 'SessionStart',
+            'additionalContext': 'PRIVATE_POINTER_IDENTIFIER',
+        }}, 'present'),
+        ({'systemMessage': 'PRIVATE_DATABASE_ERROR'}, 'warning'),
+        (None, 'absent'),
+    ],
+)
+def test_opt_in_resume_pointer_receipt_omits_private_values(
+    tmp_path: Path, outcome: object, expected: str
+) -> None:
+    state = tmp_path / '.local/state/mightymodels'
+    state.mkdir(parents=True)
+    marker = state / 'codex-lifecycle-probe.enabled'
+    marker.write_text('')
+    marker.chmod(0o600)
+    event = {
+        'hook_event_name': 'SessionStart',
+        'source': 'resume',
+        'session_id': 'PRIVATE_SESSION_ID',
+    }
+    module.lifecycle_resume_probe_outcome(event, outcome, {'HOME': str(tmp_path)})
+    log = state / 'codex-lifecycle-probe.log'
+    assert log.read_text() == f'event=SessionResumePointer hint={expected}\n'
+    assert log.stat().st_mode & 0o777 == 0o600
+    assert 'PRIVATE_' not in log.read_text()
+
+
+@pytest.mark.unit
+def test_resume_pointer_probe_disabled_without_private_marker(tmp_path: Path) -> None:
+    module.lifecycle_resume_probe_outcome(
+        {'hook_event_name': 'SessionStart', 'source': 'resume'},
+        {'hookSpecificOutput': {'additionalContext': 'SECRET'}},
+        {'HOME': str(tmp_path)},
+    )
+    assert not (tmp_path / '.local/state/mightymodels/codex-lifecycle-probe.log').exists()
+
+
+@pytest.mark.unit
+def test_resume_pointer_probe_ignores_other_lifecycle_events(tmp_path: Path) -> None:
+    state = tmp_path / '.local/state/mightymodels'
+    state.mkdir(parents=True)
+    marker = state / 'codex-lifecycle-probe.enabled'
+    marker.write_text('')
+    marker.chmod(0o600)
+    module.lifecycle_resume_probe_outcome(
+        {'hook_event_name': 'SessionStart', 'source': 'startup'},
+        {'hookSpecificOutput': {'additionalContext': 'PRIVATE'}},
+        {'HOME': str(tmp_path)},
+    )
+    assert not (state / 'codex-lifecycle-probe.log').exists()
