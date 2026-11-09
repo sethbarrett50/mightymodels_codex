@@ -148,6 +148,22 @@ def native_special_skill(front: str, body: str, name: str) -> tuple[str, str]:
         return native_investigation_decisions(front, body)
     if name == 'ask-an-adult':
         return native_escalation(front)
+    if name == 'what-we-know':
+        old = (
+            'When no dialog is available, list the questions you\\n'
+            'would ask, state a working assumption for each, and proceed on the assumptions '
+            'labelled as\\nassumptions.'
+        )
+        new = (
+            'If native input is unavailable or its explicit-human provenance cannot be '
+            'verified, leave user-answerable uncertainties pending. Record only supported '
+            'facts and unresolved questions; do not invent a user-source decision or '
+            'proceed on assumed answers. Stop before downstream work requiring that choice.'
+        )
+        if body.count(old) != 1:
+            msg = 'Expected exactly one what-we-know question fallback'
+            raise ValueError(msg)
+        return front, body.replace(old, new)
     if name == 'whats-broken':
         old = (
             'present evidence to the user in ordinary chat and stop for their answer. '
