@@ -17,10 +17,13 @@ at least two real options and their costs, and your tentative preference. State
 clearly that this is your own analysis, **not a Wingman report**. Include the
 information still needed for a well-founded decision.
 
-Ask the user in **ordinary chat** to pick an option or give a free-text instruction.
-End the turn until they explicitly respond. A timeout, dismissal, empty answer,
-nonblocking popup or automatic resolution does not grant permission. Do not
-proceed with implementation or silently substitute your preference.
+Use the actual native `request_user_input` question tool in **Plan mode**, offering
+at least two choices plus a free-text path when supported. Do not imitate
+its UI by listing options in ordinary chat. The user must provide an explicit
+answer to the blocking prompt. If the tool or blocking Plan mode is unavailable,
+stop and explain the capability needed; do not ask a textual substitute or
+proceed. A timeout, dismissal, empty answer, or automatic resolution does not
+grant permission. Never silently substitute your preference.
 
 ## 2. Persist the actual answer before resuming
 
