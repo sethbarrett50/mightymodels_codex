@@ -17,6 +17,9 @@ def test_generated_game_plan_uses_native_questions_for_all_three_gates() -> None
     assert 'Invoke native `request_user_input` when exposed, at most four risks per call' in generated
     assert 'Invoke native `request_user_input` for one question' in generated
     assert 'stop for an explicit choice: approve, revise, or abandon' in generated
+    assert 'If native input is unavailable, leave the risk handling pending' in generated
+    assert 'If native input is unavailable, leave the escalation choice pending' in generated
+    assert 'ask in chat with both answers' not in generated
     assert 'One `Codex user decision gate` dialog' not in generated
     assert generated == (ROOT / '.codex/skills/game-plan/SKILL.md').read_text(encoding='utf-8')
 
