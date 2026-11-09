@@ -22,6 +22,4 @@ def test_failure_recovery_requires_native_explicit_answer() -> None:
     generated = translated(ROOT / 'skills/whats-broken/SKILL.md')
     assert 'invoke native `request_user_input` when exposed' in generated
     assert 'present evidence to the user in ordinary chat' not in generated
-    assert generated == (ROOT / '.codex/skills/whats-broken/SKILL.md').read_text(
-        encoding='utf-8'
-    )
+    assert generated == (ROOT / '.codex/skills/whats-broken/SKILL.md').read_text(encoding='utf-8')
