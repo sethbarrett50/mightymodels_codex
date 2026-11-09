@@ -177,7 +177,7 @@ def native_open_ticket_decisions(body: str) -> str:
             ),
             (
                 'An answer starting `needs input` means the MCP tool could not '
-                'collect required inputs.\nAsk each named question with blocking native '
+                'collect required inputs.\nAsk each named question with native '
                 '`request_user_input` when exposed, wait for a verified explicit answer, '
                 'then call `ticket_write` again using those actual answers'
             ),
