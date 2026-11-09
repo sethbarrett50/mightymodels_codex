@@ -57,6 +57,8 @@ def _count_usage(usage: object, counts: Counter[str], tokens: Counter[str]) -> N
     if not isinstance(usage, dict):
         counts['turns_without_usage'] += 1
         return
+    if any(type(usage.get(name)) is not int or usage[name] < 0 for name in USAGE_FIELDS):
+        counts['turns_with_incomplete_usage'] += 1
     for name in USAGE_FIELDS:
         tokens[name] += _positive_count(usage.get(name))
 

@@ -36,7 +36,14 @@ def _validated_usage(usage: object, events: object) -> dict[str, int] | None:
     if turns == 0 or cached_tokens > input_tokens:
         return None
     errors = (
-        _safe_count(events.get(name, 0)) for name in ('turn_failed', 'errors', 'malformed_events')
+        _safe_count(events.get(name, 0))
+        for name in (
+            'turn_failed',
+            'errors',
+            'malformed_events',
+            'turns_without_usage',
+            'turns_with_incomplete_usage',
+        )
     )
     if any(value is None or value > 0 for value in errors):
         return None

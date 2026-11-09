@@ -97,3 +97,22 @@ def test_oversized_and_secret_non_numeric_data_are_rejected(tmp_path: Path) -> N
 def test_comparator_parses_with_python313_grammar() -> None:
     path = ROOT / 'scripts/codex_usage_comparison.py'
     ast.parse(path.read_text(), filename=str(path), feature_version=(3, 13))
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('counter', ['turns_without_usage', 'turns_with_incomplete_usage'])
+def test_incomplete_turn_usage_rejects_ratio(tmp_path: Path, counter: str) -> None:
+    target = report(tmp_path / 'bad.json')
+    data = json.loads(target.read_text())
+    data['events'][counter] = 1
+    target.write_text(json.dumps(data))
+    assert load(target) is None
+
+
+@pytest.mark.unit
+def test_invalid_incomplete_counter_rejects_ratio(tmp_path: Path) -> None:
+    target = report(tmp_path / 'bad.json')
+    data = json.loads(target.read_text())
+    data['events']['turns_with_incomplete_usage'] = True
+    target.write_text(json.dumps(data))
+    assert load(target) is None

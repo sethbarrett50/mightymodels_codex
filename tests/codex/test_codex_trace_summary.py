@@ -152,3 +152,24 @@ def test_completed_error_item_is_counted_without_leaking_payload() -> None:
     assert report['events']['error_items'] == 1
     assert report['events']['turn_completed'] == 1
     assert 'PRIVATE_' not in json.dumps(report)
+
+
+@pytest.mark.unit
+def test_missing_or_invalid_turn_usage_is_explicitly_counted() -> None:
+    events = [
+        {'type': 'turn.completed'},
+        {'type': 'turn.completed', 'usage': {'input_tokens': 5}},
+        {
+            'type': 'turn.completed',
+            'usage': {
+                'input_tokens': 8,
+                'cached_input_tokens': 1,
+                'output_tokens': 2,
+                'reasoning_output_tokens': 0,
+            },
+        },
+    ]
+    report = METRICS.summarize(io.StringIO(''.join(json.dumps(e) + '\n' for e in events)))
+    assert report['events']['turns_without_usage'] == 1
+    assert report['events']['turns_with_incomplete_usage'] == 1
+    assert report['usage']['input_tokens'] == 13
