@@ -169,3 +169,26 @@ def test_doctor_rejects_wrong_toml_table_types_without_traceback(tmp_path: Path)
     assert 'MCP registration missing or unexpected' in result.stdout
     assert '0/11' in result.stdout
     assert 'Traceback' not in result.stderr
+
+
+@pytest.mark.unit
+def test_doctor_rejects_mismatched_skill_manifest_name(tmp_path: Path) -> None:
+    installed = run_script(INSTALLER, tmp_path)
+    assert installed.returncode == 0, installed.stderr
+
+    # Inspect a malformed manifest without modifying installed skill sources.
+    fixture_root = tmp_path / 'source-checkout'
+    source = ROOT / '.codex/skills/lets-investigate/SKILL.md'
+    destination = fixture_root / '.codex/skills/lets-investigate/SKILL.md'
+    destination.parent.mkdir(parents=True)
+    destination.write_text(
+        source.read_text(encoding='utf-8').replace(
+            'name: lets-investigate', 'name: wrong-name', 1
+        ),
+        encoding='utf-8',
+    )
+    from runpy import run_path
+
+    doctor = run_path(str(DOCTOR))
+    assert not doctor['skill_manifest_named'](destination)
+    assert doctor['skill_manifest_named'](source)
