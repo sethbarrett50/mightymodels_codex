@@ -618,10 +618,15 @@ def test_clean_session_pointer_success_has_no_false_warning(tmp_path: Path) -> N
 @pytest.mark.parametrize(
     ('outcome', 'expected'),
     [
-        ({'hookSpecificOutput': {
-            'hookEventName': 'SessionStart',
-            'additionalContext': 'PRIVATE_POINTER_IDENTIFIER',
-        }}, 'present'),
+        (
+            {
+                'hookSpecificOutput': {
+                    'hookEventName': 'SessionStart',
+                    'additionalContext': 'PRIVATE_POINTER_IDENTIFIER',
+                }
+            },
+            'present',
+        ),
         ({'systemMessage': 'PRIVATE_DATABASE_ERROR'}, 'warning'),
         (None, 'absent'),
     ],
