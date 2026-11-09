@@ -22,7 +22,7 @@ argument-hint: "[question, claim or error]"
 
 > **Codex native user questions (all skills):** Use the actual `request_user_input` tool for every question needing a user answer when available; never simulate an interactive popup using prose or a text multiple-choice list. Default mode should invoke the native tool for choices, including required decisions, when exposed. Invoking a popup is not approval: only a verified explicit user answer satisfies a gate. If the host cannot verify an explicit answer or enforce blocking authorization, leave the gate pending and request Plan mode; if the tool is unavailable, report that fact without an ordinary-chat choice imitation. Empty, missing, timed-out, cancelled, interrupted or automatically resolved responses never count as approval. Preserve the pending decision and persist only a verified explicit answer with available MightyModels MCP tools. This Codex-only contract overrides any later legacy instruction to ask in ordinary chat or use Claude question dialogs.
 
-> **Codex investigation gate:** Required framing, classification, and end-of-round decisions follow the shared Codex required user-input contract above. Offer free-text input in ordinary chat; the legacy Claude question recorder does not run in Codex, so persist real answers through supported MCP tools only.
+> **Codex investigation gate:** Required framing, classification, and end-of-round decisions follow the shared Codex required user-input contract above. Offer free-text through native input when supported; the legacy Claude question recorder does not run in Codex, so persist real answers through supported MCP tools only.
 
 # lets-investigate
 
@@ -59,7 +59,7 @@ the runtime configuration; a claim needs the exact lines that would make it true
 research question needs the documentation for the version in the lockfile and the call sites
 that depend on it.
 
-Before dispatching anything, use blocking native `request_user_input` in Plan mode to ask whether the target line is correct
+Before dispatching anything, invoke native `request_user_input` when exposed in Default or Plan mode to ask whether the target line is correct
 and what the user already knows or has ruled out. End the turn until the user explicitly
 answers; do not treat silence, timeout or an automatic response as consent. Scouts pointed at a vague target return precise answers to the wrong question, and facts
 the user already holds cost nothing to record and a round to rediscover.
@@ -68,7 +68,7 @@ Once the user confirms the target, open the ledger and record their answers as r
 
 Call `investigation_start` with the `target` line and leave `kind` out: the tool asks the user for
 the classification and records the answer. An answer starting `needs input` means no one could
-be asked through the tool: use blocking native `request_user_input` in Plan mode for the named classification question; wait for a verified user response, then call again with that actual `kind`. Kind `change` means a proposed change to weigh, which what-we-know opens.
+be asked through the tool: invoke native `request_user_input` when exposed for the named classification question; wait for a verified explicit user response, then call again with that actual `kind`. Kind `change` means a proposed change to weigh, which what-we-know opens.
 `investigation_start` returns the investigation id, and every later call names it.
 
 The session is pointed at the investigation by the first `investigation_add`,
@@ -131,7 +131,7 @@ print, naming an entry from an earlier call. Paste the `render` output into chat
 If `add` cannot write at all, stop at the gate and say so. A gate on an unpersisted round is the loss this skill exists to
 prevent.
 
-**5. Stop at the gate.** Use blocking native `request_user_input` in Plan mode for the round's decision and unresolved questions, at most four per call. Wait for an explicit verified response.
+**5. Stop at the gate.** Invoke native `request_user_input` when exposed in Default or Plan mode for the round's decision and unresolved questions, at most four per call. Wait for an explicit verified response.
 Only then persist the answer as a `decision` entry and verify it by reading the ledger.
 Offer exactly these choices:
 

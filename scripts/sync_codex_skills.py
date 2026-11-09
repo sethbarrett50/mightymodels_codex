@@ -162,8 +162,9 @@ def native_open_ticket_decisions(body: str) -> str:
                 'answer of their own.'
             ),
             (
-                'In Codex Plan mode, ask only unanswered interview questions using '
-                'blocking native `request_user_input`. Offer two to four choices '
+                'Ask only unanswered interview questions using '
+                'native `request_user_input` when exposed in Default or Plan mode. '
+                'Offer two to four choices '
                 'and free-text input when supported; never auto-select or continue '
                 'after missing, timed-out, or auto-resolved responses.'
             ),
@@ -177,14 +178,14 @@ def native_open_ticket_decisions(body: str) -> str:
             ),
             (
                 'An answer starting `needs input` means the MCP tool could not '
-                'collect required inputs.\nAsk each named question with blocking native '
-                '`request_user_input` in Plan mode, wait for an explicit answer, '
+                'collect required inputs.\nAsk each named question with native '
+                '`request_user_input` when exposed, wait for a verified explicit answer, '
                 'then call `ticket_write` again using those actual answers'
             ),
         ),
         (
             'Ask once, through `Codex user decision gate`:',
-            ('Ask once using blocking native `request_user_input` in Plan mode:'),
+            ('Ask once using native `request_user_input` when exposed in Default or Plan mode:'),
         ),
     )
     for old, new in steps:
@@ -638,7 +639,8 @@ def translated(source: Path) -> str:
         body = body.replace(previous, replacement)
     if name == 'open-ticket':
         front = front.replace(
-            'one Codex user decision gate interview', 'a blocking native Plan-mode interview'
+            'one Codex user decision gate interview',
+            'a native interactive interview with verified answers',
         )
         body = body.replace(
             (

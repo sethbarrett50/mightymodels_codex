@@ -12,15 +12,15 @@ native_open_ticket_decisions = GENERATOR['native_open_ticket_decisions']
 
 
 @pytest.mark.unit
-def test_open_ticket_decisions_are_blocking_and_generated_output_is_current() -> None:
+def test_open_ticket_decisions_use_native_input_and_generated_output_is_current() -> None:
     generated = translated(ROOT / 'skills/open-ticket/SKILL.md')
-    assert (
-        'ask only unanswered interview questions using blocking native `request_user_input`'
-        in generated
-    )
+    assert 'Ask only unanswered interview questions using native `request_user_input`' in generated
     assert 'never auto-select or continue' in generated
     assert 'then call `ticket_write` again using those actual answers' in generated
-    assert 'Ask once using blocking native `request_user_input` in Plan mode' in generated
+    assert (
+        'Ask once using native `request_user_input` when exposed in Default or Plan mode'
+        in generated
+    )
     assert 'One `Codex user decision gate` dialog' not in generated
     assert 'one `Codex user decision gate` dialog' not in generated
     assert generated == (ROOT / '.codex/skills/open-ticket/SKILL.md').read_text(encoding='utf-8')
