@@ -458,12 +458,9 @@ def lifecycle_probe_enabled(state_dir: Path) -> bool:
         status = marker.stat(follow_symlinks=False)
     except OSError:
         return False
-    return (
-        marker.is_file()
-        and not marker.is_symlink()
-        and (status.st_mode & 0o777) == QUESTION_PROBE_MARKER_MODE
-        and status.st_uid == os.getuid()
-    )
+    if not marker.is_file() or marker.is_symlink():
+        return False
+    return (status.st_mode & 0o777) == QUESTION_PROBE_MARKER_MODE and status.st_uid == os.getuid()
 
 
 def lifecycle_probe_receipt(event: object, environ: dict[str, str]) -> None:
