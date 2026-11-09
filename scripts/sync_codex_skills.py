@@ -287,6 +287,25 @@ def native_game_plan_decisions(body: str) -> str:
             msg = 'Expected exactly one game-plan user decision instruction'
             raise ValueError(msg)
         body = body.replace(old, new)
+    fallbacks = (
+        (
+            'When no dialog is available, ask\nin chat with the four handlings '
+            'spelled out, and wait.',
+            'If native input is unavailable, leave the risk handling pending; '
+            'do not infer an answer.',
+        ),
+        (
+            'When no dialog is\navailable, ask in chat with both answers spelled '
+            'out, and wait.',
+            'If native input is unavailable, leave the escalation choice pending; '
+            'do not infer an answer.',
+        ),
+    )
+    for original, native in fallbacks:
+        if body.count(original) != 1:
+            msg = 'Expected exactly one game-plan native question fallback'
+            raise ValueError(msg)
+        body = body.replace(original, native)
     return body
 
 
