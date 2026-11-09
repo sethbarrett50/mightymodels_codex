@@ -179,196 +179,16 @@ not a guarantee that Codex loads, trusts or executes both hook sources.
 
 ### Invoking MightyModels skills from Codex
 
-Codex skills are invoked with a `# MightyModels Codex port — status and installation
+Codex skills use a dollar-sign prefix, rather than the original Claude
+slash-command syntax. A user running Codex CLI v0.167.0 in a disposable
+repository reported the namespaced prompt form `$mightymodels:lets-investigate`.
+That observation establishes the entered command form, not that the entire
+investigation workflow executed. The generated manifest names are
+`lets-investigate`, `open-ticket`, `game-plan`, and so on; try
+`$lets-investigate` if the namespaced form is not discoverable.
 
-The port provides native Codex definitions for **11 enabled agents** (from 12 Claude source roles; Fable/wingman is disabled), **19 skills**, and a
-local **35-tool MCP server**. Claude support is retained. It is **experimental**:
-static tests and one live read-only subagent test do not establish complete
-dispatch authorization or end-to-end workflow equivalence.
-
-## Verified installation and bounded CLI smoke — November 8, 2026
-
-A user-supplied, unprivileged Debian Codex CLI 0.167.0 run after updating to
-`main` at `ddbd9f4` established the following:
-
-- `install_codex_user.py` completed without an installation error.
-- `codex_doctor.py` reported 11/11 owned native agent registrations, 19/19
-  installed skill links, enabled global `mighty_mcp`, an available `uv` launcher,
-  and structurally recognized global hooks.
-- `sync_codex_agents.py --check` and `sync_codex_skills.py --check` passed.
-- `codex mcp list` reported the `mighty_mcp` launcher enabled. This is not proof
-  that a particular MCP request or lifecycle callback was executed.
-- `codex_live_acceptance.py --live --timeout 90` returned
-  `read_only_smoke_completed` in an unrelated disposable Git repository, with
-  `fixture_unchanged: true`, one completed turn, and no retained secret transcript.
-  The probe reported 39,961 input tokens and 65 output tokens for this run; those
-  figures are not a model-to-model quota comparison.
-
-The doctor also emitted `Project-scoped MCP config has unexpected shape`.
-That warning was caused by the repository intentionally omitting the optional
-`mcp_servers` table in its project config, not by a demonstrated duplicate
-server. This case is addressed by PR #85; the observed host output itself is
-retained as historical evidence.
-
-**Not verified:** actual hook delivery or trust, MCP tool execution in that
-particular run, user-decision persistence, scout handback, resume/compaction,
-host-level dispatch admission, child-agent identity or sandbox isolation.
-The smoke requests read-only access and compares its disposable fixture; it
-is not a proof of global filesystem isolation or host enforcement.
-
-Codex documents `SessionStart`, `PreToolUse`, `PostToolUse`,
-`SubagentStop` and `PreCompact` hook events, including local MCP tool
-coverage. Configuration support is not evidence that this installation
-delivered those events; test that separately in unrelated repositories.
-See https://learn.chatgpt.com/docs/hooks for the current host contract.
-
-## Observed live results — Debian 13, Codex CLI 0.167.0 (November 2026)
-
-**Historical observations, not current end-to-end acceptance.** Static checks and CLI discovery do not demonstrate host-enforced dispatch denial, read-only scout isolation, actual spawned-agent model identity, decision persistence, or complete lifecycle behavior. Track these separately under issues [#9](https://github.com/sethbarrett50/mightymodels_codex/issues/9), [#8](https://github.com/sethbarrett50/mightymodels_codex/issues/8), [#14](https://github.com/sethbarrett50/mightymodels_codex/issues/14) and [#16](https://github.com/sethbarrett50/mightymodels_codex/issues/16).
-
-The separate, unprivileged `codex` user on Debian 13 successfully:
-
-- Installed uv 0.13.7 with Python 3.14 and cloned this repository.
-- Passed the generator check in an earlier state (12 Claude sources; currently 11 enabled Codex roles and 19 skills).
-- Discovered 12 roles and 19 skills in an earlier session **before Fable/wingman was disabled**; the current 11-role registry has not been host-verified.
-- Connected to `mighty_mcp`; 35 tools were listed. A real
-  `investigation_list({})` request reached the server, but state reads returned
-  "no repository is recorded" because no write unit of work had registered it.
-- Ran the native `mm-triage-code-scout` agent to inspect MCP registration code;
-  the agent finished and reported the nine registrars.
-- Created `~/.local/share/mightymodels/state.db` and an MCP log.
-- **Did not establish** that `PreToolUse` blocked unauthorized dispatch or that
-  `SubagentStop` persisted the scout report. No implementation workflow ran.
-
-The scout's `/root/...` agent identifier is a coordinator hierarchy identifier;
-the OS account was verified as UID 1002 (`codex`), not Linux root.
-
-## Native agent instructions (issue #14)
-
-The generated `.codex/agents/mm-*.toml` role bodies translate supported
-Claude-specific tool names into the corresponding Codex interactions:
-`exec_command` for file/shell inspection, `apply_patch` for changes, and
-`spawn_agent` for permitted delegation. Native roles are referred to by
-their full `mm-` names. References claiming MightyModels skills are
-automatically preloaded have been replaced with instructions to read the
-installed skill's `SKILL.md` explicitly under `$HOME/.agents/skills/`.
-The original `agents/**/*.md` definitions remain unchanged.
-
-This mapping is a **textual runtime translation**, not host-enforced permissions:
-the source `tools`, `skills`, `maxTurns`, and other Claude frontmatter
-fields remain documented as unmapped in the compatibility report. Custom
-Codex agents inherit the parent's sandbox and approvals. The agent can only
-use native tool operations that are actually exposed in its current session;
-if unavailable, it must stop rather than silently fall back to a different
-tool or unregistered agent. Live workflow acceptance is still required.
-
-### Session resume pointer fallback (issue #8)
-
-The Codex `SessionStart` bridge uses a read-only persisted session pointer
-lookup for the host's `resume` and `compact` sources. When a valid, unexpired
-ticket or investigation pointer exists, it returns bounded `additionalContext`
-with the reference and directs Codex to reread the latest state using
-`mighty_mcp`. It never reconstructs missing decisions, treats auto-resolved
-questions as consent, or prints stored answers. Initial startup continues to
-prune stale pointers. A missing or expired pointer produces no invented state.
-
-This is implemented and fixture-tested, **not verified as delivered by a live
-Codex SessionStart callback**. The host must trust/execute the installed
-hooks, and an actual investigation/task/baton handoff still needs live
-resume and idempotence acceptance before issue #8 can close.
-
-### Project-only post-edit Python checks (issue #17)
-
-The MightyModels checkout's `.codex/hooks.json` also declares a
-`PostToolUse` hook for `apply_patch`. Its standard-library helper inspects
-only successfully applied patch targets inside this source checkout, selects
-existing nonsymlinked Python files, and invokes the already-installed local
-`.venv/bin/ruff` with `format --check` and `check --no-fix`.
-It does **not** install packages, contact a registry, run a formatter that
-writes files, touch another Git project, or reproduce source/error text in
-hook output. It reports a brief warning and directs the user to `make check`
-if either check fails or Ruff is unavailable.
-
-This is best-effort read-only feedback, not automatic formatting, `ty`
-coverage, proof that a Codex host delivered `PostToolUse`, or a global
-plugin requirement. The existing project PreToolUse suppression/lockfile
-guard remains separate. Until host delivery is confirmed, run
-`make format` (mutating) and `make check` (validation) explicitly.
-
-For quota-aware reset testing, see [Codex live acceptance after usage resets](CODEX-LIVE-ACCEPTANCE.md). The `--preflight` mode uses no Codex inference, and `--live` runs one bounded smoke without retries. The runbook separates host-dependent follow-up evidence from static CI and keeps issue #9 deferred.
-
-## Source, enabled and reported roles
-
-The source tree includes 12 original Claude roles. The native Codex generator emits 11 enabled roles and deliberately omits Fable/wingman. `.codex/compatibility-report.json` counts the **12 source roles**, including the disabled one: its `count` is not the enabled-install count. All 19 skills have Codex-specific generated equivalents. Run `python3 scripts/sync_codex_agents.py --check` and `python3 scripts/sync_codex_skills.py --check` for generation drift; these checks are not live host acceptance.
-
-### Duplicate Codex role discovery — live host finding
-
-A November 8, 2026 Codex 0.167.0 live read-only MCP test successfully called
-`mcp__mighty_mcp__investigation_list` but emitted two duplicate-name warnings
-per each of the 11 `mm-*` roles. The user confirmed 11 explicit global role
-registrations, 11 corresponding user-global agent symlinks, and 11 source
-agent files in the project checkout. The installer now retains the explicit
-global `config_file` registrations and removes the redundant managed global
-symlinks on reinstall, preserving the per-agent model and effort settings.
-The doctor rejects a still-duplicated user-global role file. **Host startup
-without duplicate warnings is not yet verified** and must be retested after
-reinstall. Unmanaged agent files are never deleted by this migration.
-
-## User-scoped installation across repositories
-
-Run this as the unprivileged Linux user that will launch Codex. Do not use sudo
-or place GitHub PATs inside the MightyModels checkout.
-
-```sh
-cd ~/code/mightymodels_codex
-uv sync --locked --no-dev
-python3 scripts/install_codex_user.py
-codex mcp list
-```
-
-The installer registers all 11 enabled roles explicitly in the managed global
-`~/.codex/config.toml` section (referencing their checkout TOML files), and
-symlinks 19 skills into `~/.agents/skills/`. It removes only obsolete
-installer-owned role symlinks in `~/.codex/agents/` to avoid duplicate global
-agent discovery. The project-local `.codex/agents/` definitions remain as
-source files. It adds a clearly marked `mighty_mcp` section
-to `~/.codex/config.toml`, installs absolute-path hooks at
-`~/.codex/hooks.json`, and adds a managed instruction stanza in
-`~/.codex/AGENTS.md`. It refuses to overwrite unrelated files and does not
-modify sandbox, approval, model, or network settings. It can be rerun.
-
-```sh
-python3 scripts/install_codex_user.py --uninstall
-```
-
-Uninstall removes only owned links and managed stanzas. It preserves Codex
-authentication, unrelated configuration, all user repositories, PAT files, and
-the MightyModels state database. Keep this checkout at its installed location;
-reinstall after moving it. Restart Codex after installing or uninstalling.
-
-**Caution:** Codex may require explicit trust for newly installed hooks; hooks
-being present on disk is not evidence they executed. The installer now safely
-merges exact MightyModels event groups into an existing valid global hook file
-without deleting unrelated event definitions. It refuses malformed JSON,
-symlinked hook manifests, duplicate managed groups and unexpected commands
-that resemble a modified MightyModels bridge. Uninstall removes only its
-recognized groups while keeping foreign hooks. A hook file carrying unrelated
-top-level metadata is never replaced by a template or deleted just because
-its recognized MightyModels hook groups are gone. The doctor also rejects
-duplicated managed event groups rather than calling such an installation healthy. This is a structural merge,
-not a guarantee that Codex loads, trusts or executes both hook sources.
-
- prefix; do not assume the original Claude
-`/mightymodels:...` commands are installed as native slash commands.
-A user running Codex CLI v0.167.0 in an unrelated disposable repository
-reported the namespaced form `$mightymodels:lets-investigate` in the prompt.
-That observation confirms the input form, **not** that a complete investigation
-executed successfully. In standard Codex skill discovery, the installed
-manifest names are `lets-investigate`, `open-ticket`, `game-plan`, and so
-on, so try `$lets-investigate` when the namespaced form is unavailable.
-
-Use `/skills` to inspect the skill menu in the running host, and select a
-MightyModels skill rather than invoking an unrelated lookalike. For example:
+Use `/skills` to inspect the menu in the running host before assuming a
+particular invocation is available. Examples:
 
 ```text
 $lets-investigate Why does this test fail?
@@ -379,12 +199,12 @@ $review-circus
 $baton-pass
 ```
 
-`python3 scripts/codex_doctor.py` checks that the 19 installed global
-symlinks point to generated skill directories and that each manifest names its
-directory correctly. **This is structural validation only**, not proof the
-Codex host loaded the skill, resolved a namespaced alias, invoked any MCP tool,
-or enforced permissions. Confirm actual discovery in an unrelated repository
-with a fresh interactive session before claiming command compatibility.
+`python3 scripts/codex_doctor.py` checks that all 19 installed global
+symlinks point to generated skill directories and each manifest has a
+matching name. This is structural validation only: it cannot prove the
+running Codex host loaded a skill, resolved a namespaced alias, invoked
+an MCP tool, or enforced permissions. Verify discovery interactively
+in an unrelated repository before claiming host-level compatibility.
 
 ### Per-repository workflow
 
