@@ -20,7 +20,10 @@ def test_open_ticket_decisions_use_native_input_and_generated_output_is_current(
     )
     assert 'never auto-select or continue' in generated
     assert 'then call `ticket_write` again using those actual answers' in generated
-    assert 'Ask once using native `request_user_input` when exposed in Default or Plan mode' in generated
+    assert (
+        'Ask once using native `request_user_input` when exposed in Default or Plan mode'
+        in generated
+    )
     assert 'One `Codex user decision gate` dialog' not in generated
     assert 'one `Codex user decision gate` dialog' not in generated
     assert generated == (ROOT / '.codex/skills/open-ticket/SKILL.md').read_text(encoding='utf-8')
