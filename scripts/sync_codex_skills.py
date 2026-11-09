@@ -197,13 +197,13 @@ def native_open_ticket_decisions(body: str) -> str:
 
 
 def native_baton_pass_frontmatter(front: str) -> str:
-    """Summarize blocking Codex chat choices without inventing a dialog UI."""
+    """Describe native Codex input while retaining explicit-answer gates."""
     old = (
         'asks in one\n  Codex user decision gate call what the next session should '
         'focus on and what to do with uncommitted\n  work, then writes'
     )
     new = (
-        'asks in ordinary chat what the next session should focus on and what to '
+        'asks using native interactive input what the next session should focus on and what to '
         'do with uncommitted\n  work, awaits explicit user answers, then writes'
     )
     if front.count(old) != 1:
@@ -221,7 +221,7 @@ def native_baton_pass_decisions(body: str) -> str:
                 'from the state rather than generic:'
             ),
             (
-                'Ask the user in ordinary chat for the next-session focus and, only '
+                'Use native `request_user_input` for the next-session focus and, only '
                 'if the tree is dirty,\nfor the uncommitted-work action. Offer '
                 'options supported by the current state and\nend the turn until the '
                 'user explicitly answers each required question; do not assume\na '
@@ -264,22 +264,31 @@ def native_baton_pass_decisions(body: str) -> str:
 
 
 def native_game_plan_decisions(body: str) -> str:
-    """Use actual Codex chat rather than a nonexistent question dialog."""
+    """Use actual native questions rather than chat imitations."""
     changes = (
         (
             (
                 'One `Codex user decision gate` dialog, risks batched up to four a call, '
                 'each offering the same'
             ),
-            'Ask in ordinary chat, at most four risks per turn, each offering the same',
+            (
+                'Invoke native `request_user_input` when exposed, at most four risks '
+                'per call, each offering the same'
+            ),
         ),
         (
             'One `Codex user decision gate` dialog with one question, the',
-            'Ask one blocking question in ordinary chat and wait for a real answer, the',
+            (
+                'Invoke native `request_user_input` for one question; wait for a '
+                'verified explicit answer, the'
+            ),
         ),
         (
             'ask through\n`Codex user decision gate`: approve, revise, or abandon.',
-            'ask in ordinary chat and stop for an explicit choice: approve, revise, or abandon.',
+            (
+                'invoke native `request_user_input` when exposed and stop for an '
+                'explicit choice: approve, revise, or abandon.'
+            ),
         ),
     )
     for old, new in changes:
@@ -287,6 +296,30 @@ def native_game_plan_decisions(body: str) -> str:
             msg = 'Expected exactly one game-plan user decision instruction'
             raise ValueError(msg)
         body = body.replace(old, new)
+    fallbacks = (
+        (
+            (
+                'When no dialog is available, ask\nin chat with the four handlings '
+                'spelled out, and wait.'
+            ),
+            (
+                'If native input is unavailable, leave the risk handling pending; '
+                'do not infer an answer.'
+            ),
+        ),
+        (
+            ('When no dialog is\navailable, ask in chat with both answers spelled out, and wait.'),
+            (
+                'If native input is unavailable, leave the escalation choice pending; '
+                'do not infer an answer.'
+            ),
+        ),
+    )
+    for original, native in fallbacks:
+        if body.count(original) != 1:
+            msg = 'Expected exactly one game-plan native question fallback'
+            raise ValueError(msg)
+        body = body.replace(original, native)
     return body
 
 

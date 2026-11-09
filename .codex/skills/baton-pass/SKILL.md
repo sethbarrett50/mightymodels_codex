@@ -5,7 +5,7 @@ description: >-
   from an active ticket (mid-sprint, or after stick-the-landing went green and review is
   next) or from a session with no ticket at all. Writes an objective snapshot from the
   recorded state first (the snapshot tool: tasks, ledger decisions, failed
-  attempts, review state), runs what-we-know in interactive mode, asks in ordinary chat what the next session should focus on and what to do with uncommitted
+  attempts, review state), runs what-we-know in interactive mode, asks using native interactive input what the next session should focus on and what to do with uncommitted
   work, awaits explicit user answers, then writes handoffs/BATON.md with the writer's judgment, which no
   file holds. With no ticket it runs open-ticket first. Ends by printing the next session's
   opening prompt in chat. Not a ticket for work not yet
@@ -65,7 +65,7 @@ can settle get settled now rather than inherited.
 
 ## 2. Ask what the next session is for
 
-Ask the user in ordinary chat for the next-session focus and, only if the tree is dirty,
+Use native `request_user_input` for the next-session focus and, only if the tree is dirty,
 for the uncommitted-work action. Offer options supported by the current state and
 end the turn until the user explicitly answers each required question; do not assume
 a popup timeout or empty response is consent.
