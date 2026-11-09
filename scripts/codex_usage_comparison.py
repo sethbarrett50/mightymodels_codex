@@ -29,10 +29,10 @@ def _validated_usage(usage: object, events: object) -> dict[str, int] | None:
     counts = (input_tokens, cached_tokens, output_tokens, reasoning_tokens, turns)
     if any(value is None for value in counts):
         return None
-    input_tokens = cast(int, input_tokens)
-    cached_tokens = cast(int, cached_tokens)
-    output_tokens = cast(int, output_tokens)
-    turns = cast(int, turns)
+    input_tokens = cast('int', input_tokens)
+    cached_tokens = cast('int', cached_tokens)
+    output_tokens = cast('int', output_tokens)
+    turns = cast('int', turns)
     if turns == 0 or cached_tokens > input_tokens:
         return None
     errors = (
