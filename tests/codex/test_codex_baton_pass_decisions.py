@@ -12,9 +12,9 @@ native_baton_pass_decisions = GENERATOR['native_baton_pass_decisions']
 
 
 @pytest.mark.unit
-def test_baton_requires_explicit_chat_answers_and_durable_handoff() -> None:
+def test_baton_requires_native_questions_and_durable_handoff() -> None:
     generated = translated(ROOT / 'skills/baton-pass/SKILL.md')
-    assert 'Ask the user in ordinary chat for the next-session focus' in generated
+    assert 'Use native `request_user_input` for the next-session focus' in generated
     assert 'end the turn until the user explicitly answers' in ' '.join(generated.split())
     assert "Preserve only the user's actual" in generated
     assert 'do not claim a persisted handoff' in generated
