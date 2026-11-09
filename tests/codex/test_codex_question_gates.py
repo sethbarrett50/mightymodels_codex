@@ -30,3 +30,11 @@ def test_codex_question_gate_docs_keep_user_setting_separate() -> None:
     assert 'default_mode_request_user_input = true' in docs
     assert 'not' in docs.lower()
     assert 'timeout' in docs.lower()
+
+
+@pytest.mark.unit
+def test_codex_docs_never_direct_required_gates_to_plain_chat() -> None:
+    docs = (ROOT / 'docs/CODEX.md').read_text(encoding='utf-8')
+    assert 'Default-mode\\nrequired decisions still use ordinary chat' not in docs
+    assert 'switch to Plan mode for real `request_user_input` interaction' in docs
+    assert 'claiming a popup opened counts as tool invocation' in docs
