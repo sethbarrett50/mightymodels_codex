@@ -479,7 +479,7 @@ def lifecycle_probe_receipt(event: object, environ: dict[str, str]) -> None:
         return
     receipt.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     with receipt.open('a', encoding='utf-8') as stream:
-        stream.write(f'event={name} source={source_name}\\n')
+        stream.write(f'event={name} source={source_name}\n')
     receipt.chmod(0o600)
 
 
