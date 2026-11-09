@@ -1,5 +1,6 @@
 """Sanitized token comparison never turns a usage ratio into a quota claim."""
 
+import ast
 import json
 from pathlib import Path
 from runpy import run_path
@@ -90,3 +91,9 @@ def test_oversized_and_secret_non_numeric_data_are_rejected(tmp_path: Path) -> N
     target = report(tmp_path / 'bad.json')
     target.write_text('X' * 65537)
     assert load(target) is None
+
+
+@pytest.mark.unit
+def test_comparator_parses_with_python313_grammar() -> None:
+    path = ROOT / 'scripts/codex_usage_comparison.py'
+    ast.parse(path.read_text(), filename=str(path), feature_version=(3, 13))
