@@ -451,6 +451,38 @@ def question_probe_receipt(event: object, environ: dict[str, str]) -> None:
     receipt.chmod(0o600)
 
 
+def lifecycle_probe_receipt(event: object, environ: dict[str, str]) -> None:
+    """Record bounded host lifecycle delivery metadata, never payload contents."""
+    if not isinstance(event, dict):
+        return
+    name = event.get('hook_event_name')
+    if name not in ('SessionStart', 'PreCompact'):
+        return
+    home = Path(environ.get('HOME') or str(Path.home()))
+    state_dir = home / '.local/state/mightymodels'
+    marker = state_dir / 'codex-lifecycle-probe.enabled'
+    try:
+        status = marker.stat(follow_symlinks=False)
+    except OSError:
+        return
+    if (
+        not marker.is_file()
+        or marker.is_symlink()
+        or (status.st_mode & 0o777) != QUESTION_PROBE_MARKER_MODE
+        or status.st_uid != os.getuid()
+    ):
+        return
+    source = event.get('source')
+    source_name = source if source in ('startup', 'resume', 'compact') else 'unknown'
+    receipt = state_dir / 'codex-lifecycle-probe.log'
+    if receipt.is_symlink():
+        return
+    receipt.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with receipt.open('a', encoding='utf-8') as stream:
+        stream.write(f'event={name} source={source_name}\\n')
+    receipt.chmod(0o600)
+
+
 def audit_probe(event: object, environ: dict[str, str]) -> None:
     """Record that the host reached this hook, without persisting tool arguments."""
     if environ.get('MIGHTYMODELS_CODEX_DISPATCH_PROBE') != '1':
@@ -497,6 +529,7 @@ def main() -> int:
     root = Path(__file__).resolve().parent.parent
     audit_probe(event, dict(os.environ))
     question_probe_receipt(event, dict(os.environ))
+    lifecycle_probe_receipt(event, dict(os.environ))
     if isinstance(event, dict) and event.get('hook_event_name') in (
         'PreCompact',
         'SubagentStop',
