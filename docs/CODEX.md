@@ -168,7 +168,12 @@ rm -f ~/.local/state/mightymodels/codex-lifecycle-probe.enabled
 
 A receipt `event=SessionStart source=resume` proves the Codex bridge
 received that event; it does **not** alone prove successful pointer
-recovery. Validate the resumed pointer separately by reading the exact
+recovery. With this marker enabled, `event=SessionResumePointer hint=present`
+means the bridge returned a bounded persisted pointer hint; `hint=absent`
+means no hint was returned, and `hint=warning` means the handler reported a
+failure. These sanitized receipts contain no pointer identifiers or answers.
+Even `hint=present` does **not** alone prove the Codex host injected the
+context into its model; verify that separately in the resumed session. Validate the resumed pointer separately by reading the exact
 MCP record, without reconstructing its value from chat. `PreCompact`
 delivery requires an actual compaction event. A missing log is
 inconclusive until hook trust, matcher and marker ownership are checked.
