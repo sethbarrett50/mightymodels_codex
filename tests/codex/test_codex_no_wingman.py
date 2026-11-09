@@ -1,6 +1,7 @@
 """Guard the Codex Fable-disabled decision route across its consumers."""
 
 from pathlib import Path
+from runpy import run_path
 
 import pytest
 
@@ -32,3 +33,19 @@ def test_codex_global_policy_does_not_substitute_fable() -> None:
     text = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
     assert 'no Fable/Wingman agent' in text
     assert 'unanswered/timeout' in text
+
+
+@pytest.mark.unit
+def test_installed_codex_ask_an_adult_never_uses_claude_wingman_dispatch() -> None:
+    rendered = run_path(str(ROOT / 'scripts/sync_codex_skills.py'))['translated'](
+        ROOT / 'skills/ask-an-adult/SKILL.md'
+    )
+    installed = (ROOT / '.codex/skills/ask-an-adult/SKILL.md').read_text()
+    assert rendered == installed
+    assert 'Codex user decision gate' not in rendered
+    assert 'wingman returns a' not in rendered.lower()
+    assert 'ticket_update_context' in rendered
+    assert 'investigation_add' in rendered
+    assert 'investigation_render' in rendered
+    assert 'End the turn until they explicitly respond' in rendered
+    assert 'No Wingman/Fable agent or substitute dispatch is available' in rendered
