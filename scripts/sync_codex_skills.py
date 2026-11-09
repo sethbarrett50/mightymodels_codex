@@ -619,7 +619,7 @@ def translated(source: Path) -> str:
         body = body.replace(previous, replacement)
     if name == 'open-ticket':
         front = front.replace(
-            'one Codex user decision gate interview', 'a blocking ordinary-chat interview'
+            'one Codex user decision gate interview', 'a blocking native Plan-mode interview'
         )
         body = body.replace(
             (
