@@ -428,9 +428,12 @@ nonsecret question/answer pairs; raw choices, skipped secret questions,
 transcript metadata and other original tool fields are discarded. A missing
 checkout directory prevents forwarding to avoid an accidental wrong-repository
 ledger write.
-A warning is returned when no eligible response can be recorded. Default-mode
-required decisions still use ordinary chat and must be explicitly persisted
-using an available MCP decision mechanism before work advances.
+A warning is returned when no eligible response can be recorded. For a
+required decision, a session still in Default mode must stop before the gate
+and switch to Plan mode for real `request_user_input` interaction. Neither
+a prose-only choice list nor claiming a popup opened counts as tool invocation.
+A confirmed response must still be persisted and verified through supported
+MCP tools before dependent work advances.
 
 **Important limitations:** hook trust, event presence and the actual
 Codex session identifier need real-host verification. An adapter calling
