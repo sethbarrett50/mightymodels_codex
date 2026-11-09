@@ -514,7 +514,7 @@ def lifecycle_resume_probe_outcome(event: object, result: object, environ: dict[
         return
     receipt.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     with receipt.open('a', encoding='utf-8') as stream:
-        stream.write(f'event=SessionResumePointer hint={state}\\n')
+        stream.write(f'event=SessionResumePointer hint={state}\n')
     receipt.chmod(0o600)
 
 
