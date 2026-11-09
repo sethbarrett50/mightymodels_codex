@@ -58,9 +58,7 @@ and `emphasis` that the call leaves out to the user and starts the run with the 
 ```
 
 When `review_start` returns `needs input` or a missing-argument refusal,
-ask for each required choice in ordinary chat and end the turn until the user
-explicitly answers. Then call again with only those actual answers; do not
-assume that a nonexistent popup or a timeout supplied them.
+invoke native `request_user_input` for each required choice when available in Default or Plan mode. Wait for a verified explicit answer, then call again with only actual choices; never treat a timeout, dismissal or automatic response as consent. If unavailable, stop.
 
 It answers with the run id, the run directory, and each persona's model. Every later step
 names the run with `run_id`.
@@ -142,9 +140,7 @@ makes about it. Call again while the answer shows findings still undecided:
 ```
 
 The answer identifies findings still undecided. For `needs input`,
-ask the user about those finding IDs in ordinary chat and stop for their
-explicit choices. Call again with `decisions` containing only confirmed
-answers (multiple findings may be included together):
+invoke native `request_user_input` for those finding IDs when available in Default or Plan mode. Stop until verified explicit choices, then call `decisions` with only confirmed answers (multiple findings may be included together):
 
 ```json
 {"run_id": "20261005-103000", "by": "user", "decisions": {"F1": {"decision": "fix"}, "F2": {"decision": "accept-risk", "reason": "..."}}}
