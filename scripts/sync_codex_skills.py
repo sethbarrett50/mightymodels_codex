@@ -163,7 +163,8 @@ def native_open_ticket_decisions(body: str) -> str:
             ),
             (
                 'Ask only unanswered interview questions using '
-                'native `request_user_input` when exposed in Default or Plan mode. Offer two to four choices '
+                'native `request_user_input` when exposed in Default or Plan mode. '
+                'Offer two to four choices '
                 'and free-text input when supported; never auto-select or continue '
                 'after missing, timed-out, or auto-resolved responses.'
             ),
@@ -638,7 +639,8 @@ def translated(source: Path) -> str:
         body = body.replace(previous, replacement)
     if name == 'open-ticket':
         front = front.replace(
-            'one Codex user decision gate interview', 'a native interactive interview with verified answers'
+            'one Codex user decision gate interview',
+            'a native interactive interview with verified answers',
         )
         body = body.replace(
             (
