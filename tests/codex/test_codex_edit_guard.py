@@ -123,3 +123,28 @@ def test_absolute_symlink_escape_denied(tmp_path: Path) -> None:
 def test_absolute_lockfile_still_denied(tmp_path: Path) -> None:
     patch = f'*** Begin Patch\n*** Update File: {tmp_path / "uv.lock"}\n+change\n*** End Patch'
     assert 'uv.lock' in GUARD.inspect(event(patch), root=tmp_path)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    'filename', ['pyproject.toml', 'ruff.toml', 'pytest.toml', 'ty.toml', 'CLAUDE.md']
+)
+def test_protected_root_config_requires_manual_review(tmp_path: Path, filename: str) -> None:
+    for target in (filename, str(tmp_path / filename)):
+        patch = f'*** Begin Patch\n*** Update File: {target}\n@@\n+change\n*** End Patch'
+        assert 'explicit user review' in GUARD.inspect(event(patch), root=tmp_path)
+
+
+@pytest.mark.unit
+def test_nested_same_named_config_does_not_require_root_config_approval(tmp_path: Path) -> None:
+    patch = '*** Begin Patch\n*** Update File: fixtures/pyproject.toml\n@@\n+change\n*** End Patch'
+    assert GUARD.inspect(event(patch), root=tmp_path) is None
+
+
+@pytest.mark.unit
+def test_protected_config_move_target_requires_review(tmp_path: Path) -> None:
+    patch = (
+        '*** Begin Patch\n*** Update File: README.md\n'
+        '*** Move to: pyproject.toml\n@@\n+change\n*** End Patch'
+    )
+    assert 'explicit user review' in GUARD.inspect(event(patch), root=tmp_path)
