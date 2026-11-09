@@ -16,6 +16,8 @@ def test_baton_requires_native_questions_and_durable_handoff() -> None:
     generated = translated(ROOT / 'skills/baton-pass/SKILL.md')
     assert 'Use native `request_user_input` for the next-session focus' in generated
     assert 'end the turn until the user explicitly answers' in ' '.join(generated.split())
+    assert 'asks using native interactive input' in generated
+    assert 'Ask the user in ordinary chat' not in generated
     assert "Preserve only the user's actual" in generated
     assert 'do not claim a persisted handoff' in generated
     assert 'recorder hook on `Codex user decision gate` already stored' not in generated
