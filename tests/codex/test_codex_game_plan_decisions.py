@@ -14,7 +14,9 @@ native_game_plan_decisions = SYNC['native_game_plan_decisions']
 @pytest.mark.unit
 def test_generated_game_plan_uses_native_questions_for_all_three_gates() -> None:
     generated = translate(ROOT / 'skills/game-plan/SKILL.md')
-    assert 'Invoke native `request_user_input` when exposed, at most four risks per call' in generated
+    assert (
+        'Invoke native `request_user_input` when exposed, at most four risks per call' in generated
+    )
     assert 'Invoke native `request_user_input` for one question' in generated
     assert 'stop for an explicit choice: approve, revise, or abandon' in generated
     assert 'If native input is unavailable, leave the risk handling pending' in generated
