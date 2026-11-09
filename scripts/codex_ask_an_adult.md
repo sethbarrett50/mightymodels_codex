@@ -17,11 +17,13 @@ at least two real options and their costs, and your tentative preference. State
 clearly that this is your own analysis, **not a Wingman report**. Include the
 information still needed for a well-founded decision.
 
-Use the actual native `request_user_input` question tool in **Plan mode**, offering
-at least two choices plus a free-text path when supported. Do not imitate
+Use the actual native `request_user_input` question tool in Default or Plan mode
+when exposed, offering at least two choices plus a free-text path when supported. Do not imitate
 its UI by listing options in ordinary chat. The user must provide an explicit
-answer to the blocking prompt. If the tool or blocking Plan mode is unavailable,
-stop and explain the capability needed; do not ask a textual substitute or
+answer explicitly; an automatic response does not qualify. If the host cannot
+verify an explicit answer or enforce blocking authorization in Default mode,
+leave the decision pending and request Plan mode. If the tool is unavailable,
+stop and explain the missing capability; do not ask a textual substitute or
 proceed. A timeout, dismissal, empty answer, or automatic resolution does not
 grant permission. Never silently substitute your preference.
 
