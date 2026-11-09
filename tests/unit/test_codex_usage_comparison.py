@@ -136,3 +136,22 @@ def test_invalid_operation_failure_counts_are_rejected(tmp_path: Path, invalid: 
     data['events']['mcp_calls_failed'] = invalid
     target.write_text(json.dumps(data))
     assert load(target) is None
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('started', [0, 1, 3, True, 'SECRET'])
+def test_started_turn_mismatch_rejects_comparison(tmp_path: Path, started: object) -> None:
+    target = report(tmp_path / 'bad-turns.json', turns=2)
+    data = json.loads(target.read_text())
+    data['events']['turn_started'] = started
+    target.write_text(json.dumps(data))
+    assert load(target) is None
+
+
+@pytest.mark.unit
+def test_matching_started_and_completed_turns_are_valid(tmp_path: Path) -> None:
+    target = report(tmp_path / 'good-turns.json', turns=2)
+    data = json.loads(target.read_text())
+    data['events']['turn_started'] = 2
+    target.write_text(json.dumps(data))
+    assert load(target) is not None
