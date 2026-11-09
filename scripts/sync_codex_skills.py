@@ -598,8 +598,11 @@ def translated(source: Path) -> str:
             'For Codex, the ordinary-chat requirements below are authoritative; '
             'no native dialog API is implied.',
         )
-    if name == 'lets-investigate':
-        front, body = native_investigation_decisions(front, body)
+    front, body = (
+        native_investigation_decisions(front, body)
+        if name == 'lets-investigate'
+        else (front, body)
+    )
     front = native_baton_pass_frontmatter(front) if name == 'baton-pass' else front
     front = native_landing_frontmatter(front) if name == 'stick-the-landing' else front
     front = native_task_split_frontmatter(front) if name == 'break-it-down' else front
