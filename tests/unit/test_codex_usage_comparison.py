@@ -116,3 +116,23 @@ def test_invalid_incomplete_counter_rejects_ratio(tmp_path: Path) -> None:
     data['events']['turns_with_incomplete_usage'] = True
     target.write_text(json.dumps(data))
     assert load(target) is None
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('counter', ['mcp_calls_failed', 'commands_exited_nonzero'])
+def test_failed_operations_reject_token_comparison(tmp_path: Path, counter: str) -> None:
+    target = report(tmp_path / 'failed.json')
+    data = json.loads(target.read_text())
+    data['events'][counter] = 1
+    target.write_text(json.dumps(data))
+    assert load(target) is None
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('invalid', [-1, True, 'SECRET_FAILURE'])
+def test_invalid_operation_failure_counts_are_rejected(tmp_path: Path, invalid: object) -> None:
+    target = report(tmp_path / 'invalid.json')
+    data = json.loads(target.read_text())
+    data['events']['mcp_calls_failed'] = invalid
+    target.write_text(json.dumps(data))
+    assert load(target) is None
