@@ -395,14 +395,25 @@ def run_lifecycle(event: object, *, project_root: Path, environ: dict) -> dict |
 
 def question_probe_receipt(event: object, environ: dict[str, str]) -> None:
     """Opt-in receipt of hook delivery and response *shape*, never answer contents."""
-    if environ.get('MIGHTYMODELS_CODEX_QUESTION_PROBE') != '1':
+    home = Path(environ.get('HOME') or str(Path.home()))
+    state_dir = home / '.local/state/mightymodels'
+    marker = state_dir / 'codex-question-probe.enabled'
+    opt_in = environ.get('MIGHTYMODELS_CODEX_QUESTION_PROBE') == '1'
+    if not opt_in:
+        try:
+            status = marker.stat(follow_symlinks=False)
+            opt_in = marker.is_file() and not marker.is_symlink() and (
+                status.st_mode & 0o777
+            ) == 0o600 and status.st_uid == os.getuid()
+        except OSError:
+            return
+    if not opt_in:
         return
     if not isinstance(event, dict) or event.get('hook_event_name') != 'PostToolUse':
         return
     if event.get('tool_name') != 'request_user_input':
         return
-    home = Path(environ.get('HOME') or str(Path.home()))
-    receipt = home / '.local/state/mightymodels/codex-question-probe.log'
+    receipt = state_dir / 'codex-question-probe.log'
     response = event.get('tool_response')
     if isinstance(response, str):
         try:
