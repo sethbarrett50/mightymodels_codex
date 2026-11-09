@@ -1,10 +1,10 @@
 """Read-only doctor cannot disclose secrets or silently bless missing setup."""
 
 import json
-from importlib import import_module
 import os
 import subprocess
 import sys
+from importlib import import_module
 from pathlib import Path
 
 import pytest
@@ -183,9 +183,7 @@ def test_doctor_rejects_mismatched_skill_manifest_name(tmp_path: Path) -> None:
     destination = fixture_root / '.codex/skills/lets-investigate/SKILL.md'
     destination.parent.mkdir(parents=True)
     destination.write_text(
-        source.read_text(encoding='utf-8').replace(
-            'name: lets-investigate', 'name: wrong-name', 1
-        ),
+        source.read_text(encoding='utf-8').replace('name: lets-investigate', 'name: wrong-name', 1),
         encoding='utf-8',
     )
     # Importing the module does not execute its CLI or modify the checkout.
