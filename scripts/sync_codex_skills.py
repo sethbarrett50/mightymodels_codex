@@ -387,10 +387,10 @@ def native_review_circus_decisions(body: str) -> str:
             ),
             (
                 'When `review_start` returns `needs input` or a missing-argument '
-                'refusal,\nask for each required choice in ordinary chat and end '
-                'the turn until the user\nexplicitly answers. Then call again with '
-                'only those actual answers; do not\nassume that a nonexistent '
-                'popup or a timeout supplied them.'
+                'refusal,\ninvoke native `request_user_input` for each required choice '
+                'when available in Default or Plan mode. Wait for a verified explicit '
+                'answer, then call again with only actual choices; never treat a '
+                'timeout, dismissal or automatic response as consent. If unavailable, stop.'
             ),
         ),
         (
@@ -422,10 +422,10 @@ def native_review_circus_decisions(body: str) -> str:
             ),
             (
                 'The answer identifies findings still undecided. For `needs '
-                'input`,\nask the user about those finding IDs in ordinary chat '
-                'and stop for their\nexplicit choices. Call again with `decisions` '
-                'containing only confirmed\nanswers (multiple findings may be '
-                'included together):'
+                'input`,\ninvoke native `request_user_input` for those finding IDs '
+                'when available in Default or Plan mode. Stop until verified explicit '
+                'choices, then call `decisions` with only confirmed answers (multiple '
+                'findings may be included together):'
             ),
         ),
     )
@@ -514,9 +514,10 @@ def native_landing_decisions(body: str) -> str:
         '(up to four questions a call, two to four options each):'
     )
     after = (
-        'ask in ordinary chat whether to review now or hand off, then end '
-        'the turn until the user explicitly chooses. Neither a timeout '
-        'nor an automatic response is consent:'
+        'invoke native `request_user_input` in Default or Plan mode for review '
+        'now versus hand off. Await a verified explicit choice; if native input '
+        'is unavailable, stop with the decision pending. Neither timeout nor '
+        'auto-resolution is consent:'
     )
     if body.count(before) != 1:
         msg = 'Expected exactly one landing decision instruction'
@@ -545,8 +546,8 @@ def native_landing_frontmatter(front: str) -> str:
         '(review-circus) or hand off (baton-pass).'
     )
     new = (
-        'On green, ask in ordinary chat whether to review now (review-circus) '
-        'or hand off (baton-pass), then wait for an explicit answer.'
+        'On green, use native `request_user_input` to choose review now (review-circus) '
+        'or hand off (baton-pass); require verified explicit approval.'
     )
     if front.count(old) != 1:
         msg = 'Expected exactly one landing frontmatter decision instruction'

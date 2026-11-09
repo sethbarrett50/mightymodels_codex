@@ -15,7 +15,7 @@ native_review_circus_decisions = SYNC['native_review_circus_decisions']
 def test_review_decision_prompts_and_disabled_override_are_native() -> None:
     generated = translate(ROOT / 'skills/review-circus/SKILL.md')
     assert 'When `review_start` returns `needs input`' in generated
-    assert 'ask the user about those finding IDs in ordinary chat' in generated
+    assert 'invoke native `request_user_input` for those finding IDs' in generated
     assert 'Codex disables the Fable review override.' in generated
     assert 'Never call `review_override`' in generated
     assert 'moving it to fable' not in generated

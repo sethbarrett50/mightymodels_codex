@@ -13,11 +13,11 @@ native_landing_frontmatter = SYNC['native_landing_frontmatter']
 
 
 @pytest.mark.unit
-def test_landing_asks_in_chat_and_matches_generated_asset() -> None:
+def test_landing_asks_natively_and_matches_generated_asset() -> None:
     generated = translated(ROOT / 'skills/stick-the-landing/SKILL.md')
-    assert 'ask in ordinary chat whether to review now or hand off' in generated
-    assert 'end the turn until the user explicitly chooses' in generated
-    assert 'Neither a timeout nor an automatic response is consent' in generated
+    assert 'invoke native `request_user_input` in Default or Plan mode' in generated
+    assert 'stop with the decision pending' in generated
+    assert 'Neither timeout nor auto-resolution is consent' in generated
     assert 'ask once through `Codex user decision gate`' not in generated
     assert generated == (ROOT / '.codex/skills/stick-the-landing/SKILL.md').read_text(
         encoding='utf-8'

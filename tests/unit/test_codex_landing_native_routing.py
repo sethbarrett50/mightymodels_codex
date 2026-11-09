@@ -20,7 +20,7 @@ def test_landing_uses_native_models_and_requires_real_approval() -> None:
     assert 'registered native Codex roles' in generated
     assert 'proof of the effective host model' in generated
     assert 'Models are the fixed aliases' not in generated
-    assert 'ask in ordinary chat whether to review now or hand off' in generated
+    assert 'invoke native `request_user_input` in Default or Plan mode' in generated
 
 
 @pytest.mark.unit
