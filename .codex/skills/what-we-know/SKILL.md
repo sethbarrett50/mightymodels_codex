@@ -93,7 +93,7 @@ attempt. Each carries either what an inference rests on or where the answer live
 exceed about six, group them and ask the user which matter; twenty questions is a failed
 triage wearing thoroughness as a costume.
 
-**4. Resolve through `native `request_user_input``.** One dialog, up to four questions a call with two to
+**4. Resolve through `request_user_input`.** One dialog, up to four questions a call with two to
 four options each (the user can always type an answer of their own), only for uncertainties
 the user can actually answer (intent, production observations, history, priorities). Uncertainties a scout could answer get one more narrow dispatch instead
 of a question; uncertainties nobody can answer yet are recorded as such. Record each answer as
