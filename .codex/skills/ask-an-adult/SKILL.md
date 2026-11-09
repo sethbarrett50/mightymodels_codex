@@ -1,7 +1,7 @@
 ---
 name: ask-an-adult
 description: >-
-  Resolve a stuck judgment call through an explicit Codex ordinary-chat user decision.
+  Resolve a stuck judgment call through native blocking Plan-mode user input.
   No Wingman/Fable agent or substitute dispatch is available. Persist confirmed
   decisions through supported MCP tools before resuming. Not for retrieving facts (send a
   scout), not for work you can simply do, and not for confirming a plan you have
