@@ -512,7 +512,6 @@ def lifecycle_resume_probe_outcome(event: object, result: object, environ: dict[
     receipt.chmod(0o600)
 
 
-
 def scout_stop_probe_receipt(event: object, result: object, environ: dict[str, str]) -> None:
     """Opt-in stop delivery and handler outcome; never write role IDs or report text."""
     if not isinstance(event, dict) or event.get('hook_event_name') != 'SubagentStop':
