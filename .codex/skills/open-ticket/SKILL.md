@@ -1,7 +1,7 @@
 ---
 name: open-ticket
 description: >-
-  Turn an understood problem into a staged unit of work: a blocking native Plan-mode interview (slug,
+  Turn an understood problem into a staged unit of work: a native interactive interview with verified answers (slug,
   tracker GitHub / Jira / both / none), then the
   ticket directory, a Findings rollup from the lets-investigate ledger or what-we-know, the
   GitHub issue and/or Jira ticket (a draft file when the CLI is absent) with a checked tracker
@@ -38,7 +38,7 @@ reports, or the database, which may carry raw command output.
 
 ## The interview
 
-In Codex Plan mode, ask only unanswered interview questions using blocking native `request_user_input`. Offer two to four choices and free-text input when supported; never auto-select or continue after missing, timed-out, or auto-resolved responses.
+Ask only unanswered interview questions using native `request_user_input` when exposed in Default or Plan mode. Offer two to four choices and free-text input when supported; never auto-select or continue after missing, timed-out, or auto-resolved responses.
 Answers already given are confirmed in the summary, not re-asked.
 
 **Argument:** a slug for the new ticket, given when the skill was started: "USER_REQUEST_ARGS". Empty
@@ -129,7 +129,7 @@ checkout the sprint can run on; the tool refuses it, so ask the user for a branc
 `scope`, `compaction` or `branch`; the tool asks the user for those three.
 
 An answer starting `needs input` means the MCP tool could not collect required inputs.
-Ask each named question with blocking native `request_user_input` in Plan mode, wait for an explicit answer, then call `ticket_write` again using those actual answers
+Ask each named question with native `request_user_input` when exposed, wait for a verified explicit answer, then call `ticket_write` again using those actual answers
 (`scope`, `compaction`, and `branch` as the current branch name or the new branch name).
 
 The tool refuses to overwrite an existing ticket.yml. Tell the user the file exists
@@ -145,7 +145,7 @@ around it. The ticket is not staged until this passes.
 
 ## What next
 
-Ask once using blocking native `request_user_input` in Plan mode:
+Ask once using native `request_user_input` when exposed in Default or Plan mode:
 
 - **Plan now**: invoke game-plan in this session. Recommended when `plan-first` is true and the
   context has room for it.
