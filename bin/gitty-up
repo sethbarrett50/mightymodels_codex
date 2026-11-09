@@ -167,16 +167,61 @@ outcome_while_pending() {
   sleep "${POLL_SECONDS}"
 }
 
+# gh pr checks --json is not supported by older installed gh releases.
+# gh pr view --json statusCheckRollup is widely supported; normalize its
+# CheckRun and StatusContext variants to the same conservative bucket format.
+# Fail closed for unknown states rather than declaring CI green.
+checks_json() {
+  local pr=$1 raw
+  raw=$(gh pr view "${pr}" --json statusCheckRollup 2>&1) || {
+    printf '%s\n' "${raw}"
+    return 1
+  }
+  jq -ce '
+    if (.statusCheckRollup | type) != "array" then
+      error("missing or invalid statusCheckRollup")
+    else
+      [.statusCheckRollup[] |
+        {
+          name: (.name // .context // "unknown"),
+          link: (.detailsUrl // .targetUrl // ""),
+          bucket: (
+            if .__typename == "CheckRun" then
+              if .status != "COMPLETED" then
+                if (.status | IN("QUEUED", "IN_PROGRESS", "PENDING", "WAITING", "REQUESTED")) then "pending" else "unknown" end
+              elif .conclusion == "SUCCESS" then "pass"
+              elif (.conclusion | IN("SKIPPED", "NEUTRAL")) then "skipping"
+              elif .conclusion == "CANCELLED" then "cancel"
+              elif (.conclusion | IN("FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STALE", "STARTUP_FAILURE")) then "fail"
+              else "unknown" end
+            elif .__typename == "StatusContext" then
+              if .state == "SUCCESS" then "pass"
+              elif .state == "PENDING" or .state == "EXPECTED" then "pending"
+              elif (.state | IN("FAILURE", "ERROR")) then "fail"
+              else "unknown" end
+            else "unknown" end
+          )
+        }
+      ]
+    end
+  ' <<<"${raw}"
+}
+
 poll_checks_once() {
   local pr=$1 register_by=$2
-  local pending
-  if ! pending=$(gh pr checks "${pr}" --json bucket --jq 'map(select(.bucket == "pending")) | length' 2>&1); then
-    case ${pending} in
-      *"no checks reported"*) report_unregistered_checks "${register_by}" ;;
-      *) printf 'ERROR %s' "${pending}" ;;
-    esac
+  local pending checks
+  if ! checks=$(checks_json "${pr}" 2>&1); then
+    printf 'ERROR %s' "${checks}"
     return
   fi
+  if [[ ${checks} == '[]' ]]; then
+    report_unregistered_checks "${register_by}"
+    return
+  fi
+  pending=$(jq -r '[.[] | select(.bucket == "pending")] | length' <<<"${checks}") || {
+    printf 'ERROR invalid check buckets'
+    return
+  }
   case ${pending} in
     0) printf 'SETTLED' ;;
     '' | *[!0-9]*) printf 'ERROR unexpected gh output: %s' "${pending}" ;;
@@ -257,7 +302,7 @@ command_verdict() {
   require_integer --pr "${pr}"
 
   local checks verdict
-  checks=$(gh pr checks "${pr}" --json name,bucket,link 2>&1) || exit_with_error "${checks}"
+  checks=$(checks_json "${pr}" 2>&1) || exit_with_error "${checks}"
   jq -e 'type == "array"' <<<"${checks}" >/dev/null 2>&1 || exit_with_error "unexpected gh output: ${checks}"
   verdict=$(verdict_of_checks <<<"${checks}")
   emit "VERDICT ${verdict}"
