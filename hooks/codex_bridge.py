@@ -411,17 +411,22 @@ def question_probe_receipt(event: object, environ: dict[str, str]) -> None:
             response = None
     answers = response.get('answers') if isinstance(response, dict) else None
     mode = event.get('permission_mode')
-    mode = mode if mode in ('default', 'plan', 'acceptEdits', 'dontAsk', 'bypassPermissions') else 'unknown'
+    allowed_modes = ('default', 'plan', 'acceptEdits', 'dontAsk', 'bypassPermissions')
+    mode = mode if mode in allowed_modes else 'unknown'
+    request = event.get('tool_input')
+    question_present = isinstance(request, dict) and isinstance(request.get('questions'), list)
     fields = (
         'event=PostToolUse',
         'tool=request_user_input',
         f'mode={mode}',
-        f'input_questions={isinstance(event.get("tool_input"), dict) and isinstance(event["tool_input"].get("questions"), list)}',
+        f'input_questions={question_present}',
         f'response_object={isinstance(response, dict)}',
         f'answers_object={isinstance(answers, dict)}',
         f'timeout_field={isinstance(response, dict) and "afkTimeoutMs" in response}',
     )
     receipt.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if receipt.is_symlink():
+        return
     with receipt.open('a', encoding='utf-8') as stream:
         stream.write(' '.join(fields) + '\n')
     receipt.chmod(0o600)
