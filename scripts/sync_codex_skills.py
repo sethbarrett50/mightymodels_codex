@@ -251,7 +251,17 @@ def native_baton_pass_decisions(body: str) -> str:
                 'from the state rather than generic:'
             ),
             (
-                'Use native `request_user_input` for the next-session focus and, only '
+                'For an active ticket, BEFORE asking, read the current ticket context via `ticket_show`, '
+                'preserve every existing entry, add `Pending baton focus: explicit user answer not yet '
+                'verified` (and a pending uncommitted-work marker if the tree is dirty), '
+                'write the entire context with `ticket_update_context`, and verify the new '
+                'markers through `ticket_show`. If this write fails, STOP rather than '
+                'claiming that unanswered decisions survive resume. For no-ticket '
+                'sessions, disclose that this pending-choice state has no durable ticket '
+                'writer; do not claim persistence. After explicit confirmation, replace '
+                'pending markers with the confirmed actual choices and verify read-back. '
+                'Never turn a default or auto-resolved answer into an approved choice. '
+                'Then use native `request_user_input` for the next-session focus and, only '
                 'if the tree is dirty,\nfor the uncommitted-work action. Offer '
                 'options supported by the current state and\nend the turn until the '
                 'user explicitly answers each required question; do not assume\na '
