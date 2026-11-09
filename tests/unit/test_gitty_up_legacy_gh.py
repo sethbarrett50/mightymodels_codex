@@ -51,17 +51,33 @@ def run_gitty(
 @pytest.mark.skipif(shutil.which('jq') is None, reason='jq required')
 def test_legacy_gh_rollup_success_and_skip(fake_gh: Path) -> None:
     checks = [
-        {'__typename': 'CheckRun', 'name': 'tests', 'status': 'COMPLETED',
-         'conclusion': 'SUCCESS', 'detailsUrl': 'https://example.test/test'},
-        {'__typename': 'StatusContext', 'context': 'lint', 'state': 'SUCCESS',
-         'targetUrl': 'https://example.test/lint'},
-        {'__typename': 'CheckRun', 'name': 'optional', 'status': 'COMPLETED',
-         'conclusion': 'SKIPPED', 'detailsUrl': 'https://example.test/skip'},
+        {
+            '__typename': 'CheckRun',
+            'name': 'tests',
+            'status': 'COMPLETED',
+            'conclusion': 'SUCCESS',
+            'detailsUrl': 'https://example.test/test',
+        },
+        {
+            '__typename': 'StatusContext',
+            'context': 'lint',
+            'state': 'SUCCESS',
+            'targetUrl': 'https://example.test/lint',
+        },
+        {
+            '__typename': 'CheckRun',
+            'name': 'optional',
+            'status': 'COMPLETED',
+            'conclusion': 'SKIPPED',
+            'detailsUrl': 'https://example.test/skip',
+        },
     ]
     wait = run_gitty(fake_gh, checks, 'wait')
     verdict = run_gitty(fake_gh, checks, 'verdict')
-    assert wait.returncode == 0 and 'GITTY SETTLED' in wait.stdout
-    assert verdict.returncode == 0 and 'GITTY VERDICT pass' in verdict.stdout
+    assert wait.returncode == 0
+    assert 'GITTY SETTLED' in wait.stdout
+    assert verdict.returncode == 0
+    assert 'GITTY VERDICT pass' in verdict.stdout
     assert 'pass\ttests\thttps://example.test/test' in verdict.stdout
     assert 'pass\tlint\thttps://example.test/lint' in verdict.stdout
     assert 'skipping\toptional' in verdict.stdout
@@ -82,11 +98,9 @@ def test_pending_and_missing_checks_never_pass(fake_gh: Path) -> None:
 @pytest.mark.parametrize(
     'check',
     [
-        {'__typename': 'CheckRun', 'name': 'CI', 'status': 'COMPLETED',
-         'conclusion': 'FAILURE'},
+        {'__typename': 'CheckRun', 'name': 'CI', 'status': 'COMPLETED', 'conclusion': 'FAILURE'},
         {'__typename': 'StatusContext', 'context': 'CI', 'state': 'ERROR'},
-        {'__typename': 'CheckRun', 'name': 'CI', 'status': 'COMPLETED',
-         'conclusion': 'CANCELLED'},
+        {'__typename': 'CheckRun', 'name': 'CI', 'status': 'COMPLETED', 'conclusion': 'CANCELLED'},
     ],
 )
 def test_failed_or_cancelled_checks_never_pass(fake_gh: Path, check: dict[str, object]) -> None:
@@ -98,10 +112,18 @@ def test_failed_or_cancelled_checks_never_pass(fake_gh: Path, check: dict[str, o
 @pytest.mark.unit
 @pytest.mark.skipif(shutil.which('jq') is None, reason='jq required')
 def test_unknown_and_bad_payloads_fail_closed(fake_gh: Path) -> None:
-    unknown = [{'__typename': 'CheckRun', 'name': 'CI', 'status': 'COMPLETED',
-                'conclusion': 'FUTURE_STATUS'}]
+    unknown = [
+        {
+            '__typename': 'CheckRun',
+            'name': 'CI',
+            'status': 'COMPLETED',
+            'conclusion': 'FUTURE_STATUS',
+        }
+    ]
     assert 'GITTY VERDICT error' in run_gitty(fake_gh, unknown, 'verdict').stdout
     bad = run_gitty(fake_gh, None, 'verdict')
-    assert bad.returncode == 1 and 'GITTY ERROR' in bad.stdout
+    assert bad.returncode == 1
+    assert 'GITTY ERROR' in bad.stdout
     denied = run_gitty(fake_gh, [], 'verdict', api_error=True)
-    assert denied.returncode == 1 and 'GITTY ERROR' in denied.stdout
+    assert denied.returncode == 1
+    assert 'GITTY ERROR' in denied.stdout
