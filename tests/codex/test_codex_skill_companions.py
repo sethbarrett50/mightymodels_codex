@@ -40,3 +40,15 @@ def test_open_ticket_metadata_requires_real_chat_instead_of_nonexistent_dialog()
     assert 'a blocking ordinary-chat interview' in rendered
     assert 'one Codex user decision gate interview' not in rendered
     assert 'no native dialog API is implied' in rendered
+
+
+@pytest.mark.unit
+def test_generated_prompting_subagents_requires_explicit_reviewer_doctrine() -> None:
+    source = ROOT / 'skills/prompting-subagents/SKILL.md'
+    generated = GENERATE(source)
+    installed = (ROOT / '.codex/skills/prompting-subagents/SKILL.md').read_text()
+    assert generated == installed
+    assert 'each preloads its doctrine' not in generated
+    for name in ('becoming-merge-vader', 'becoming-uncle-bob'):
+        assert f'$HOME/.agents/skills/{name}/SKILL.md' in generated
+    assert 'Codex does not guarantee skill preloads' in generated
