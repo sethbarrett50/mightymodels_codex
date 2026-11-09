@@ -734,9 +734,15 @@ def translated(source: Path) -> str:
         body = transformer(body)
     # Do not leave a fictitious generic dialog tool name in installed Codex assets.
     # Source-backed native transformers above still operate on the legacy wording.
+    # Translate inline-code references before bare prose to avoid nested
+    # backticks such as ``native \`request_user_input\``` in installed skills.
     front, body = (
-        front.replace('Codex user decision gate', 'native `request_user_input`'),
-        body.replace('Codex user decision gate', 'native `request_user_input`'),
+        front.replace('`Codex user decision gate`', '`request_user_input`').replace(
+            'Codex user decision gate', 'native `request_user_input`'
+        ),
+        body.replace('`Codex user decision gate`', '`request_user_input`').replace(
+            'Codex user decision gate', 'native `request_user_input`'
+        ),
     )
     return (
         f'---\n{front}\n---\n\n{BANNER}\n\n'

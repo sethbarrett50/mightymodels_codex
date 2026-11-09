@@ -78,3 +78,12 @@ def test_generated_investigation_gates_wait_and_persist_explicit_user_decisions(
     assert 'kind `decision`' in rendered
     assert 'investigation_render' in rendered
     assert 'Never record silence or defaults as decisions' in rendered
+
+
+@pytest.mark.unit
+def test_generated_skills_never_nest_native_question_tool_backticks() -> None:
+    for source in sorted((ROOT / 'skills').glob('*/SKILL.md')):
+        rendered = GENERATE(source)
+        installed = ROOT / '.codex/skills' / source.parent.name / 'SKILL.md'
+        assert rendered == installed.read_text(encoding='utf-8')
+        assert '`native `request_user_input``' not in rendered

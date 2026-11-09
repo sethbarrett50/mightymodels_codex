@@ -73,7 +73,7 @@ reports are in the directory step 4 deletes.
 `close_ticket` has no prune. This step is Bash and removes `.mightymodels/SLUG`, nothing else. List
 what will go: that directory and its contents. The ticket's rows, its linked ledgers included,
 stay in the database, and both archive files stay under `.mightymodels/archives/`. Ask once through
-`native `request_user_input``, one question with two options: delete the directory, or keep it. Only on a
+`request_user_input`, one question with two options: delete the directory, or keep it. Only on a
 yes, call `close_check` again, call `ticket_show` and read `status closed`, and confirm both archive files exist at the paths step 2
 wrote. Any miss: stop and delete nothing, so a failed close never becomes a lost ticket. Then,
 from the repository root, with `SLUG` the slug those calls accepted (the tools take only
