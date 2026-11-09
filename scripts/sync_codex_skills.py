@@ -100,6 +100,33 @@ def native_investigation_decisions(front: str, body: str) -> tuple[str, str]:
     return front, body
 
 
+def native_escalation(front: str) -> tuple[str, str]:
+    """Replace Claude Wingman dispatch with an explicit Codex user decision."""
+    original = (
+        'Escalate a stuck decision to the wingman advisor and act on what comes back. Builds the'
+        '\\n  escalation packet, dispatches wingman, then puts wingman\\'s questions to the'
+        '\\n  user through `Codex user decision gate` before any work resumes.'
+    )
+    replacement = (
+        'Resolve a stuck judgment call through an explicit Codex ordinary-chat user decision.'
+        '\\n  No Wingman/Fable agent or substitute dispatch is available. Persist confirmed'
+        '\\n  decisions through supported MCP tools before resuming.'
+    )
+    if front.count(original) != 1:
+        msg = 'Expected exactly one Wingman-only escalation frontmatter description'
+        raise ValueError(msg)
+    path = Path(__file__).resolve().parent / 'codex_ask_an_adult.md'
+    return front.replace(original, replacement), path.read_text(encoding='utf-8')
+
+
+def native_special_skill(front: str, body: str, name: str) -> tuple[str, str]:
+    if name == 'lets-investigate':
+        return native_investigation_decisions(front, body)
+    if name == 'ask-an-adult':
+        return native_escalation(front)
+    return front, body
+
+
 def native_open_ticket_decisions(body: str) -> str:
     """Make user decisions explicit chat gates, not fictitious host dialogs."""
     steps = (
@@ -598,9 +625,7 @@ def translated(source: Path) -> str:
             'For Codex, the ordinary-chat requirements below are authoritative; '
             'no native dialog API is implied.',
         )
-    front, body = (
-        native_investigation_decisions(front, body) if name == 'lets-investigate' else (front, body)
-    )
+    front, body = native_special_skill(front, body, name)
     front = native_baton_pass_frontmatter(front) if name == 'baton-pass' else front
     front = native_landing_frontmatter(front) if name == 'stick-the-landing' else front
     front = native_task_split_frontmatter(front) if name == 'break-it-down' else front
