@@ -3,7 +3,7 @@ name: lets-investigate
 description: >-
   Run a chat-first investigation as a gated loop: frame one target, dispatch scouts for
   repository facts and documentation facts, fold every report into a restated in-chat ledger
-  (knowns, open questions, decisions, resources), then stop at an Codex user decision gate gate where the user
+  (knowns, open questions, decisions, resources), then stop for an explicit ordinary-chat decision where the user
   chooses to dig further, redirect, or consolidate. Persists its ledger as rows
   in the state database and changes nothing else. Not for reviewing a branch or grading a codebase (review-circus), debugging
   with a known reproduction (whats-broken), or non-engineering research such as market or
@@ -20,7 +20,7 @@ argument-hint: "[question, claim or error]"
 > **Native Codex workflow (generated):** This file is generated from the Claude skill; do not edit it directly. MCP calls must use actual `mighty_mcp` tools exposed by the current Codex session. Use named native `spawn_agent` roles; never invoke Claude Agent/SendMessage APIs or inherit model aliases. A required decision in Default mode uses ordinary chat and stops until a real answer; auto-resolution never grants permission. `USER_REQUEST_ARGS` denotes the user-provided invocation text, not a shell variable. Helper paths resolve through the installed `$HOME/.agents/skills/` links; if these links are missing, stop rather than guessing a file location.
 
 
-> **Codex required user-input contract (all skills):** In Default mode, a question that gates further action MUST be asked in ordinary chat; end the turn until the user explicitly replies. The native `request_user_input` popup may auto-resolve and is only for optional feedback in Default mode. In Plan mode, a genuinely blocking native question may be used when the host exposes it, but require a real explicit answer. Empty input, timeout, cancellation, interruption, and automatic resolution never count as consent. Preserve the pending decision and persist only the user's actual answer using available MightyModels tools. This is Codex-only; the Claude `Codex user decision gate` steps below remain unchanged.
+> **Codex required user-input contract (all skills):** In Default mode, a question that gates further action MUST be asked in ordinary chat; end the turn until the user explicitly replies. The native `request_user_input` popup may auto-resolve and is only for optional feedback in Default mode. In Plan mode, a genuinely blocking native question may be used when the host exposes it, but require a real explicit answer. Empty input, timeout, cancellation, interruption, and automatic resolution never count as consent. Preserve the pending decision and persist only the user's actual answer using available MightyModels tools. For Codex, the ordinary-chat requirements below are authoritative; no native dialog API is implied.
 
 > **Codex investigation gate:** Required framing, classification, and end-of-round decisions follow the shared Codex required user-input contract above. Offer free-text input in ordinary chat; the legacy Claude question recorder does not run in Codex, so persist real answers through supported MCP tools only.
 
@@ -59,30 +59,30 @@ the runtime configuration; a claim needs the exact lines that would make it true
 research question needs the documentation for the version in the lockfile and the call sites
 that depend on it.
 
-Put the framing to the user through one `Codex user decision gate` dialog before dispatching anything: the
-target line, and one question asking what they already know or have ruled out (the user can
-always type an answer of their own). Scouts pointed at a vague target return precise answers to the wrong question, and facts
+Before dispatching anything, ask in ordinary chat whether the target line is correct
+and what the user already knows or has ruled out. End the turn until the user explicitly
+answers; do not treat silence, timeout or an automatic response as consent. Scouts pointed at a vague target return precise answers to the wrong question, and facts
 the user already holds cost nothing to record and a round to rediscover.
 
 Once the user confirms the target, open the ledger and record their answers as round 0:
 
 Call `investigation_start` with the `target` line and leave `kind` out: the tool asks the user for
 the classification and records the answer. An answer starting `needs input` means no one could
-be asked through the tool: put the question it names to the user in one `Codex user decision gate`
-dialog, then call again with `kind`. Kind `change` means a proposed change to weigh, which what-we-know opens.
+be asked through the tool: ask the named classification question in ordinary chat, end the
+turn until the user explicitly responds, then call again with that actual `kind`. Kind `change` means a proposed change to weigh, which what-we-know opens.
 `investigation_start` returns the investigation id, and every later call names it.
 
 The session is pointed at the investigation by the first `investigation_add`,
-`investigation_render` or `investigation_knowns` call that names the id; `investigation_start`
-does not point it. Until a pointer exists the recorder writes nothing. After that, the recorder
-hook on `Codex user decision gate` writes each answer the user gives in a dialog into the ledger as a
-`decision` entry from `user`, stamped with the ledger's latest round, or round 1 when that is 0,
-never round 0. An answer given before a round's `investigation_add` is stamped by the same rule, so it
-lands in the latest existing round, or in round 1 when only round 0 exists. Do not write a gate answer yourself. Record by hand, as a `known` from `user` in round 0
-(cite `user`, source `user`), each framing answer and any answer given before the first call
-naming the id, along with any fact the user states. The kind answer goes through the tool's own
-form: `investigation_start` stores it as the investigation's kind, and it is not a ledger entry.
-`known` and `resource` entries need a `cite`.
+`investigation_render` or `investigation_knowns` call naming its id; `investigation_start`
+does not point it. Codex ordinary-chat answers are not automatically recorded by a Claude
+question hook. Record confirmed framing facts as `known` entries from `user` in round 0
+with cite `user`, using `investigation_add`, and verify them with `investigation_render`.
+The classification belongs to `investigation_start`'s `kind` parameter, not a ledger entry.
+For every later explicit choice, use `investigation_add` with an entry of kind `decision`,
+source `user`, the user's actual words, and a round at least 1 (latest round if positive;
+otherwise 1). Read back via `investigation_render` before advancing; if the write fails,
+report the failure and do not claim persistence. Never record silence or defaults as decisions.
+`known` and `resource` entries require a `cite`.
 
 When the user is resuming an earlier investigation, `investigation_list` shows the ids and
 `investigation_render` restores the ledger.
@@ -132,23 +132,24 @@ print, naming an entry from an earlier call. Paste the `render` output into chat
 If `add` cannot write at all, stop at the gate and say so. A gate on an unpersisted round is the loss this skill exists to
 prevent.
 
-**5. Stop at the gate.** Open an `Codex user decision gate` dialog with the round's decision and any questions
-held for the user, batched into one call (up to four questions). The decision offers exactly
-these choices:
+**5. Stop at the gate.** Ask the round's decision and any unresolved questions in ordinary
+chat, at most four questions at a time. End the turn until the user explicitly responds.
+Only then persist the answer as a `decision` entry and verify it by reading the ledger.
+Offer exactly these choices:
 
 - **Sufficient**: consolidate through what-we-know.
 - **Dig further**: run the Next questions as proposed.
 - **Redirect**: the target or the Next questions need changing; the user says how.
 - **Stop here**: keep the ledger in chat and end without consolidating.
 
-When you believe the picture is complete, say so in the dialog text and recommend Sufficient,
+When you believe the picture is complete, say so in the chat question and recommend Sufficient,
 and still ask. When the Next questions would not change the picture, say that too; a user who
 hears "one more round would only confirm what we have" can make a real choice. What you do
 not do is skip the gate because the answer seems obvious. Ending someone's triage for them is
 how half-understood problems get ticketed.
 
-When no dialog tool is available, ask the same question in chat with the four options spelled
-out, and wait for the answer.
+Do not substitute a nonblocking popup or infer an answer from silence. Never dispatch
+another round or consolidate until the user makes an explicit choice.
 
 ## The ledger
 
@@ -159,11 +160,11 @@ Rules that keep the ledger honest:
 
 - A claim with no citation goes in Open. ("The retry wrapper is applied everywhere" with no
   line is not a Known.)
-- A Decision carries the user's word from a dialog. Once the session is pointed at the
-  investigation, the recorder hook writes each answer to an `Codex user decision gate` as a Decision; you
-  never add one. Answers given before that are recorded by hand as Knowns from `user` in round 0
-  (see Round zero). Your own conclusion, however well cited, is a Known or an Open item until the
-  user takes it through a dialog.
+- A Decision carries the user's confirmed words, not an inferred approval. In Codex,
+  explicitly persist each gate answer with `investigation_add` as kind `decision`, source
+  `user`, and verify it with `investigation_render` before moving on. The initial framing
+  facts belong as `known` entries in round 0. Your conclusion remains a Known or Open
+  item until the user explicitly decides.
 - Resources record where facts came from so open-ticket can name them in the issue and the
   next session does not re-find them. A fetched docs page goes here with the version it
   describes; a docs page for the wrong version is a Resource with a warning, not a Known.

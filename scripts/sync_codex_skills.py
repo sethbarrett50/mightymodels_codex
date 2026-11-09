@@ -7,6 +7,7 @@ unchanged for Claude. No external tools or network access are needed.
 """
 
 import argparse
+import json
 import re
 from pathlib import Path
 
@@ -80,6 +81,23 @@ def native_dispatch_steps(body: str) -> str:
         msg = 'Expected exactly one Claude reviewer doctrine preload claim'
         raise ValueError(msg)
     return body.replace(legacy_doctrine, native_doctrine)
+
+
+def native_investigation_decisions(front: str, body: str) -> tuple[str, str]:
+    """Translate source-backed investigation gates using bounded exact replacements."""
+    path = Path(__file__).resolve().parent / 'codex_investigation_translations.json'
+    translations = json.loads(path.read_text(encoding='utf-8'))
+    for original, native in translations['front']:
+        if front.count(original) != 1:
+            msg = 'Expected exactly one investigation frontmatter decision gate'
+            raise ValueError(msg)
+        front = front.replace(original, native)
+    for original, native in translations['body']:
+        if body.count(original) != 1:
+            msg = 'Expected exactly one investigation decision instruction'
+            raise ValueError(msg)
+        body = body.replace(original, native)
+    return front, body
 
 
 def native_open_ticket_decisions(body: str) -> str:
@@ -580,6 +598,9 @@ def translated(source: Path) -> str:
             'For Codex, the ordinary-chat requirements below are authoritative; '
             'no native dialog API is implied.',
         )
+    front, body = (
+        native_investigation_decisions(front, body) if name == 'lets-investigate' else (front, body)
+    )
     front = native_baton_pass_frontmatter(front) if name == 'baton-pass' else front
     front = native_landing_frontmatter(front) if name == 'stick-the-landing' else front
     front = native_task_split_frontmatter(front) if name == 'break-it-down' else front
