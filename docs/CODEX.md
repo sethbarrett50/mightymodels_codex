@@ -101,6 +101,36 @@ use native tool operations that are actually exposed in its current session;
 if unavailable, it must stop rather than silently fall back to a different
 tool or unregistered agent. Live workflow acceptance is still required.
 
+### Opt-in native question hook diagnostics (issue #8)
+
+The Codex question recorder intentionally accepts Plan-mode answers only.
+Default-mode `request_user_input` has been observed working interactively,
+but the available post-tool event has not yet been proven to distinguish
+an explicit user selection from an auto-resolved response. Do not delete
+the Plan-mode restriction merely to suppress the warning.
+
+To collect a **sanitized hook receipt** from a fresh Codex session without
+logging prompts, answers, session IDs, working-directory paths or MCP state:
+
+```sh
+cd /tmp/tmp.3Ae4vuYgko
+MIGHTYMODELS_CODEX_QUESTION_PROBE=1 codex
+```
+
+Invoke one native `request_user_input` question. After exiting Codex, read:
+
+```sh
+cat ~/.local/state/mightymodels/codex-question-probe.log
+```
+
+The probe writes only a fixed event label, tool label, whitelisted permission
+mode and boolean presence/type checks (`input_questions`, `response_object`,
+`answers_object`, `timeout_field`), with file mode 0600. Presence of an
+`answers` object is **not proof of explicit user consent**. This opt-in
+probe is not a substitute for the explicit-answer MCP fallback, and cannot
+automatically authorize any pending decision. Remove the log after the test
+if no longer needed. Do not paste raw Codex transcripts or secret prompts.
+
 ### Session resume pointer fallback (issue #8)
 
 The Codex `SessionStart` bridge uses a read-only persisted session pointer
