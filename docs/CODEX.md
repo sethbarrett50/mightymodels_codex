@@ -220,10 +220,35 @@ with the reference and directs Codex to reread the latest state using
 questions as consent, or prints stored answers. Initial startup continues to
 prune stale pointers. A missing or expired pointer produces no invented state.
 
-This is implemented and fixture-tested, **not verified as delivered by a live
-Codex SessionStart callback**. The host must trust/execute the installed
-hooks, and an actual investigation/task/baton handoff still needs live
-resume and idempotence acceptance before issue #8 can close.
+### Live issue #8 acceptance checkpoint — 2026-11-09
+
+**Verified on Codex v0.167.0:** The host received startup and resume
+`SessionStart` events in a disposable, registered Git repository. A real
+`investigation_start` returned an ID and a successful named
+`investigation_render` established a pointer. After resuming the exact
+Codex session, the private lifecycle receipt recorded
+`event=SessionResumePointer hint=present`; before any MCP reads, the
+resumed host explicitly observed the persisted investigation ID in injected
+`SessionStart` context. This verifies the real pointer injection pathway,
+not merely the generated hook output.
+
+**Separately verified:** In a disposable ticket repository, the live host
+accepted repeated `task_declare(T1)`, rejected a duplicate
+`task_start(T1)` with no extra attempt, and preserved the `in-progress`
+task and `engineer` attempts=1. After exact-session resume, two
+`task_show` and two `ticket_show` MCP read-backs matched and retained
+the explicit ticket-context handoff marker. No agent was dispatched.
+
+**Still unverified for #8:** full `baton-pass` snapshot/BATON.md workflow,
+scout handback/`SubagentStop` delivery on the real Codex host, and
+pending user decisions across an interrupted workflow. The earlier
+native-question tests must not be mistaken for explicit human authorization.
+Host dispatch admission/security acceptance is separately deferred in #9.
+Neither milestone completes #14 full native workflow acceptance or #16
+effective model and quota measurements.
+
+This distinction is intentional: successful hooks and durable MCP records
+do not prove the remaining full-workflow transitions.
 
 ### Project-only post-edit Python checks (issue #17)
 
