@@ -52,3 +52,14 @@ def test_generated_prompting_subagents_requires_explicit_reviewer_doctrine() -> 
     for name in ('becoming-merge-vader', 'becoming-uncle-bob'):
         assert f'$HOME/.agents/skills/{name}/SKILL.md' in generated
     assert 'Codex does not guarantee skill preloads' in generated
+
+
+@pytest.mark.unit
+def test_review_model_metadata_not_misrepresented_as_runtime_identity() -> None:
+    source = ROOT / 'skills/prompting-subagents/SKILL.md'
+    rendered = GENERATE(source)
+    installed = (ROOT / '.codex/skills/prompting-subagents/SKILL.md').read_text()
+    assert rendered == installed
+    assert 'records the actual reviewer model' not in rendered
+    assert 'effective model identity as unverified' in rendered
+    assert 'gpt-6.1-sol' in rendered
