@@ -2,7 +2,7 @@
 name: one-shot
 description: >-
   Fast ramp into the mightymodels work loop from whatever context exists: an active ticket, a
-  pasted issue, or a task described in chat. One Codex user decision gate dialog covers the questions
+  pasted issue, or a task described in chat. One native `request_user_input` dialog covers the questions
   open-ticket would have asked and that the context has not already answered (slug, scope,
   branch, progress view), then two or three scouts confirm the claims at HEAD, the task
   list is written as small tasks with an observable outcome sentence each, the tasks are
@@ -12,7 +12,7 @@ when_to_use: >-
   Auto-invoke at session start when the active ticket says scope sm and plan-first
   false; use explicitly on any scope for "/one-shot", "one-shot this", "yolo this", "just
   send it", "skip the plan and run the loop", "start on this without a ticket", with an
-  Codex user decision gate confirmation on med or large scope.
+  native `request_user_input` confirmation on med or large scope.
 argument-hint: "[ticket-slug, issue or task]"
 ---
 
@@ -48,7 +48,7 @@ the target is what the user gave: the chat so far, a pasted issue, a link. State
 one line and what done looks like in one more; if the second line cannot be written, the
 interview's first question is what proves done.
 
-**2. The short interview.** One `Codex user decision gate` dialog (up to four questions a call, two to four
+**2. The short interview.** One `native `request_user_input`` dialog (up to four questions a call, two to four
 options each, and the user can always type an answer of their own), containing only the
 questions the context has not answered. The full set, in open-ticket's order, minus the one one-shot answers itself:
 
@@ -59,7 +59,7 @@ questions the context has not answered. The full set, in open-ticket's order, mi
 The scope of each anticipated task and the branch are not asked here: the `ticket_write` call
 in step 3 leaves them out and asks the user itself. Compaction is not asked. one-shot answers it:
 `plan-first: false`. When the scope the user chose comes back med or large (read `scope` in
-ticket.yml after the write), one more `Codex user decision gate` before the loop starts: proceed under the
+ticket.yml after the write), one more `native `request_user_input`` before the loop starts: proceed under the
 no-compaction assumption, or route to game-plan. A med or large ticket that hits a compaction
 mid-sprint loses more than a sm one, so the user confirms that trade knowingly.
 
@@ -72,7 +72,7 @@ open-ticket does. Pass the answers as arguments, with `compaction` false and no 
 tool asks the user for both.
 
 An answer starting `needs input` means no one could be asked through the tool: put each question
-it names to the user in one `Codex user decision gate` dialog, then call again with those arguments. Then read `branch-name` from ticket.yml: when it is not the current branch, create that
+it names to the user in one `native `request_user_input`` dialog, then call again with those arguments. Then read `branch-name` from ticket.yml: when it is not the current branch, create that
 branch from HEAD.
 
 Then call `ticket_validate` with the `slug`, which stages the ticket as a row in the state

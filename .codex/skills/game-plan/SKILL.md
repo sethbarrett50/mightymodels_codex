@@ -3,7 +3,7 @@ name: game-plan
 description: >-
   Large-scope ramp for a mightymodels ticket: read ticket.yml and the issue, verify the
   ticket's claims with scouts, run cross-examine so the user
-  decides the design before drafting, interview the user (Codex user decision gate) on how each risk is handled, then
+  decides the design before drafting, interview the user (native `request_user_input`) on how each risk is handled, then
   write the ticket's plan.md as a compaction-safe ledger: intent, approach, invariants that
   must hold throughout, small dependency-ordered tasks each with plain-word acceptance
   criteria (observable outcome sentences), non-goals, and risks with the user's chosen
