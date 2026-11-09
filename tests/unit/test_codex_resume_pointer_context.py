@@ -142,10 +142,6 @@ def test_successful_session_prune_has_no_false_warning(tmp_path: Path) -> None:
         'cwd': str(tmp_path),
         'source': 'startup',
     }
-    fake_result = subprocess.CompletedProcess(
-        args=['uv'], returncode=0, stdout='', stderr=''
-    )
+    fake_result = subprocess.CompletedProcess(args=['uv'], returncode=0, stdout='', stderr='')
     with patch.object(subprocess, 'run', return_value=fake_result):
-        assert run_lifecycle(
-            event, project_root=tmp_path, environ={'HOME': str(tmp_path)}
-        ) is None
+        assert run_lifecycle(event, project_root=tmp_path, environ={'HOME': str(tmp_path)}) is None
