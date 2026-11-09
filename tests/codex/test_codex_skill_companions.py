@@ -32,14 +32,14 @@ def test_original_claude_skill_is_not_rewritten() -> None:
 
 
 @pytest.mark.unit
-def test_open_ticket_metadata_requires_real_chat_instead_of_nonexistent_dialog() -> None:
+def test_open_ticket_metadata_uses_native_input_in_default_mode() -> None:
     source = ROOT / 'skills/open-ticket/SKILL.md'
     rendered = GENERATE(source)
     installed = (ROOT / '.codex/skills/open-ticket/SKILL.md').read_text()
     assert rendered == installed
-    assert 'a blocking native Plan-mode interview' in rendered
+    assert 'a native interactive interview with verified answers' in rendered
     assert 'one Codex user decision gate interview' not in rendered
-    assert 'blocking native `request_user_input`' in rendered
+    assert 'native `request_user_input` when exposed in Default or Plan mode' in rendered
 
 
 @pytest.mark.unit
@@ -72,7 +72,7 @@ def test_generated_investigation_gates_wait_and_persist_explicit_user_decisions(
     installed = (ROOT / '.codex/skills/lets-investigate/SKILL.md').read_text()
     assert rendered == installed
     assert 'Codex user decision gate' not in rendered
-    assert 'blocking native `request_user_input` in Plan mode' in rendered
+    assert 'native `request_user_input` when exposed in Default or Plan mode' in rendered
     assert 'Wait for an explicit verified response' in rendered
     assert 'investigation_add' in rendered
     assert 'kind `decision`' in rendered
