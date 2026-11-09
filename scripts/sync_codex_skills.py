@@ -706,6 +706,10 @@ def translated(source: Path) -> str:
     transformer = transformers.get(name)
     if transformer is not None:
         body = transformer(body)
+    # Do not leave a fictitious generic dialog tool name in installed Codex assets.
+    # Source-backed native transformers above still operate on the legacy wording.
+    front = front.replace('Codex user decision gate', 'native `request_user_input`')
+    body = body.replace('Codex user decision gate', 'native `request_user_input`')
     return (
         f'---\n{front}\n---\n\n{BANNER}\n\n'
         f'{native_companion_guidance(name)}{native_question_contract(body, name)}'
