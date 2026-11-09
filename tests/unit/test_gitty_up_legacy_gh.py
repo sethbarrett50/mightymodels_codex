@@ -32,7 +32,9 @@ def fake_gh(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def run_gitty(fake_gh: Path, checks: object, command: str, *, api_error: bool = False):
+def run_gitty(
+    fake_gh: Path, checks: object, command: str, *, api_error: bool = False
+) -> subprocess.CompletedProcess[str]:
     env = dict(os.environ)
     env['PATH'] = str(fake_gh) + os.pathsep + env['PATH']
     env['GITTY_FAKE_ROLLUP'] = json.dumps({'statusCheckRollup': checks})
@@ -40,7 +42,9 @@ def run_gitty(fake_gh: Path, checks: object, command: str, *, api_error: bool = 
     args = [str(SCRIPT), command, '--pr', '254']
     if command == 'wait':
         args.extend(['--deadline', '1', '--register-by', '1'])
-    return subprocess.run(args, env=env, capture_output=True, text=True, timeout=10, check=False)
+    return subprocess.run(  # noqa: S603
+        args, env=env, capture_output=True, text=True, timeout=10, check=False
+    )
 
 
 @pytest.mark.unit
@@ -58,9 +62,9 @@ def test_legacy_gh_rollup_success_and_skip(fake_gh: Path) -> None:
     verdict = run_gitty(fake_gh, checks, 'verdict')
     assert wait.returncode == 0 and 'GITTY SETTLED' in wait.stdout
     assert verdict.returncode == 0 and 'GITTY VERDICT pass' in verdict.stdout
-    assert 'pass\\ttests\\thttps://example.test/test' in verdict.stdout
-    assert 'pass\\tlint\\thttps://example.test/lint' in verdict.stdout
-    assert 'skipping\\toptional' in verdict.stdout
+    assert 'pass\ttests\thttps://example.test/test' in verdict.stdout
+    assert 'pass\tlint\thttps://example.test/lint' in verdict.stdout
+    assert 'skipping\toptional' in verdict.stdout
 
 
 @pytest.mark.unit
@@ -85,7 +89,7 @@ def test_pending_and_missing_checks_never_pass(fake_gh: Path) -> None:
          'conclusion': 'CANCELLED'},
     ],
 )
-def test_failed_or_cancelled_checks_never_pass(fake_gh: Path, check: dict) -> None:
+def test_failed_or_cancelled_checks_never_pass(fake_gh: Path, check: dict[str, object]) -> None:
     result = run_gitty(fake_gh, [check], 'verdict')
     assert result.returncode == 0
     assert 'GITTY VERDICT fail' in result.stdout
