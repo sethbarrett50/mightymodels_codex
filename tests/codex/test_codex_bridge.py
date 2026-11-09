@@ -612,3 +612,63 @@ def test_clean_session_pointer_success_has_no_false_warning(tmp_path: Path) -> N
             supplied, project_root=tmp_path, environ={'HOME': str(tmp_path)}
         )
     assert result is None
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ('location', 'marker', 'value'),
+    [
+        ('response', 'status', 'timeout'),
+        ('response', 'status', 'cancelled'),
+        ('response', 'status', 'auto_resolved'),
+        ('response', 'timedOut', True),
+        ('response', 'autoResolved', True),
+        ('response', 'afkTimeoutMs', None),
+        ('event', 'status', 'interrupted'),
+        ('event', 'auto_resolved', True),
+        ('event', 'afkTimeoutMs', 120000),
+    ],
+)
+def test_expired_plan_question_never_records_answer_shaped_payload(
+    location: str, marker: str, value: object
+) -> None:
+    event: dict[str, object] = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'request_user_input',
+        'permission_mode': 'plan',
+        'session_id': 'session-001',
+        'cwd': 'fixture-checkout',
+        'tool_input': {'questions': [{'id': 'q', 'question': 'May I proceed?'}]},
+        'tool_response': {'answers': {'q': {'answers': ['Yes']}}},
+    }
+    if location == 'event':
+        event[marker] = value
+    else:
+        response = event['tool_response']
+        assert isinstance(response, dict)
+        response[marker] = value
+    assert module.translate_plan_answers(event) is None
+
+
+@pytest.mark.unit
+def test_host_expired_question_has_no_persistence_side_effect(tmp_path: Path) -> None:
+    event = {
+        'hook_event_name': 'PostToolUse',
+        'tool_name': 'request_user_input',
+        'permission_mode': 'plan',
+        'session_id': 'session-001',
+        'cwd': str(tmp_path),
+        'tool_input': {'questions': [{'id': 'q', 'question': 'Continue?'}]},
+        'tool_response': {
+            'status': 'timeout',
+            'answers': {'q': {'answers': ['Yes']}},
+        },
+    }
+    with patch.object(module.subprocess, 'run') as runner:
+        outcome = module.run_lifecycle(
+            event, project_root=tmp_path, environ={'HOME': str(tmp_path)}
+        )
+    runner.assert_not_called()
+    assert outcome is not None
+    assert 'did not persist' in outcome['systemMessage']
+    assert 'Yes' not in json.dumps(outcome)
