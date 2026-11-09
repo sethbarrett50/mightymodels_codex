@@ -8,6 +8,7 @@ prompts and models are never echoed.
 import argparse
 import json
 from pathlib import Path
+from typing import cast
 
 MAX_INPUT_BYTES = 65536
 PARSE_ERRORS = (OSError, UnicodeError, ValueError)
@@ -28,15 +29,14 @@ def _validated_usage(usage: object, events: object) -> dict[str, int] | None:
     counts = (input_tokens, cached_tokens, output_tokens, reasoning_tokens, turns)
     if any(value is None for value in counts):
         return None
-    assert input_tokens is not None
-    assert cached_tokens is not None
-    assert output_tokens is not None
-    assert turns is not None
+    input_tokens = cast(int, input_tokens)
+    cached_tokens = cast(int, cached_tokens)
+    output_tokens = cast(int, output_tokens)
+    turns = cast(int, turns)
     if turns == 0 or cached_tokens > input_tokens:
         return None
     errors = (
-        _safe_count(events.get(name, 0))
-        for name in ('turn_failed', 'errors', 'malformed_events')
+        _safe_count(events.get(name, 0)) for name in ('turn_failed', 'errors', 'malformed_events')
     )
     if any(value is None or value > 0 for value in errors):
         return None
