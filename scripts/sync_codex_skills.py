@@ -7,6 +7,7 @@ unchanged for Claude. No external tools or network access are needed.
 """
 
 import argparse
+import json
 import re
 from pathlib import Path
 
@@ -83,27 +84,18 @@ def native_dispatch_steps(body: str) -> str:
 
 
 def native_investigation_decisions(front: str, body: str) -> tuple[str, str]:
-    """Replace nonexistent Codex dialogs with explicit, verifiable user decisions."""
-    front_changes = (
-        ("then stop at an Codex user decision gate gate where the user", "then stop for an explicit ordinary-chat decision where the user"),
-    )
-    body_changes = (
-        ("This is Codex-only; the Claude `Codex user decision gate` steps below remain unchanged.", "For Codex, the ordinary-chat requirements below are authoritative; no native dialog API is implied."),
-        ("Put the framing to the user through one `Codex user decision gate` dialog before dispatching anything: the\ntarget line, and one question asking what they already know or have ruled out (the user can\nalways type an answer of their own).", "Before dispatching anything, ask in ordinary chat whether the target line is correct\nand what the user already knows or has ruled out. End the turn until the user explicitly\nanswers; do not treat silence, timeout or an automatic response as consent."),
-        ("be asked through the tool: put the question it names to the user in one `Codex user decision gate`\ndialog, then call again with `kind`.", "be asked through the tool: ask the named classification question in ordinary chat, end the\nturn until the user explicitly responds, then call again with that actual `kind`."),
-        ("The session is pointed at the investigation by the first `investigation_add`,\n`investigation_render` or `investigation_knowns` call that names the id; `investigation_start`\ndoes not point it. Until a pointer exists the recorder writes nothing. After that, the recorder\nhook on `Codex user decision gate` writes each answer the user gives in a dialog into the ledger as a\n`decision` entry from `user`, stamped with the ledger's latest round, or round 1 when that is 0,\nnever round 0. An answer given before a round's `investigation_add` is stamped by the same rule, so it\nlands in the latest existing round, or in round 1 when only round 0 exists. Do not write a gate answer yourself. Record by hand, as a `known` from `user` in round 0\n(cite `user`, source `user`), each framing answer and any answer given before the first call\nnaming the id, along with any fact the user states. The kind answer goes through the tool's own\nform: `investigation_start` stores it as the investigation's kind, and it is not a ledger entry.\n`known` and `resource` entries need a `cite`.", "The session is pointed at the investigation by the first `investigation_add`,\n`investigation_render` or `investigation_knowns` call naming its id; `investigation_start`\ndoes not point it. Codex ordinary-chat answers are not automatically recorded by a Claude\nquestion hook. Record confirmed framing facts as `known` entries from `user` in round 0\nwith cite `user`, using `investigation_add`, and verify them with `investigation_render`.\nThe classification belongs to `investigation_start`'s `kind` parameter, not a ledger entry.\nFor every later explicit choice, use `investigation_add` with an entry of kind `decision`,\nsource `user`, the user's actual words, and a round at least 1 (latest round if positive;\notherwise 1). Read back via `investigation_render` before advancing; if the write fails,\nreport the failure and do not claim persistence. Never record silence or defaults as decisions.\n`known` and `resource` entries require a `cite`."),
-        ("**5. Stop at the gate.** Open an `Codex user decision gate` dialog with the round's decision and any questions\nheld for the user, batched into one call (up to four questions). The decision offers exactly\nthese choices:", "**5. Stop at the gate.** Ask the round's decision and any unresolved questions in ordinary\nchat, at most four questions at a time. End the turn until the user explicitly responds.\nOnly then persist the answer as a `decision` entry and verify it by reading the ledger.\nOffer exactly these choices:"),
-        ("say so in the dialog text and recommend Sufficient,", "say so in the chat question and recommend Sufficient,"),
-        ("When no dialog tool is available, ask the same question in chat with the four options spelled\nout, and wait for the answer.", "Do not substitute a nonblocking popup or infer an answer from silence. Never dispatch\nanother round or consolidate until the user makes an explicit choice."),
-        ("- A Decision carries the user's word from a dialog. Once the session is pointed at the\n  investigation, the recorder hook writes each answer to an `Codex user decision gate` as a Decision; you\n  never add one. Answers given before that are recorded by hand as Knowns from `user` in round 0\n  (see Round zero). Your own conclusion, however well cited, is a Known or an Open item until the\n  user takes it through a dialog.", "- A Decision carries the user's confirmed words, not an inferred approval. In Codex,\n  explicitly persist each gate answer with `investigation_add` as kind `decision`, source\n  `user`, and verify it with `investigation_render` before moving on. The initial framing\n  facts belong as `known` entries in round 0. Your conclusion remains a Known or Open\n  item until the user explicitly decides."),
-    )
-    for original, native in front_changes:
+    """Translate source-backed investigation gates using bounded exact replacements."""
+    path = Path(__file__).resolve().parent / 'codex_investigation_translations.json'
+    translations = json.loads(path.read_text(encoding='utf-8'))
+    for original, native in translations['front']:
         if front.count(original) != 1:
-            raise ValueError('Expected exactly one investigation frontmatter decision gate')
+            msg = 'Expected exactly one investigation frontmatter decision gate'
+            raise ValueError(msg)
         front = front.replace(original, native)
-    for original, native in body_changes:
+    for original, native in translations['body']:
         if body.count(original) != 1:
-            raise ValueError('Expected exactly one investigation decision instruction')
+            msg = 'Expected exactly one investigation decision instruction'
+            raise ValueError(msg)
         body = body.replace(original, native)
     return front, body
 
