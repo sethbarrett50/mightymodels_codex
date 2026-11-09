@@ -250,16 +250,21 @@ Restart Codex and inspect `codex features list`, then verify the tool is
 actually available in the running session. The MightyModels installer does
 not modify this user preference.
 
-**Required user decisions** must use a truly blocking `request_user_input`
-call in **Plan mode**. The Codex Default-mode tool is intended for optional
-questions and can auto-resolve; it must never grant approval. If the current
-mode or host cannot provide blocking native input, stop and explain that a
-Plan-mode interactive prompt is required. Do not substitute a text question
-or proceed as if an unanswered popup selected an option.
+**Native question presentation** and **authorization to proceed** are
+separate. For any multiple-choice question, including a required workflow
+decision, invoke `request_user_input` when exposed in Default or Plan mode.
+Do not suppress the interactive UI merely because the session is in Default
+mode. The Default-mode feature flag enables optional native questions, but
+its prompts may auto-resolve and cannot by themselves guarantee a blocking
+approval gate. A required decision is satisfied only by a verified explicit
+user answer, never by a default, cancellation, timeout, missing response,
+or a claim that a popup was shown.
 
-For **optional** questions, use the native tool if exposed in Default mode.
-If unavailable, report that the interactive control is unavailable rather
-than pretending a text multiple-choice question is a popup.
+When a required decision cannot be safely verified or blocked in Default
+mode, leave it pending and instruct the user to switch to Plan mode for a
+blocking `request_user_input` interaction. If the native tool is unavailable,
+report that limitation without presenting a plain-text choice list as a
+popup. Never continue dependent work on an unverified selection.
 
 Only a verified, explicit user answer may be persisted in MightyModels
 MCP state. Tool failure, timeout, cancellation, empty replies, auto-resolution
@@ -428,9 +433,13 @@ nonsecret question/answer pairs; raw choices, skipped secret questions,
 transcript metadata and other original tool fields are discarded. A missing
 checkout directory prevents forwarding to avoid an accidental wrong-repository
 ledger write.
-A warning is returned when no eligible response can be recorded. Default-mode
-required decisions still use ordinary chat and must be explicitly persisted
-using an available MCP decision mechanism before work advances.
+A warning is returned when no eligible response can be recorded. For a
+required decision, a session in Default mode should still invoke the native
+question tool when exposed; if a blocking and explicit answer cannot be
+verified, the gate remains pending and the user must switch to Plan mode. Neither
+a prose-only choice list nor claiming a popup opened counts as tool invocation.
+A confirmed response must still be persisted and verified through supported
+MCP tools before dependent work advances.
 
 **Important limitations:** hook trust, event presence and the actual
 Codex session identifier need real-host verification. An adapter calling

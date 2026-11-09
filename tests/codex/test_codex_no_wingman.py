@@ -47,5 +47,8 @@ def test_installed_codex_ask_an_adult_never_uses_claude_wingman_dispatch() -> No
     assert 'ticket_update_context' in rendered
     assert 'investigation_add' in rendered
     assert 'investigation_render' in rendered
-    assert 'Use the actual native `request_user_input` question tool in **Plan mode**' in rendered
+    assert (
+        'Use the actual native `request_user_input` question tool in Default or Plan mode'
+        in rendered
+    )
     assert 'No Wingman/Fable agent or substitute dispatch is available' in rendered
