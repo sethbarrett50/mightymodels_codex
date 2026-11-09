@@ -72,7 +72,8 @@ def inspect(event: object, root: Path | None = None) -> str | None:  # noqa: C90
                 return 'Patch path outside the project scope'
             if parts.name == 'uv.lock':
                 return 'Direct uv.lock edits are blocked; use the dependency lock workflow'
-            if parts == PurePosixPath(parts.name) and parts.name in _PROTECTED_CONFIG:
+            candidate = Path(path) if parts.is_absolute() else checkout / path
+            if parts.name in _PROTECTED_CONFIG and candidate.resolve() == checkout / parts.name:
                 return 'Protected project configuration requires separate explicit user review'
             file_header_seen = True
             python_file = parts.suffix in ('.py', '.pyi')
