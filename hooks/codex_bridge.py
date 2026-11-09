@@ -493,12 +493,9 @@ def lifecycle_resume_probe_outcome(event: object, result: object, environ: dict[
         status = marker.stat(follow_symlinks=False)
     except OSError:
         return
-    if (
-        not marker.is_file()
-        or marker.is_symlink()
-        or (status.st_mode & 0o777) != QUESTION_PROBE_MARKER_MODE
-        or status.st_uid != os.getuid()
-    ):
+    if not marker.is_file() or marker.is_symlink():
+        return
+    if (status.st_mode & 0o777) != QUESTION_PROBE_MARKER_MODE or status.st_uid != os.getuid():
         return
     output = result.get('hookSpecificOutput') if isinstance(result, dict) else None
     hint = output.get('additionalContext') if isinstance(output, dict) else None
