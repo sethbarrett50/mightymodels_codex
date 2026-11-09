@@ -748,7 +748,11 @@ For development **inside this MightyModels checkout**, the project-only
 `.codex/hooks.json` now registers a narrow `PreToolUse` handler for
 `apply_patch` / `Edit` / `Write`. Its read-only Python guard refuses newly
 added `noqa`, `type: ignore` and `ty: ignore` annotations in the patch and
-direct `uv.lock` patch changes. Unknown edit payloads are denied rather than
+direct `uv.lock` patch changes. Intercepted root `pyproject.toml`,
+`ruff.toml`, `pytest.toml`, `ty.toml` and `CLAUDE.md` edits are denied with a
+manual-review reason. The hook **cannot** automatically ask for or verify
+approval. Make approved changes through a separately reviewed workflow, not
+by silently bypassing project protections. Unknown edit payloads are denied rather than
 silently assumed safe. It does not change user/global dispatch or MCP hooks.
 
 **This is not complete host enforcement.** Hook execution requires Codex to load
