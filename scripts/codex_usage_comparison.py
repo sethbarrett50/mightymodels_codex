@@ -9,7 +9,6 @@ import argparse
 import json
 from pathlib import Path
 
-REQUIRED_USAGE = ('input_tokens', 'cached_input_tokens', 'output_tokens', 'reasoning_output_tokens')
 MAX_INPUT_BYTES = 65536
 
 
@@ -29,22 +28,27 @@ def _load_summary(path: Path) -> dict[str, int] | None:
     usage, events = data.get('usage'), data.get('events')
     if not isinstance(usage, dict) or not isinstance(events, dict):
         return None
-    counters = {key: _safe_count(usage.get(key)) for key in REQUIRED_USAGE}
+    input_tokens = _safe_count(usage.get('input_tokens'))
+    cached_tokens = _safe_count(usage.get('cached_input_tokens'))
+    output_tokens = _safe_count(usage.get('output_tokens'))
+    reasoning_tokens = _safe_count(usage.get('reasoning_output_tokens'))
     turns = _safe_count(events.get('turn_completed'))
-    if any(value is None for value in counters.values()) or turns is None or turns == 0:
-        return None
-    if any(
-        _safe_count(events.get(name, 0)) is None or events.get(name, 0) > 0
-        for name in ('turn_failed', 'errors', 'malformed_events')
+    if (
+        input_tokens is None
+        or cached_tokens is None
+        or output_tokens is None
+        or reasoning_tokens is None
+        or turns is None
+        or turns == 0
     ):
         return None
-    if counters['cached_input_tokens'] > counters['input_tokens']:
+    if cached_tokens > input_tokens:
         return None
-    return {
-        'turns': turns,
-        'input_tokens': counters['input_tokens'],
-        'output_tokens': counters['output_tokens'],
-    }
+    for name in ('turn_failed', 'errors', 'malformed_events'):
+        error_count = _safe_count(events.get(name, 0))
+        if error_count is None or error_count > 0:
+            return None
+    return {'turns': turns, 'input_tokens': input_tokens, 'output_tokens': output_tokens}
 
 
 def compare(baseline: dict[str, int], candidate: dict[str, int]) -> dict[str, object]:
