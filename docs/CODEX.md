@@ -144,6 +144,36 @@ probe is not a substitute for the explicit-answer MCP fallback, and cannot
 automatically authorize any pending decision. Remove the log after the test
 if no longer needed. Do not paste raw Codex transcripts or secret prompts.
 
+### Opt-in lifecycle delivery receipts (issue #8)
+
+To establish whether the host actually delivered `SessionStart` and
+`PreCompact`, enable a *private* local marker before launching Codex.
+The hook logs only whitelisted event names and a whitelisted lifecycle
+source; it never stores session IDs, paths, prompts or persisted records.
+
+```sh
+install -d -m 700 ~/.local/state/mightymodels
+install -m 600 /dev/null ~/.local/state/mightymodels/codex-lifecycle-probe.enabled
+cd /path/to/disposable-repo
+codex
+```
+
+For a bounded acceptance, start Codex once, exit and resume that specific
+session, then read and remove the probe marker:
+
+```sh
+cat ~/.local/state/mightymodels/codex-lifecycle-probe.log
+rm -f ~/.local/state/mightymodels/codex-lifecycle-probe.enabled
+```
+
+A receipt `event=SessionStart source=resume` proves the Codex bridge
+received that event; it does **not** alone prove successful pointer
+recovery. Validate the resumed pointer separately by reading the exact
+MCP record, without reconstructing its value from chat. `PreCompact`
+delivery requires an actual compaction event. A missing log is
+inconclusive until hook trust, matcher and marker ownership are checked.
+This probe never changes MCP state or authorization decisions.
+
 ### Session resume pointer fallback (issue #8)
 
 The Codex `SessionStart` bridge uses a read-only persisted session pointer
