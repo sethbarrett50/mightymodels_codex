@@ -70,7 +70,7 @@ where to look, not what to believe. Stale claims are a delta report to the user 
 plan on top of them.
 
 **2b. Survey the toolchain.** On every run, in the same message as step 2's scouts, dispatch
-`mightymodels:triage:terry-toolchain` on `sonnet` with its `prompting-subagents` template. It
+native `spawn_agent` with `agent_type=mm-triage-terry-toolchain` and its `prompting-subagents` template. Use the model and reasoning effort registered for this native role; never pass the Claude `sonnet` alias. It
 surveys the harness's tools, the installed skills, plugins and agents, the repository's own
 toolchain (git hooks, lint and format bans, CI, and where the test, lint and build commands
 are declared) and the sandbox and permission limits. It writes no file: save its report
