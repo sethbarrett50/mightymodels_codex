@@ -493,9 +493,10 @@ def native_assembly_roles(body: str) -> str:
                 'status and the reasons verbatim, with two answers:'
             ),
             (
-                'Off → ask the user in ordinary chat, then stop until explicitly '
-                'answered. Give the task, status, reasons verbatim, and these two '
-                'choices:'
+                'Off → invoke native `request_user_input` in Default or Plan mode, '
+                'giving task, status and reasons verbatim, with two choices: '
+                'architect once or hold for user instruction. Stop until a '
+                'verified explicit answer; if unavailable, keep escalation pending:'
             ),
         ),
     )
@@ -558,7 +559,7 @@ def native_landing_frontmatter(front: str) -> str:
 def native_task_split_frontmatter(front: str) -> str:
     """Avoid describing an unavailable dialog in Codex skill metadata."""
     old = 'Ends in one Codex user decision gate dialog showing every piece'
-    new = 'Ends by asking in ordinary chat and awaiting explicit approval for every piece'
+    new = 'Ends with native `request_user_input` and verified explicit approval for every piece'
     if front.count(old) != 1:
         msg = 'Expected exactly one task split frontmatter dialog'
         raise ValueError(msg)
@@ -566,7 +567,7 @@ def native_task_split_frontmatter(front: str) -> str:
 
 
 def native_task_split_decisions(body: str) -> str:
-    """Ask for split approval in ordinary chat and preserve actual choices."""
+    """Use native input for split approval and preserve actual choices."""
     changes = (
         (
             'Until the dialog in step 4 is answered this skill',
@@ -579,25 +580,26 @@ def native_task_split_decisions(body: str) -> str:
                 'in prose instead, and do not start on a piece while you wait.'
             ),
             (
-                'A timeout, cancellation, dismissal or empty reply is not an answer: '
-                'ask again in\nordinary chat. Do not decide for the user or start '
-                'a piece while awaiting approval.'
+                'A timeout, cancellation, dismissal, empty or auto-resolved response is '
+                'not an answer: keep the decision pending and invoke native '
+                '`request_user_input` again when available. Do not start a piece.'
             ),
         ),
         (
             'then open one\n`Codex user decision gate` dialog about them.',
             (
-                'then ask in ordinary chat whether to split, keep, or revise. '
-                'End the turn until the user explicitly responds.'
+                'then invoke native `request_user_input` in Default or Plan mode to '
+                'choose split, keep or revise. Stop until a verified explicit '
+                'answer; if unavailable, leave the gate pending.'
             ),
         ),
         (
             'The dialog has one question with these options:',
-            'Ask one blocking question with these options:',
+            'Use one native `request_user_input` question with these options:',
         ),
         (
             "through the dialog's free text.",
-            'using an explicit free-text response in chat.',
+            'using the native tool free-text option with a verified user response.',
         ),
         (
             'as the dialog listed.',
