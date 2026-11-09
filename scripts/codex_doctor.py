@@ -65,10 +65,8 @@ def skill_manifest_named(source: Path) -> bool:
     """Check the generated skill name without interpreting arbitrary YAML or executing it."""
     try:
         with source.open(encoding='utf-8') as manifest:
-            first = manifest.readline().strip()
-            name = manifest.readline().strip()
-            third = manifest.readline()
-    except (OSError, UnicodeError):
+            first, name, third = (manifest.readline().strip() for _ in range(3))
+    except OSError, UnicodeError:
         return False
     return (
         first == '---'
