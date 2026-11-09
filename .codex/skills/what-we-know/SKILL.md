@@ -7,7 +7,7 @@ description: >-
   proposed change), closing with a readiness read for the next stage. Reads the persisted
   lets-investigate ledger, treats entries from an older HEAD as leads to re-verify, and writes
   current verdicts back; assembles from cited facts or one scout wave otherwise. Interactive mode resolves
-  uncertainties via Codex user decision gate; sprint mode (inside agents-assemble) compiles per-task
+  uncertainties via native `request_user_input`; sprint mode (inside agents-assemble) compiles per-task
   citations and files-in-scope and never asks.
   Not for summarizing a repository, writing docs, or general knowledge questions.
 when_to_use: >-
@@ -93,7 +93,7 @@ attempt. Each carries either what an inference rests on or where the answer live
 exceed about six, group them and ask the user which matter; twenty questions is a failed
 triage wearing thoroughness as a costume.
 
-**4. Resolve through `Codex user decision gate`.** One dialog, up to four questions a call with two to
+**4. Resolve through `native `request_user_input``.** One dialog, up to four questions a call with two to
 four options each (the user can always type an answer of their own), only for uncertainties
 the user can actually answer (intent, production observations, history, priorities). Uncertainties a scout could answer get one more narrow dispatch instead
 of a question; uncertainties nobody can answer yet are recorded as such. Record each answer as
