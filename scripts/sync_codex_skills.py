@@ -330,11 +330,11 @@ def native_review_routing(front: str, body: str) -> tuple[str, str]:
         'sonnet, standard and deep on opus), persona\n  emphasis, and scope;'
     )
     front_new = (
-        'An ordinary-chat decision sets review depth (quick, standard, deep), persona\n'
+        'A native `request_user_input` decision sets review depth (quick, standard, deep), persona\n'
         '  emphasis, and scope without changing native reviewer model pins;'
     )
     front_gate = 'presented by id through Codex user decision gate'
-    native_gate = 'presented by id for explicit ordinary-chat decisions'
+    native_gate = 'presented by id for explicit native `request_user_input` decisions'
     body_changes = (
         (
             ('quick is one persona on sonnet, standard and deep run their reviewers on opus.'),
