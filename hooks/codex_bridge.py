@@ -480,6 +480,44 @@ def lifecycle_probe_receipt(event: object, environ: dict[str, str]) -> None:
     receipt.chmod(0o600)
 
 
+
+def lifecycle_resume_probe_outcome(event: object, result: object, environ: dict[str, str]) -> None:
+    """Opt-in receipt of a returned pointer hint, never the target or its contents."""
+    if not isinstance(event, dict) or event.get('hook_event_name') != 'SessionStart':
+        return
+    if event.get('source') not in ('resume', 'compact'):
+        return
+    home = Path(environ.get('HOME') or str(Path.home()))
+    state_dir = home / '.local/state/mightymodels'
+    marker = state_dir / 'codex-lifecycle-probe.enabled'
+    try:
+        status = marker.stat(follow_symlinks=False)
+    except OSError:
+        return
+    if (
+        not marker.is_file()
+        or marker.is_symlink()
+        or (status.st_mode & 0o777) != QUESTION_PROBE_MARKER_MODE
+        or status.st_uid != os.getuid()
+    ):
+        return
+    output = result.get('hookSpecificOutput') if isinstance(result, dict) else None
+    hint = output.get('additionalContext') if isinstance(output, dict) else None
+    if isinstance(hint, str) and hint.strip():
+        state = 'present'
+    elif isinstance(result, dict) and result.get('systemMessage'):
+        state = 'warning'
+    else:
+        state = 'absent'
+    receipt = state_dir / 'codex-lifecycle-probe.log'
+    if receipt.is_symlink():
+        return
+    receipt.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with receipt.open('a', encoding='utf-8') as stream:
+        stream.write(f'event=SessionResumePointer hint={state}\\n')
+    receipt.chmod(0o600)
+
+
 def audit_probe(event: object, environ: dict[str, str]) -> None:
     """Record that the host reached this hook, without persisting tool arguments."""
     if environ.get('MIGHTYMODELS_CODEX_DISPATCH_PROBE') != '1':
@@ -536,6 +574,7 @@ def main() -> int:
         result = run_lifecycle(event, project_root=root, environ=dict(os.environ))
     else:
         result = run_admission(event, project_root=root, environ=dict(os.environ))
+    lifecycle_resume_probe_outcome(event, result, dict(os.environ))
     audit_probe_decision(event, dict(os.environ), result)
     if result is not None:
         print(json.dumps(result))
