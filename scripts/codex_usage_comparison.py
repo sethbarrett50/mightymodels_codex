@@ -33,7 +33,7 @@ def _validated_usage(usage: object, events: object) -> dict[str, int] | None:
     cached_tokens = cast('int', cached_tokens)
     output_tokens = cast('int', output_tokens)
     turns = cast('int', turns)
-    if turns == 0 or cached_tokens > input_tokens or input_tokens + output_tokens == 0:
+    if turns == 0 or cached_tokens > input_tokens:
         return None
     errors = (
         _safe_count(events.get(name, 0))
