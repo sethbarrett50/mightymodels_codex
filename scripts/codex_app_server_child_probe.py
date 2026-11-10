@@ -179,6 +179,10 @@ def run(repo: Path, timeout: int, *, codex: str = 'codex') -> dict[str, object]:
     finally:
         selector.close()
         _stop(proc)
+        if proc.stdin is not None:
+            proc.stdin.close()
+        if proc.stdout is not None:
+            proc.stdout.close()
     report = observer.report()
     report.update({
         'probe_status': status,
