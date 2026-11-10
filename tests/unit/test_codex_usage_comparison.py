@@ -87,6 +87,19 @@ def test_invalid_source_and_usage_are_rejected(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
+def test_reasoning_tokens_cannot_exceed_output_tokens(tmp_path: Path) -> None:
+    target = report(tmp_path / 'invalid-reasoning.json', output_tokens=3)
+    data = json.loads(target.read_text())
+    data['usage']['reasoning_output_tokens'] = 4
+    target.write_text(json.dumps(data))
+    assert load(target) is None
+
+    data['usage']['reasoning_output_tokens'] = 3
+    target.write_text(json.dumps(data))
+    assert load(target) is not None
+
+
+@pytest.mark.unit
 def test_oversized_and_secret_non_numeric_data_are_rejected(tmp_path: Path) -> None:
     target = report(tmp_path / 'bad.json')
     target.write_text('X' * 65537)

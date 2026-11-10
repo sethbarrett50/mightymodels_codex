@@ -32,8 +32,9 @@ def _validated_usage(usage: object, events: object) -> dict[str, int] | None:
     input_tokens = cast('int', input_tokens)
     cached_tokens = cast('int', cached_tokens)
     output_tokens = cast('int', output_tokens)
+    reasoning_tokens = cast('int', reasoning_tokens)
     turns = cast('int', turns)
-    if turns == 0 or cached_tokens > input_tokens:
+    if turns == 0 or cached_tokens > input_tokens or reasoning_tokens > output_tokens:
         return None
     # A streamed turn that started but never completed is not a clean baseline.
     if 'turn_started' in events and _safe_count(events['turn_started']) != turns:
