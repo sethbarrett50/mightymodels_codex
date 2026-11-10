@@ -171,7 +171,7 @@ class Session:
     def done(self) -> bool:
         if self.status != 'unverified':
             return True
-        if self.phase == 'running' and self.parent and self.turn and self.completion == (self.parent, self.turn):
+        if self.phase == 'running' and self.completion == (self.parent, self.turn):
             self.status = 'parent_completed'
             return True
         return False
