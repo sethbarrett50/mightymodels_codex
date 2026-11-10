@@ -76,7 +76,11 @@ def summarize(lines: TextIO) -> dict[str, object]:
             if not isinstance(thread_id, str) or not thread_id:
                 counters['invalid_events'] += 1
                 continue
-            if thread_id not in usage and len(usage) >= MAX_THREADS:
+            if (
+                thread_id not in usage
+                and thread_id not in invalid_usage
+                and len(usage) + len(invalid_usage) >= MAX_THREADS
+            ):
                 counters['capacity_exceeded'] += 1
                 continue
             token_usage = params.get('tokenUsage')
