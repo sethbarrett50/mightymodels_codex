@@ -271,7 +271,7 @@ def main() -> int:
         return 2
     try:
         report = run(repo, args.timeout)
-    except OSError, RuntimeError, ValueError:
+    except OSError, RuntimeError, TypeError, ValueError:
         print(json.dumps({'status': 'unverified: host or protocol error'}))
         return 2
     print(json.dumps(report, indent=2, sort_keys=True))
