@@ -99,7 +99,9 @@ def test_parent_completion_without_child_is_not_success(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
-def test_live_flag_is_mandatory_and_silent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_live_flag_is_mandatory_and_silent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     repo, _fake = fixture(tmp_path, 'child')
     monkeypatch.setattr(sys, 'argv', ['probe', '--repo', str(repo)])
     assert PROBE.main() == 2
