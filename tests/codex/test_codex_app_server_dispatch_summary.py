@@ -67,10 +67,7 @@ def test_failed_call_not_called_security_denial() -> None:
 @pytest.mark.unit
 def test_receiver_id_without_child_is_not_child_observed() -> None:
     report = CLASSIFIER.summarize(stream(spawn('completed', ['PRIVATE_CHILD'])))
-    assert (
-        report['dispatch_classification']
-        == 'spawn_returned_child_id_but_thread_unobserved'
-    )
+    assert report['dispatch_classification'] == 'spawn_returned_child_id_but_thread_unobserved'
     assert report['observed_children'] == 0
 
 
@@ -99,8 +96,16 @@ def test_duplicate_call_item_is_deduplicated_and_private() -> None:
 
 @pytest.mark.unit
 def test_non_spawn_items_are_ignored() -> None:
-    event = {'method': 'item/completed', 'params': {'item': {
-        'type': 'collabAgentToolCall', 'id': 'PRIVATE', 'tool': 'wait', 'status': 'failed'
-    }}}
+    event: dict[str, object] = {
+        'method': 'item/completed',
+        'params': {
+            'item': {
+                'type': 'collabAgentToolCall',
+                'id': 'PRIVATE',
+                'tool': 'wait',
+                'status': 'failed',
+            }
+        },
+    }
     report = CLASSIFIER.summarize(stream(event))
     assert report['dispatch_classification'] == 'spawn_attempt_not_observed'
