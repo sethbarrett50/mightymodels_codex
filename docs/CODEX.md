@@ -821,6 +821,55 @@ verify agent routing, trust and state transitions before claiming #16 passed.
 The summarizer cannot reconstruct hidden child turns or model metadata if
 the event stream does not expose them.
 
+### Native App Server telemetry boundary (Codex CLI 0.167.0; issue #16)
+
+Read-only schema inspection on the user's installed Codex CLI 0.167.0 found
+stable App Server definitions for child-thread relationships and token
+notifications. To reproduce the **schema-only** check without inference:
+
+```sh
+mkdir -p /tmp/codex-schema-audit/stable
+codex app-server generate-json-schema --out /tmp/codex-schema-audit/stable
+```
+
+Inspect the generated `codex_app_server_protocol.v2.schemas.json` locally.
+The stable `Thread` has optional `parentThreadId` and `agentRole` fields,
+and optional `model` and `reasoningEffort` fields. Crucially, their schema
+descriptions explicitly say that model and effort represent the **current
+configuration or latest persisted values, not per-turn execution telemetry**.
+The `Turn` object has no direct model or reasoning-effort properties. Even
+non-null thread metadata therefore cannot prove which model actually served
+a child turn or which effort applied to every request.
+
+`ThreadTokenUsageUpdatedNotification` contains required `threadId`,
+`turnId`, and `tokenUsage` fields. `ThreadTokenUsage` contains `last`
+and `total` numeric breakdowns. `ModelReroutedNotification` contains
+`threadId`, `turnId`, `fromModel`, `toModel`, and `reason`. These are
+**protocol capabilities**, not evidence that every child emits complete usage
+or model-transition records. The stable `thread/list` accepts pagination;
+its parent-thread filter is experimental, while the returned `Thread`
+may expose `parentThreadId` even without that filter.
+
+A privacy-preserving historical audit must not confuse the interfaces:
+`thread/list` returns thread metadata, and `thread/read` can read stored
+thread information without resuming it; neither schema alone promises
+replay of historical `thread/tokenUsage/updated` events. A `thread/resume`
+is **not** a read-only observation operation and must not be used on active
+sessions merely to recover usage. No script should log raw App Server
+responses: thread previews, turns, IDs and paths may contain private data.
+If future measurement is authorized, filter responses in memory and emit only
+approved, aggregated numerical/role-level fields; never print identifiers,
+prompts, transcripts, source paths, or credentials. Treat missing usage as
+**unavailable**, never zero.
+
+This schema-only audit consumed no model inference and did not verify actual
+child runtime identity, effective reasoning effort, complete child usage,
+baseline matching or provider quota savings. In particular, provider quota
+and billing must be verified from authoritative provider accounting, not
+inferred from thread token counters. Keep issue #16 open for those claims.
+Do not enable experimental runtime features or repeat completed #8 lifecycle
+or deferred #9 adversarial tests to satisfy this section.
+
 ### Compare two sanitized Codex runs without assuming quota savings
 
 To compare a baseline run with one using MightyModels, run **the same bounded,
