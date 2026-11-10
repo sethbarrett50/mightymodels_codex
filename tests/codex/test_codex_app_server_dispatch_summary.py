@@ -3,12 +3,14 @@
 import io
 import json
 import runpy
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'scripts'))
 CLASSIFIER = SimpleNamespace(
     **runpy.run_path(str(ROOT / 'scripts/codex_app_server_dispatch_summary.py'))
 )
@@ -97,7 +99,8 @@ def test_duplicate_call_item_is_deduplicated_and_private() -> None:
 
 @pytest.mark.unit
 def test_non_spawn_items_are_ignored() -> None:
-    event = spawn('failed')
-    event['params']['item']['tool'] = 'wait'
+    event = {'method': 'item/completed', 'params': {'item': {
+        'type': 'collabAgentToolCall', 'id': 'PRIVATE', 'tool': 'wait', 'status': 'failed'
+    }}}
     report = CLASSIFIER.summarize(stream(event))
     assert report['dispatch_classification'] == 'spawn_attempt_not_observed'
