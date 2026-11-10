@@ -14,12 +14,15 @@ STATUSES = frozenset({'inProgress', 'completed', 'failed', 'interrupted'})
 
 
 class DispatchObserver:
-    """Correlate a bounded set of observed spawn items without exposing IDs."""
+    """Correlate observed spawn/activity items without exposing IDs or model labels."""
 
     def __init__(self) -> None:
         self.usage = Observer()
         self.calls: dict[str, tuple[str, bool]] = {}
         self.ignored = 0
+        # Only transient IDs and boolean availability; never retain model labels.
+        self.child_creation: dict[str, tuple[bool, bool]] = {}
+        self.ignored_child_activity = 0
 
     def record_item(self, method: str, params: dict) -> None:
         item = params.get('item')
@@ -48,6 +51,28 @@ class DispatchObserver:
         elif identity not in self.calls:
             self.calls[identity] = ('inProgress', has_receiver)
 
+    def record_child_activity(self, params: dict) -> None:
+        item = params.get('item')
+        if not isinstance(item, dict) or item.get('type') != 'subAgentActivity':
+            return
+        if item.get('kind') != 'started':
+            return
+        identity = item.get('agentThreadId')
+        if not isinstance(identity, str) or not identity:
+            self.ignored_child_activity += 1
+            return
+        if identity in self.child_creation:
+            return
+        if len(self.child_creation) >= MAX_THREADS:
+            self.ignored_child_activity += 1
+            return
+        model = item.get('model')
+        effort = item.get('reasoningEffort')
+        self.child_creation[identity] = (
+            isinstance(model, str) and bool(model.strip()),
+            isinstance(effort, str) and bool(effort.strip()),
+        )
+
     def consume(self, event: dict) -> None:
         method = event.get('method')
         params = event.get('params')
@@ -59,6 +84,7 @@ class DispatchObserver:
             self.usage.record_usage(params)
         elif method in ('item/started', 'item/completed'):
             self.record_item(method, params)
+            self.record_child_activity(params)
 
     def report(self) -> dict[str, object]:
         report = self.usage.report()
@@ -74,6 +100,8 @@ class DispatchObserver:
             classification = 'spawn_returned_child_id_but_thread_unobserved'
         else:
             classification = 'spawn_outcome_unknown'
+        model_observed = sum(model for model, _ in self.child_creation.values())
+        effort_observed = sum(effort for _, effort in self.child_creation.values())
         report.update({
             'dispatch_classification': classification,
             'observed_spawn_calls': len(self.calls),
@@ -81,6 +109,11 @@ class DispatchObserver:
                 status: statuses.count(status) for status in sorted(set(statuses))
             },
             'ignored_spawn_items': self.ignored,
+            'observed_subagent_creations': len(self.child_creation),
+            'creations_with_resolved_model': model_observed,
+            'creations_with_resolved_effort': effort_observed,
+            'ignored_subagent_activities': self.ignored_child_activity,
+            'resolved_creation_metadata_is_execution_proof': False,
             'dispatch_observability': (
                 'partial: missing App Server events cannot prove no dispatch attempt; '
                 'failed does not prove a security denial'

@@ -109,3 +109,49 @@ def test_non_spawn_items_are_ignored() -> None:
     }
     report = CLASSIFIER.summarize(stream(event))
     assert report['dispatch_classification'] == 'spawn_attempt_not_observed'
+
+
+def activity(
+    kind: str = 'started',
+    model: object = 'PRIVATE_RESOLVED_MODEL',
+    effort: object = 'high',
+) -> dict[str, object]:
+    return {
+        'method': 'item/completed',
+        'params': {
+            'item': {
+                'type': 'subAgentActivity',
+                'agentThreadId': 'PRIVATE_CHILD',
+                'kind': kind,
+                'model': model,
+                'reasoningEffort': effort,
+                'agentPath': 'PRIVATE_PATH',
+            },
+        },
+    }
+
+
+@pytest.mark.unit
+def test_resolved_creation_metadata_counted_without_identity() -> None:
+    report = CLASSIFIER.summarize(stream(activity(), activity(), activity('completed')))
+    assert report['observed_subagent_creations'] == 1
+    assert report['creations_with_resolved_model'] == 1
+    assert report['creations_with_resolved_effort'] == 1
+    assert report['resolved_creation_metadata_is_execution_proof'] is False
+    assert report['effective_child_models_verified'] is False
+    assert 'PRIVATE' not in json.dumps(report)
+
+
+@pytest.mark.unit
+def test_missing_creation_metadata_is_not_treated_as_verified() -> None:
+    report = CLASSIFIER.summarize(stream(activity(model=None, effort=None)))
+    assert report['observed_subagent_creations'] == 1
+    assert report['creations_with_resolved_model'] == 0
+    assert report['creations_with_resolved_effort'] == 0
+
+
+@pytest.mark.unit
+def test_noncreation_activity_does_not_invent_creation() -> None:
+    report = CLASSIFIER.summarize(stream(activity('completed')))
+    assert report['observed_subagent_creations'] == 0
+    assert report['creations_with_resolved_model'] == 0
