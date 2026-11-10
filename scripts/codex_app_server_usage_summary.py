@@ -99,9 +99,7 @@ class Observer:
         if thread_id in self.invalid_usage:
             return
         previous = self.usage.get(thread_id)
-        if previous is not None and any(
-            a < b for a, b in zip(measured, previous, strict=True)
-        ):
+        if previous is not None and any(a < b for a, b in zip(measured, previous, strict=True)):
             self.invalid_usage.add(thread_id)
             self.usage.pop(thread_id, None)
             self.counters['regressing_usage_notifications'] += 1
