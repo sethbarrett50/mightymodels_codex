@@ -9,16 +9,18 @@ from types import SimpleNamespace
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-OBSERVER = SimpleNamespace(**runpy.run_path(
-    str(ROOT / 'scripts/codex_app_server_usage_summary.py')
-))
+OBSERVER = SimpleNamespace(
+    **runpy.run_path(str(ROOT / 'scripts/codex_app_server_usage_summary.py'))
+)
 
 
-def _stream(*events: dict) -> io.StringIO:
+def _stream(*events: dict[str, object]) -> io.StringIO:
     return io.StringIO(''.join(json.dumps(e) + '\n' for e in events))
 
 
-def _thread(identity: str, parent: str | None, role: str = 'mm-triage-code-scout') -> dict:
+def _thread(
+    identity: str, parent: str | None, role: str = 'mm-triage-code-scout'
+) -> dict[str, object]:
     return {
         'method': 'thread/started',
         'params': {'thread': {
@@ -28,7 +30,9 @@ def _thread(identity: str, parent: str | None, role: str = 'mm-triage-code-scout
     }
 
 
-def _usage(identity: str, input_tokens: int, output: int, reasoning: int = 0) -> dict:
+def _usage(
+    identity: str, input_tokens: int, output: int, reasoning: int = 0
+) -> dict[str, object]:
     return {
         'method': 'thread/tokenUsage/updated',
         'params': {
