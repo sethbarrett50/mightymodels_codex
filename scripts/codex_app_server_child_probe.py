@@ -11,7 +11,7 @@ import hashlib
 import json
 import os
 import signal
-import sys
+import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -20,6 +20,9 @@ from codex_app_server_dispatch_summary import DispatchObserver
 
 MAX_LINE = 1_000_000
 MAX_TIMEOUT = 120
+MIN_TIMEOUT = 10
+THREAD_REQUEST_ID = 2
+TURN_REQUEST_ID = 3
 PROMPT = (
     'Use native spawn_agent once with mm-triage-code-scout to inspect the first '
     'heading of README.md. No edits, shell commands, other files, network, '
@@ -65,7 +68,7 @@ async def receive(proc: asyncio.subprocess.Process, deadline: float) -> dict | N
         return None
     try:
         raw = await asyncio.wait_for(proc.stdout.readline(), remaining)
-    except (TimeoutError, asyncio.LimitOverrunError):
+    except TimeoutError, asyncio.LimitOverrunError:
         return None
     if not raw:
         return None
@@ -79,7 +82,7 @@ async def receive(proc: asyncio.subprocess.Process, deadline: float) -> dict | N
         raise RuntimeError(msg) from None
     if not isinstance(event, dict):
         msg = 'invalid JSON-RPC event'
-        raise RuntimeError(msg)
+        raise TypeError(msg)
     return event
 
 
@@ -110,12 +113,19 @@ class Session:
             self.status = 'initialize_rejected'
             return
         await send(proc, {'method': 'initialized', 'params': {}})
-        await send(proc, {
-            'id': 2, 'method': 'thread/start', 'params': {
-                'cwd': str(self.repo), 'ephemeral': True,
-                'sandbox': 'read-only', 'approvalPolicy': 'never',
+        await send(
+            proc,
+            {
+                'id': 2,
+                'method': 'thread/start',
+                'params': {
+                    'cwd': str(self.repo),
+                    'ephemeral': True,
+                    'sandbox': 'read-only',
+                    'approvalPolicy': 'never',
+                },
             },
-        })
+        )
         self.phase = 'thread_start'
 
     async def start_thread(self, proc: asyncio.subprocess.Process, event: dict) -> None:
@@ -126,10 +136,14 @@ class Session:
             self.status = 'thread_rejected'
             return
         self.parent = identity
-        await send(proc, {
-            'id': 3, 'method': 'turn/start',
-            'params': {'threadId': identity, 'input': [{'type': 'text', 'text': PROMPT}]},
-        })
+        await send(
+            proc,
+            {
+                'id': 3,
+                'method': 'turn/start',
+                'params': {'threadId': identity, 'input': [{'type': 'text', 'text': PROMPT}]},
+            },
+        )
         self.phase = 'turn_start'
 
     def start_turn(self, event: dict) -> None:
@@ -149,18 +163,17 @@ class Session:
             return
         if event.get('id') == 1 and self.phase == 'initialize':
             await self.initialize(proc, event)
-        elif event.get('id') == 2 and self.phase == 'thread_start':
+        elif event.get('id') == THREAD_REQUEST_ID and self.phase == 'thread_start':
             await self.start_thread(proc, event)
-        elif event.get('id') == 3 and self.phase == 'turn_start':
+        elif event.get('id') == TURN_REQUEST_ID and self.phase == 'turn_start':
             self.start_turn(event)
 
     def done(self) -> bool:
         if self.status != 'unverified':
             return True
-        if self.phase == 'running' and self.parent and self.turn:
-            if self.completion == (self.parent, self.turn):
-                self.status = 'parent_completed'
-                return True
+        if self.phase == 'running' and self.parent and self.turn and self.completion == (self.parent, self.turn):
+            self.status = 'parent_completed'
+            return True
         return False
 
 
@@ -179,19 +192,33 @@ async def stop(proc: asyncio.subprocess.Process) -> None:
             await proc.stdin.wait_closed()
 
 
-async def observe(session: Session, timeout: int, codex: str) -> None:
+async def observe(session: Session, duration: int, codex: str) -> None:
     proc = await asyncio.create_subprocess_exec(
-        codex, 'app-server', '--stdio', cwd=session.repo,
-        stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.DEVNULL, start_new_session=True,
+        codex,
+        'app-server',
+        '--stdio',
+        cwd=session.repo,
+        stdin=asyncio.subprocess.PIPE,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.DEVNULL,
+        start_new_session=True,
     )
     try:
-        deadline = time.monotonic() + timeout
-        await send(proc, {
-            'id': 1, 'method': 'initialize', 'params': {'clientInfo': {
-                'name': 'mm_child_probe', 'title': 'Bounded Child Probe', 'version': '0.3',
-            }},
-        })
+        deadline = time.monotonic() + duration
+        await send(
+            proc,
+            {
+                'id': 1,
+                'method': 'initialize',
+                'params': {
+                    'clientInfo': {
+                        'name': 'mm_child_probe',
+                        'title': 'Bounded Child Probe',
+                        'version': '0.3',
+                    }
+                },
+            },
+        )
         while not session.done():
             event = await receive(proc, deadline)
             if event is None:
@@ -219,6 +246,15 @@ def run(repo: Path, timeout: int, *, codex: str = 'codex') -> dict[str, object]:
     return report
 
 
+def valid_fixture(repo: Path, duration: int) -> bool:
+    temp_root = Path(tempfile.gettempdir()).resolve()
+    if repo == temp_root or not repo.is_relative_to(temp_root):
+        return False
+    if not (repo / '.git').is_dir() or not (repo / 'README.md').is_file():
+        return False
+    return MIN_TIMEOUT <= duration <= MAX_TIMEOUT
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repo', type=Path, required=True)
@@ -230,27 +266,25 @@ def main() -> int:
         print(json.dumps({'status': 'blocked: explicit live and task assertion required'}))
         return 2
     repo = args.repo.resolve()
-    if (
-        not repo.is_relative_to(Path('/tmp'))
-        or repo == Path('/tmp')
-        or not (repo / '.git').is_dir()
-        or not (repo / 'README.md').is_file()
-        or not 10 <= args.timeout <= MAX_TIMEOUT
-    ):
+    if not valid_fixture(repo, args.timeout):
         print(json.dumps({'status': 'blocked: invalid disposable fixture or timeout'}))
         return 2
     try:
         report = run(repo, args.timeout)
-    except (OSError, RuntimeError, ValueError):
+    except OSError, RuntimeError, ValueError:
         print(json.dumps({'status': 'unverified: host or protocol error'}))
         return 2
     print(json.dumps(report, indent=2, sort_keys=True))
-    return 0 if (
-        report['probe_status'] == 'parent_completed'
-        and report['fixture_unchanged_verified']
-        and report['observed_children'] > 0
-    ) else 2
+    return (
+        0
+        if (
+            report['probe_status'] == 'parent_completed'
+            and report['fixture_unchanged_verified']
+            and report['observed_children'] > 0
+        )
+        else 2
+    )
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    raise SystemExit(main())
