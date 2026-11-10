@@ -870,6 +870,26 @@ inferred from thread token counters. Keep issue #16 open for those claims.
 Do not enable experimental runtime features or repeat completed #8 lifecycle
 or deferred #9 adversarial tests to satisfy this section.
 
+### Offline App Server usage observer (synthetic acceptance; issue #16)
+
+`scripts/codex_app_server_usage_summary.py` accepts App Server JSON-RPC
+notifications on standard input, without contacting Codex or loading a session.
+For a **synthetic fixture only**, pipe newline-delimited notifications into
+`python3 scripts/codex_app_server_usage_summary.py`. No raw notification
+record is written by this script; the output contains only aggregate counts.
+Do not capture or share raw live App Server traffic without separate approval,
+and do not redirect it into a persistent file or CI artifact.
+
+The observer associates `thread/started` child metadata with the most recent
+valid cumulative `thread/tokenUsage/updated` total for that child; cumulative
+notifications are never summed across turns. It handles out-of-order child
+metadata and usage, rejects regressing or malformed counters and records
+unobserved usage separately from measured totals. This **cannot** establish
+that all children or all updates were observed, that parent usage excludes
+children, or that configured model/effort were actually used. It explicitly
+leaves model/effort verification and provider quota savings unresolved.
+No live Codex run is required for its unit tests.
+
 ### Compare two sanitized Codex runs without assuming quota savings
 
 To compare a baseline run with one using MightyModels, run **the same bounded,
