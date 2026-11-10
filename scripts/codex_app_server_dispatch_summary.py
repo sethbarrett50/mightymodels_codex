@@ -35,7 +35,7 @@ class DispatchObserver:
             self.ignored += 1
             return
         status = item.get('status')
-        if status not in STATUSES:
+        if not isinstance(status, str) or status not in STATUSES:
             status = 'unknown'
         receivers = item.get('receiverThreadIds')
         has_receiver = (
@@ -70,10 +70,7 @@ class DispatchObserver:
             classification = 'spawn_attempt_not_observed'
         elif any(status == 'failed' for status in statuses):
             classification = 'spawn_failed_or_denied'
-        elif any(
-            status == 'completed' and receiver
-            for status, receiver in self.calls.values()
-        ):
+        elif any(status == 'completed' and receiver for status, receiver in self.calls.values()):
             classification = 'spawn_returned_child_id_but_thread_unobserved'
         else:
             classification = 'spawn_outcome_unknown'
